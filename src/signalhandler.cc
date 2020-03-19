@@ -66,7 +66,6 @@ const struct {
 #if !defined(OS_WINDOWS)
   { SIGBUS, "SIGBUS" },
 #endif
-  { SIGTERM, "SIGTERM" },
 };
 
 static bool kFailureSignalHandlerInstalled = false;

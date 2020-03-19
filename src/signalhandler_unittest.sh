@@ -95,19 +95,6 @@ while true; do
     break
   fi
 done
-kill -TERM $!
-wait $!
-
-from_pid=''
-# Only linux has the process ID of the signal sender.
-if [ x`uname` = "xLinux" ]; then
-  from_pid="from PID $$"
-fi
-for pattern in SIGTERM "by PID $!" "$from_pid" main "Aborted at [0-9]"; do
-  if ! grep --quiet "$pattern" signalhandler.out2; then
-    die "'$pattern' should appear in the output"
-  fi
-done
 
 # Test for a case the program dies in a non-main thread.
 $BINARY die_in_thread 2> signalhandler.out3
