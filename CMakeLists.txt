@@ -8,7 +8,7 @@ if (POLICY CMP0063)
   cmake_policy (SET CMP0063 NEW)
 endif (POLICY CMP0063)
 
-project(glog VERSION 0.4.0 LANGUAGES C CXX)
+project(glog VERSION 0.4.1 LANGUAGES C CXX)
 
 set (CPACK_PACKAGE_NAME glog)
 set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "")
@@ -69,6 +69,21 @@ if (WITH_GFLAGS)
 endif (WITH_GFLAGS)
 
 find_package (Threads)
+find_package (fmt)
+if (fmt_FOUND)
+  # Ensure clients locate only the package config and not third party find
+  # modules having the same name. This avoid cmake_policy PUSH/POP errors.
+  if (CMAKE_VERSION VERSION_LESS 3.9)
+    set (fmt_DEPENDENCY "find_dependency (fmt ${fmt_VERSION})")
+  else (CMAKE_VERSION VERSION_LESS 3.9)
+    # Passing additional find_package arguments to find_dependency is possible
+    # starting with CMake 3.9.
+    set (fmt_CMake_VERSION 3.9)
+    set (fmt_DEPENDENCY "find_dependency (fmt ${fmt_VERSION} NO_MODULE)")
+  endif (CMAKE_VERSION VERSION_LESS 3.9)
+endif (fmt_FOUND)
+
+
 find_package (Unwind)
 
 if (Unwind_FOUND)
@@ -569,6 +584,8 @@ if (gflags_FOUND)
     targeT_compile_definitions (glog PUBLIC GFLAGS_DLL_DECLARE_FLAG= GFLAGS_DLL_DEFINE_FLAG=)
   endif (NOT BUILD_SHARED_LIBS)
 endif (gflags_FOUND)
+
+target_link_libraries(glog PUBLIC fmt::fmt)
 
 set_target_properties (glog PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties (glog PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})

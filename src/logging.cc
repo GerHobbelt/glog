@@ -73,6 +73,8 @@
 # include "stacktrace.h"
 #endif
 
+#include <fmt/format.h>
+
 using std::string;
 using std::vector;
 using std::setw;
@@ -154,6 +156,17 @@ GLOG_DEFINE_int32(logemaillevel, 999,
                   " ...)");
 GLOG_DEFINE_string(logmailer, "/bin/mail",
                    "Mailer used to send logging email");
+
+GLOG_DEFINE_string(log_custom_format,"","Custom log format for each message. Named arguments are \"severity\" will have a string INFO, WARNING, ERROR or FATAL,"
+                                              "\"year\" - curent year, \"month\" - current month number, \"month_day\" -  current day of month, "
+                                              "\"hour\" - current time, \"min\" - current minute, \"second\": current second as a double "
+                                              "(will have upto microsecond precision), \"tid\" - current thread id, \"basename\" - basename (usually the filename), "
+                                              "\"line\" - line number. See fmt library on how to use named arguments in a format string");
+
+// LogSeverityNames[severity][0],
+// 1900+data_->tm_time_.tm_year,1+data_->tm_time_.tm_mon,data_->tm_time_.tm_mday,
+// data_->tm_time_.tm_hour,data_->tm_time_.tm_min,data_->tm_time_.tm_sec,data_->usecs_,
+// static_cast<unsigned int>(GetTID()),data_->basename_ , data_->line_)
 
 // Compute the default value for --log_dir
 static const char* DefaultLogDir() {
@@ -1204,28 +1217,16 @@ void LogFileObject::Write(bool force_flush,
     }
 
     // Write a header message into the log file
-    ostringstream file_header_stream;
-    file_header_stream.fill('0');
-    file_header_stream << "Log file created at: "
-                       << 1900+tm_time.tm_year << '/'
-                       << setw(2) << 1+tm_time.tm_mon << '/'
-                       << setw(2) << tm_time.tm_mday
-                       << ' '
-                       << setw(2) << tm_time.tm_hour << ':'
-                       << setw(2) << tm_time.tm_min << ':'
-                       << setw(2) << tm_time.tm_sec << '\n'
-                       << "Running on machine: "
-                       << LogDestination::hostname() << '\n'
-                       << "Log line format: [IWEF]yyyymmdd hh:mm:ss.uuuuuu "
-                       << "threadid file:line] msg" << '\n';
-    const string& file_header_string = file_header_stream.str();
-
+    fmt::memory_buffer file_header_string;
+    fmt::format_to(file_header_string, FMT_STRING("Log file created at: {}/{:02d}/{:02d} {:02d}:{:02d}:{:02d}\nRunning on machine: {}\nLog line format: {}\n"),
+        1900+tm_time.tm_year,1+tm_time.tm_mon,tm_time.tm_mday,tm_time.tm_hour,tm_time.tm_min,tm_time.tm_sec, LogDestination::hostname(),
+                FLAGS_log_custom_format.empty()?"[IWEF]yyyymmdd hh:mm:ss.uuuuuu threadid file:line] msg":FLAGS_log_custom_format.c_str());
     const int header_len = file_header_string.size();
     fwrite(file_header_string.data(), 1, header_len, file_);
     file_length_ += header_len;
     bytes_since_flush_ += header_len;
   }
- 
+
   // Write to LOG file
   if ( !stop_writing ) {
     // fwrite() doesn't return an error when the disk is full, for
@@ -1432,20 +1433,28 @@ void LogMessage::Init(const char* file,
   //    (log level, GMT year, month, date, time, thread_id, file basename, line)
   // We exclude the thread_id for the default thread.
   if (FLAGS_log_prefix && (line != kNoLogPrefix)) {
-    stream() << LogSeverityNames[severity][0]
-             << setw(4) << 1900+data_->tm_time_.tm_year
-             << setw(2) << 1+data_->tm_time_.tm_mon
-             << setw(2) << data_->tm_time_.tm_mday
-             << ' '
-             << setw(2) << data_->tm_time_.tm_hour  << ':'
-             << setw(2) << data_->tm_time_.tm_min   << ':'
-             << setw(2) << data_->tm_time_.tm_sec   << "."
-             << setw(6) << data_->usecs_
-             << ' '
-             << setfill(' ') << setw(5)
-             << static_cast<unsigned int>(GetTID()) << setfill('0')
-             << ' '
-             << data_->basename_ << ':' << data_->line_ << "] ";
+      fmt::memory_buffer memory_buffer;
+    if(FLAGS_log_custom_format.empty()) {
+      fmt::format_to(memory_buffer,FMT_STRING("{}{:04d}{:02d}{:02d} {:02d}:{:02d}:{:02d}.{:06d} {:5d} {}:{}] "),
+                              LogSeverityNames[severity][0],
+                              1900 + data_->tm_time_.tm_year, 1 + data_->tm_time_.tm_mon, data_->tm_time_.tm_mday,
+                              data_->tm_time_.tm_hour, data_->tm_time_.tm_min, data_->tm_time_.tm_sec, data_->usecs_,
+                              static_cast<unsigned int>(GetTID()), data_->basename_, data_->line_);
+    } else {
+      fmt::format_to(memory_buffer, FLAGS_log_custom_format,
+                              fmt::arg(FMT_STRING("severity"), LogSeverityNames[severity]),
+                              fmt::arg(FMT_STRING("year"), 1900 + data_->tm_time_.tm_year),
+                              fmt::arg(FMT_STRING("month"),  1 + data_->tm_time_.tm_mon),
+                              fmt::arg(FMT_STRING("month_day"),  data_->tm_time_.tm_mday),
+                              fmt::arg(FMT_STRING("hour"),  data_->tm_time_.tm_hour),
+                              fmt::arg(FMT_STRING("min"),  data_->tm_time_.tm_min),
+                              fmt::arg(FMT_STRING("second"),  static_cast<double>(data_->tm_time_.tm_sec) + static_cast<double>(data_->usecs_)/1E6),
+                              fmt::arg(FMT_STRING("tid"),  static_cast<unsigned int>(GetTID())),
+                              fmt::arg(FMT_STRING("basename"),  data_->basename_),
+                              fmt::arg(FMT_STRING("line"),  data_->line_));
+
+    }
+    stream().write(memory_buffer.data(), memory_buffer.size());
   }
   data_->num_prefix_chars_ = data_->stream_.pcount();
 

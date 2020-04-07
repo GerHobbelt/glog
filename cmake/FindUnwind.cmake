@@ -47,11 +47,14 @@ if (Unwind_LIBRARY)
       Unwind_VERSION_MAJOR "${_Unwind_VERSION_CONTENTS}")
     string (REGEX REPLACE ".*#define UNW_VERSION_MINOR[ \t]+([0-9]+).*" "\\1"
       Unwind_VERSION_MINOR "${_Unwind_VERSION_CONTENTS}")
-    string (REGEX REPLACE ".*#define UNW_VERSION_EXTRA[ \t]+([0-9]+).*" "\\1"
-      Unwind_VERSION_PATCH "${_Unwind_VERSION_CONTENTS}")
-
+    if ("${_Unwind_VERSION_CONTENTS}" MATCHES "#define UNW_VERSION_EXTRA[ \t]+([0-9]+)")
+        set(Unwind_VERSION_PATCH ${CMAKE_MATCH_1})
+    else ()
+        set(Unwind_VERSION_PATCH "0")
+    endif ()
     set (Unwind_VERSION
       ${Unwind_VERSION_MAJOR}.${Unwind_VERSION_MINOR}.${Unwind_VERSION_PATCH})
+    message("Found version  ${Unwind_VERSION}")
     set (Unwind_VERSION_COMPONENTS 3)
   endif (EXISTS ${_Unwind_VERSION_HEADER})
 endif (Unwind_LIBRARY)
