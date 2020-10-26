@@ -7,7 +7,7 @@ Pod::Spec.new do |spec|
   spec.name = 'glog'
   spec.version = "0.3.5-pre"
   spec.license =  { :type => 'MIT' }
-  spec.homepage = 'https://github.com/google/glog'
+  spec.homepage = 'https://github.com/JimiPlatform/glog'
   spec.summary = 'glog for iOS ReactNative'
   spec.authors = 'Jimi', 'Google'
 
