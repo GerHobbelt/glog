@@ -11,7 +11,7 @@ Pod::Spec.new do |spec|
   spec.summary = 'glog for iOS ReactNative'
   spec.authors = 'Jimi', 'Google'
 
-  spec.source = { :git => 'https://github.com/JimiPlatform/glog.git', :branch => 'dev', :tag => "v#{spec.version}" }
+  spec.source = { :git => 'https://github.com/JimiPlatform/glog.git', :branch => 'dev', :tag => "#{spec.version}" }
   spec.module_name = 'glog'
   spec.header_dir = 'glog'
   spec.source_files = 'src/glog/*.h',

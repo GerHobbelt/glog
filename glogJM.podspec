@@ -1,18 +1,17 @@
 Pod::Spec.new do |spec|
   spec.name = 'glogJM'
-  spec.version = '0.3.5-alpha'
+  spec.version = '0.3.5-release'
   spec.license = { :type => 'Google', :file => 'COPYING' }
   spec.homepage = 'https://github.com/JimiPlatform/glog'
   spec.summary = 'glog for iOS ReactNative'
-  spec.authors = 'Jimi,Google'
+  spec.authors = 'Jimi', 'Google'
 
-  spec.source = { :git => 'https://github.com/JimiPlatform/glog.git', :tag => "#{spec.version}" }
+  spec.source = { :git => 'https://github.com/JimiPlatform/glog.git', :branch => 'dev', :tag => "#{spec.version}" }
   spec.libraries           = "stdc++"
   spec.pod_target_xcconfig = { "USE_HEADERMAP" => "NO",
                                "HEADER_SEARCH_PATHS" => "$(PODS_TARGET_SRCROOT)/src" }
 
   spec.platform = :ios, "9.0"
-  spec.xcconfig = { 'VALID_ARCHS' => 'armv7s armv7 x86_64 arm64 arm64e' }
   spec.ios.vendored_frameworks = 'glog.framework'
 
 end
