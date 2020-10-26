@@ -13,7 +13,6 @@ Pod::Spec.new do |spec|
 
   spec.source = { :git => 'https://github.com/JimiPlatform/glog.git', :branch => 'dev', :tag => "#{spec.version}" }
   spec.module_name = 'glog'
-  spec.header_dir = 'glog'
   spec.source_files = 'src/glog/*.h',
                       'src/demangle.cc',
                       'src/logging.cc',
