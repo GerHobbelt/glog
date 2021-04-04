@@ -1,0 +1,591 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		53113AF926190FE700D1C5DC /* Glog.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113AF726190FE700D1C5DC /* Glog.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		53113B402619110200D1C5DC /* stacktrace_x86-inl.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B012619110200D1C5DC /* stacktrace_x86-inl.h */; };
+		53113B412619110200D1C5DC /* utilities.cc in Sources */ = {isa = PBXBuildFile; fileRef = 53113B022619110200D1C5DC /* utilities.cc */; };
+		53113B422619110200D1C5DC /* symbolize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 53113B032619110200D1C5DC /* symbolize.cc */; };
+		53113B442619110200D1C5DC /* googletest.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B052619110200D1C5DC /* googletest.h */; };
+		53113B452619110200D1C5DC /* stacktrace.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B062619110200D1C5DC /* stacktrace.h */; };
+		53113B462619110200D1C5DC /* demangle.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B072619110200D1C5DC /* demangle.h */; };
+		53113B472619110200D1C5DC /* symbolize.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B082619110200D1C5DC /* symbolize.h */; };
+		53113B4B2619110200D1C5DC /* vlog_is_on.cc in Sources */ = {isa = PBXBuildFile; fileRef = 53113B0E2619110200D1C5DC /* vlog_is_on.cc */; };
+		53113B4C2619110200D1C5DC /* utilities.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B0F2619110200D1C5DC /* utilities.h */; };
+		53113B522619110200D1C5DC /* log_severity.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B162619110200D1C5DC /* log_severity.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		53113B532619110200D1C5DC /* stacktrace_generic-inl.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B172619110200D1C5DC /* stacktrace_generic-inl.h */; };
+		53113B542619110200D1C5DC /* stacktrace_powerpc-inl.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B182619110200D1C5DC /* stacktrace_powerpc-inl.h */; };
+		53113B582619110200D1C5DC /* stacktrace_x86_64-inl.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B1C2619110200D1C5DC /* stacktrace_x86_64-inl.h */; };
+		53113B592619110200D1C5DC /* raw_logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 53113B1D2619110200D1C5DC /* raw_logging.cc */; };
+		53113B5B2619110200D1C5DC /* stacktrace_windows-inl.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B1F2619110200D1C5DC /* stacktrace_windows-inl.h */; };
+		53113B602619110200D1C5DC /* config_for_unittests.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B242619110200D1C5DC /* config_for_unittests.h */; };
+		53113B632619110200D1C5DC /* mock-log.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B272619110200D1C5DC /* mock-log.h */; };
+		53113B672619110200D1C5DC /* signalhandler.cc in Sources */ = {isa = PBXBuildFile; fileRef = 53113B2B2619110200D1C5DC /* signalhandler.cc */; };
+		53113B682619110200D1C5DC /* port.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B2D2619110200D1C5DC /* port.h */; };
+		53113B6F2619110200D1C5DC /* dirent.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B352619110200D1C5DC /* dirent.h */; };
+		53113B722619110200D1C5DC /* logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 53113B382619110200D1C5DC /* logging.cc */; };
+		53113B732619110200D1C5DC /* demangle.cc in Sources */ = {isa = PBXBuildFile; fileRef = 53113B392619110200D1C5DC /* demangle.cc */; };
+		53113B752619110200D1C5DC /* stacktrace_libunwind-inl.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B3B2619110200D1C5DC /* stacktrace_libunwind-inl.h */; };
+		53113B762619110200D1C5DC /* commandlineflags.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B3D2619110200D1C5DC /* commandlineflags.h */; };
+		53113B772619110200D1C5DC /* googleinit.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B3E2619110200D1C5DC /* googleinit.h */; };
+		53113B782619110200D1C5DC /* mutex.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B3F2619110200D1C5DC /* mutex.h */; };
+		53113B7A2619112100D1C5DC /* vlog_is_on.h.in in Headers */ = {isa = PBXBuildFile; fileRef = 53113B122619110200D1C5DC /* vlog_is_on.h.in */; settings = {ATTRIBUTES = (Public, ); }; };
+		53113B7B2619112100D1C5DC /* logging.h.in in Headers */ = {isa = PBXBuildFile; fileRef = 53113B132619110200D1C5DC /* logging.h.in */; settings = {ATTRIBUTES = (Public, ); }; };
+		53113B7C2619112100D1C5DC /* stl_logging.h.in in Headers */ = {isa = PBXBuildFile; fileRef = 53113B142619110200D1C5DC /* stl_logging.h.in */; settings = {ATTRIBUTES = (Public, ); }; };
+		53113B7D2619112100D1C5DC /* raw_logging.h.in in Headers */ = {isa = PBXBuildFile; fileRef = 53113B152619110200D1C5DC /* raw_logging.h.in */; settings = {ATTRIBUTES = (Public, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		53113AF426190FE700D1C5DC /* Glog.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Glog.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		53113AF726190FE700D1C5DC /* Glog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Glog.h; sourceTree = "<group>"; };
+		53113AF826190FE700D1C5DC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		53113B012619110200D1C5DC /* stacktrace_x86-inl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stacktrace_x86-inl.h"; sourceTree = "<group>"; };
+		53113B022619110200D1C5DC /* utilities.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = utilities.cc; sourceTree = "<group>"; };
+		53113B032619110200D1C5DC /* symbolize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = symbolize.cc; sourceTree = "<group>"; };
+		53113B042619110200D1C5DC /* utilities_unittest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = utilities_unittest.cc; sourceTree = "<group>"; };
+		53113B052619110200D1C5DC /* googletest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = googletest.h; sourceTree = "<group>"; };
+		53113B062619110200D1C5DC /* stacktrace.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stacktrace.h; sourceTree = "<group>"; };
+		53113B072619110200D1C5DC /* demangle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = demangle.h; sourceTree = "<group>"; };
+		53113B082619110200D1C5DC /* symbolize.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = symbolize.h; sourceTree = "<group>"; };
+		53113B092619110200D1C5DC /* logging_striptest2.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = logging_striptest2.cc; sourceTree = "<group>"; };
+		53113B0C2619110200D1C5DC /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		53113B0D2619110200D1C5DC /* glog_package_config.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = glog_package_config.cc; sourceTree = "<group>"; };
+		53113B0E2619110200D1C5DC /* vlog_is_on.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vlog_is_on.cc; sourceTree = "<group>"; };
+		53113B0F2619110200D1C5DC /* utilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utilities.h; sourceTree = "<group>"; };
+		53113B102619110200D1C5DC /* stl_logging_unittest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stl_logging_unittest.cc; sourceTree = "<group>"; };
+		53113B122619110200D1C5DC /* vlog_is_on.h.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = vlog_is_on.h.in; sourceTree = "<group>"; };
+		53113B132619110200D1C5DC /* logging.h.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = logging.h.in; sourceTree = "<group>"; };
+		53113B142619110200D1C5DC /* stl_logging.h.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = stl_logging.h.in; sourceTree = "<group>"; };
+		53113B152619110200D1C5DC /* raw_logging.h.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = raw_logging.h.in; sourceTree = "<group>"; };
+		53113B162619110200D1C5DC /* log_severity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_severity.h; sourceTree = "<group>"; };
+		53113B172619110200D1C5DC /* stacktrace_generic-inl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stacktrace_generic-inl.h"; sourceTree = "<group>"; };
+		53113B182619110200D1C5DC /* stacktrace_powerpc-inl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stacktrace_powerpc-inl.h"; sourceTree = "<group>"; };
+		53113B192619110200D1C5DC /* logging_striptest_main.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = logging_striptest_main.cc; sourceTree = "<group>"; };
+		53113B1A2619110200D1C5DC /* logging_striptest10.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = logging_striptest10.cc; sourceTree = "<group>"; };
+		53113B1B2619110200D1C5DC /* mock-log_test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "mock-log_test.cc"; sourceTree = "<group>"; };
+		53113B1C2619110200D1C5DC /* stacktrace_x86_64-inl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stacktrace_x86_64-inl.h"; sourceTree = "<group>"; };
+		53113B1D2619110200D1C5DC /* raw_logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = raw_logging.cc; sourceTree = "<group>"; };
+		53113B1E2619110200D1C5DC /* logging_unittest.err */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = logging_unittest.err; sourceTree = "<group>"; };
+		53113B1F2619110200D1C5DC /* stacktrace_windows-inl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stacktrace_windows-inl.h"; sourceTree = "<group>"; };
+		53113B202619110200D1C5DC /* symbolize_unittest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = symbolize_unittest.cc; sourceTree = "<group>"; };
+		53113B212619110200D1C5DC /* signalhandler_unittest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = signalhandler_unittest.cc; sourceTree = "<group>"; };
+		53113B222619110200D1C5DC /* config.h.cmake.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.h.cmake.in; sourceTree = "<group>"; };
+		53113B232619110200D1C5DC /* logging_striplog_test.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = logging_striplog_test.sh; sourceTree = "<group>"; };
+		53113B242619110200D1C5DC /* config_for_unittests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config_for_unittests.h; sourceTree = "<group>"; };
+		53113B252619110200D1C5DC /* demangle_unittest.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = demangle_unittest.sh; sourceTree = "<group>"; };
+		53113B262619110200D1C5DC /* logging_unittest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = logging_unittest.cc; sourceTree = "<group>"; };
+		53113B272619110200D1C5DC /* mock-log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "mock-log.h"; sourceTree = "<group>"; };
+		53113B282619110200D1C5DC /* demangle_unittest.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = demangle_unittest.txt; sourceTree = "<group>"; };
+		53113B292619110200D1C5DC /* signalhandler_unittest.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = signalhandler_unittest.sh; sourceTree = "<group>"; };
+		53113B2A2619110200D1C5DC /* stacktrace_unittest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stacktrace_unittest.cc; sourceTree = "<group>"; };
+		53113B2B2619110200D1C5DC /* signalhandler.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = signalhandler.cc; sourceTree = "<group>"; };
+		53113B2D2619110200D1C5DC /* port.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = port.h; sourceTree = "<group>"; };
+		53113B2E2619110200D1C5DC /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
+		53113B302619110200D1C5DC /* stl_logging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stl_logging.h; sourceTree = "<group>"; };
+		53113B312619110200D1C5DC /* logging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = logging.h; sourceTree = "<group>"; };
+		53113B322619110200D1C5DC /* raw_logging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = raw_logging.h; sourceTree = "<group>"; };
+		53113B332619110200D1C5DC /* vlog_is_on.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vlog_is_on.h; sourceTree = "<group>"; };
+		53113B342619110200D1C5DC /* log_severity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_severity.h; sourceTree = "<group>"; };
+		53113B352619110200D1C5DC /* dirent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dirent.h; sourceTree = "<group>"; };
+		53113B362619110200D1C5DC /* preprocess.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = preprocess.sh; sourceTree = "<group>"; };
+		53113B372619110200D1C5DC /* port.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = port.cc; sourceTree = "<group>"; };
+		53113B382619110200D1C5DC /* logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = logging.cc; sourceTree = "<group>"; };
+		53113B392619110200D1C5DC /* demangle.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = demangle.cc; sourceTree = "<group>"; };
+		53113B3A2619110200D1C5DC /* demangle_unittest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = demangle_unittest.cc; sourceTree = "<group>"; };
+		53113B3B2619110200D1C5DC /* stacktrace_libunwind-inl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stacktrace_libunwind-inl.h"; sourceTree = "<group>"; };
+		53113B3D2619110200D1C5DC /* commandlineflags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = commandlineflags.h; sourceTree = "<group>"; };
+		53113B3E2619110200D1C5DC /* googleinit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = googleinit.h; sourceTree = "<group>"; };
+		53113B3F2619110200D1C5DC /* mutex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mutex.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		53113AF126190FE700D1C5DC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		53113AEA26190FE700D1C5DC = {
+			isa = PBXGroup;
+			children = (
+				53113AF626190FE700D1C5DC /* Glog */,
+				53113AF526190FE700D1C5DC /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		53113AF526190FE700D1C5DC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				53113AF426190FE700D1C5DC /* Glog.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		53113AF626190FE700D1C5DC /* Glog */ = {
+			isa = PBXGroup;
+			children = (
+				53113B002619110200D1C5DC /* src */,
+				53113AF726190FE700D1C5DC /* Glog.h */,
+				53113AF826190FE700D1C5DC /* Info.plist */,
+			);
+			path = Glog;
+			sourceTree = "<group>";
+		};
+		53113B002619110200D1C5DC /* src */ = {
+			isa = PBXGroup;
+			children = (
+				53113B012619110200D1C5DC /* stacktrace_x86-inl.h */,
+				53113B022619110200D1C5DC /* utilities.cc */,
+				53113B032619110200D1C5DC /* symbolize.cc */,
+				53113B042619110200D1C5DC /* utilities_unittest.cc */,
+				53113B052619110200D1C5DC /* googletest.h */,
+				53113B062619110200D1C5DC /* stacktrace.h */,
+				53113B072619110200D1C5DC /* demangle.h */,
+				53113B082619110200D1C5DC /* symbolize.h */,
+				53113B092619110200D1C5DC /* logging_striptest2.cc */,
+				53113B0A2619110200D1C5DC /* package_config_unittest */,
+				53113B0E2619110200D1C5DC /* vlog_is_on.cc */,
+				53113B0F2619110200D1C5DC /* utilities.h */,
+				53113B102619110200D1C5DC /* stl_logging_unittest.cc */,
+				53113B112619110200D1C5DC /* glog */,
+				53113B172619110200D1C5DC /* stacktrace_generic-inl.h */,
+				53113B182619110200D1C5DC /* stacktrace_powerpc-inl.h */,
+				53113B192619110200D1C5DC /* logging_striptest_main.cc */,
+				53113B1A2619110200D1C5DC /* logging_striptest10.cc */,
+				53113B1B2619110200D1C5DC /* mock-log_test.cc */,
+				53113B1C2619110200D1C5DC /* stacktrace_x86_64-inl.h */,
+				53113B1D2619110200D1C5DC /* raw_logging.cc */,
+				53113B1E2619110200D1C5DC /* logging_unittest.err */,
+				53113B1F2619110200D1C5DC /* stacktrace_windows-inl.h */,
+				53113B202619110200D1C5DC /* symbolize_unittest.cc */,
+				53113B212619110200D1C5DC /* signalhandler_unittest.cc */,
+				53113B222619110200D1C5DC /* config.h.cmake.in */,
+				53113B232619110200D1C5DC /* logging_striplog_test.sh */,
+				53113B242619110200D1C5DC /* config_for_unittests.h */,
+				53113B252619110200D1C5DC /* demangle_unittest.sh */,
+				53113B262619110200D1C5DC /* logging_unittest.cc */,
+				53113B272619110200D1C5DC /* mock-log.h */,
+				53113B282619110200D1C5DC /* demangle_unittest.txt */,
+				53113B292619110200D1C5DC /* signalhandler_unittest.sh */,
+				53113B2A2619110200D1C5DC /* stacktrace_unittest.cc */,
+				53113B2B2619110200D1C5DC /* signalhandler.cc */,
+				53113B2C2619110200D1C5DC /* windows */,
+				53113B382619110200D1C5DC /* logging.cc */,
+				53113B392619110200D1C5DC /* demangle.cc */,
+				53113B3A2619110200D1C5DC /* demangle_unittest.cc */,
+				53113B3B2619110200D1C5DC /* stacktrace_libunwind-inl.h */,
+				53113B3C2619110200D1C5DC /* base */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		53113B0A2619110200D1C5DC /* package_config_unittest */ = {
+			isa = PBXGroup;
+			children = (
+				53113B0B2619110200D1C5DC /* working_config */,
+			);
+			path = package_config_unittest;
+			sourceTree = "<group>";
+		};
+		53113B0B2619110200D1C5DC /* working_config */ = {
+			isa = PBXGroup;
+			children = (
+				53113B0C2619110200D1C5DC /* CMakeLists.txt */,
+				53113B0D2619110200D1C5DC /* glog_package_config.cc */,
+			);
+			path = working_config;
+			sourceTree = "<group>";
+		};
+		53113B112619110200D1C5DC /* glog */ = {
+			isa = PBXGroup;
+			children = (
+				53113B122619110200D1C5DC /* vlog_is_on.h.in */,
+				53113B132619110200D1C5DC /* logging.h.in */,
+				53113B142619110200D1C5DC /* stl_logging.h.in */,
+				53113B152619110200D1C5DC /* raw_logging.h.in */,
+				53113B162619110200D1C5DC /* log_severity.h */,
+			);
+			path = glog;
+			sourceTree = "<group>";
+		};
+		53113B2C2619110200D1C5DC /* windows */ = {
+			isa = PBXGroup;
+			children = (
+				53113B2D2619110200D1C5DC /* port.h */,
+				53113B2E2619110200D1C5DC /* config.h */,
+				53113B2F2619110200D1C5DC /* glog */,
+				53113B352619110200D1C5DC /* dirent.h */,
+				53113B362619110200D1C5DC /* preprocess.sh */,
+				53113B372619110200D1C5DC /* port.cc */,
+			);
+			path = windows;
+			sourceTree = "<group>";
+		};
+		53113B2F2619110200D1C5DC /* glog */ = {
+			isa = PBXGroup;
+			children = (
+				53113B302619110200D1C5DC /* stl_logging.h */,
+				53113B312619110200D1C5DC /* logging.h */,
+				53113B322619110200D1C5DC /* raw_logging.h */,
+				53113B332619110200D1C5DC /* vlog_is_on.h */,
+				53113B342619110200D1C5DC /* log_severity.h */,
+			);
+			path = glog;
+			sourceTree = "<group>";
+		};
+		53113B3C2619110200D1C5DC /* base */ = {
+			isa = PBXGroup;
+			children = (
+				53113B3D2619110200D1C5DC /* commandlineflags.h */,
+				53113B3E2619110200D1C5DC /* googleinit.h */,
+				53113B3F2619110200D1C5DC /* mutex.h */,
+			);
+			path = base;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		53113AEF26190FE700D1C5DC /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				53113B532619110200D1C5DC /* stacktrace_generic-inl.h in Headers */,
+				53113B7A2619112100D1C5DC /* vlog_is_on.h.in in Headers */,
+				53113B7B2619112100D1C5DC /* logging.h.in in Headers */,
+				53113B7C2619112100D1C5DC /* stl_logging.h.in in Headers */,
+				53113B7D2619112100D1C5DC /* raw_logging.h.in in Headers */,
+				53113B522619110200D1C5DC /* log_severity.h in Headers */,
+				53113B772619110200D1C5DC /* googleinit.h in Headers */,
+				53113B442619110200D1C5DC /* googletest.h in Headers */,
+				53113B632619110200D1C5DC /* mock-log.h in Headers */,
+				53113B402619110200D1C5DC /* stacktrace_x86-inl.h in Headers */,
+				53113AF926190FE700D1C5DC /* Glog.h in Headers */,
+				53113B602619110200D1C5DC /* config_for_unittests.h in Headers */,
+				53113B6F2619110200D1C5DC /* dirent.h in Headers */,
+				53113B782619110200D1C5DC /* mutex.h in Headers */,
+				53113B462619110200D1C5DC /* demangle.h in Headers */,
+				53113B762619110200D1C5DC /* commandlineflags.h in Headers */,
+				53113B542619110200D1C5DC /* stacktrace_powerpc-inl.h in Headers */,
+				53113B582619110200D1C5DC /* stacktrace_x86_64-inl.h in Headers */,
+				53113B752619110200D1C5DC /* stacktrace_libunwind-inl.h in Headers */,
+				53113B682619110200D1C5DC /* port.h in Headers */,
+				53113B4C2619110200D1C5DC /* utilities.h in Headers */,
+				53113B5B2619110200D1C5DC /* stacktrace_windows-inl.h in Headers */,
+				53113B452619110200D1C5DC /* stacktrace.h in Headers */,
+				53113B472619110200D1C5DC /* symbolize.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		53113AF326190FE700D1C5DC /* Glog */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 53113AFC26190FE700D1C5DC /* Build configuration list for PBXNativeTarget "Glog" */;
+			buildPhases = (
+				53113D1E2619D8E200D1C5DC /* ShellScript */,
+				53113AEF26190FE700D1C5DC /* Headers */,
+				53113AF026190FE700D1C5DC /* Sources */,
+				53113AF126190FE700D1C5DC /* Frameworks */,
+				53113AF226190FE700D1C5DC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Glog;
+			productName = Glog;
+			productReference = 53113AF426190FE700D1C5DC /* Glog.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		53113AEB26190FE700D1C5DC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1240;
+				TargetAttributes = {
+					53113AF326190FE700D1C5DC = {
+						CreatedOnToolsVersion = 12.4;
+					};
+				};
+			};
+			buildConfigurationList = 53113AEE26190FE700D1C5DC /* Build configuration list for PBXProject "Glog" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 53113AEA26190FE700D1C5DC;
+			productRefGroup = 53113AF526190FE700D1C5DC /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				53113AF326190FE700D1C5DC /* Glog */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		53113AF226190FE700D1C5DC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		53113D1E2619D8E200D1C5DC /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\ncd \"${PROJECT_DIR}/../\"\nsh \"ios-configure-glog.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		53113AF026190FE700D1C5DC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				53113B672619110200D1C5DC /* signalhandler.cc in Sources */,
+				53113B422619110200D1C5DC /* symbolize.cc in Sources */,
+				53113B592619110200D1C5DC /* raw_logging.cc in Sources */,
+				53113B732619110200D1C5DC /* demangle.cc in Sources */,
+				53113B412619110200D1C5DC /* utilities.cc in Sources */,
+				53113B4B2619110200D1C5DC /* vlog_is_on.cc in Sources */,
+				53113B722619110200D1C5DC /* logging.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		53113AFA26190FE700D1C5DC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.4;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		53113AFB26190FE700D1C5DC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.4;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		53113AFD26190FE700D1C5DC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				"HEADER_SEARCH_PATHS[arch=*]" = "${PROJECT_DIR}/../src/**";
+				INFOPLIST_FILE = Glog/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				OTHER_CFLAGS = "";
+				"OTHER_CFLAGS[arch=*]" = (
+					"-Wno-shorten-64-to-32",
+					"-DNO_THREADS",
+					"-fdeclspec",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = FB.Flipper.Glog;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		53113AFE26190FE700D1C5DC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				"HEADER_SEARCH_PATHS[arch=*]" = "${PROJECT_DIR}/../src/**";
+				INFOPLIST_FILE = Glog/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				OTHER_CFLAGS = "";
+				"OTHER_CFLAGS[arch=*]" = (
+					"-Wno-shorten-64-to-32",
+					"-DNO_THREADS",
+					"-fdeclspec",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = FB.Flipper.Glog;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		53113AEE26190FE700D1C5DC /* Build configuration list for PBXProject "Glog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53113AFA26190FE700D1C5DC /* Debug */,
+				53113AFB26190FE700D1C5DC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		53113AFC26190FE700D1C5DC /* Build configuration list for PBXNativeTarget "Glog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53113AFD26190FE700D1C5DC /* Debug */,
+				53113AFE26190FE700D1C5DC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 53113AEB26190FE700D1C5DC /* Project object */;
+}
