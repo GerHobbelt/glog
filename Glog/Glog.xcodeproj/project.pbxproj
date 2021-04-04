@@ -34,10 +34,10 @@
 		53113B762619110200D1C5DC /* commandlineflags.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B3D2619110200D1C5DC /* commandlineflags.h */; };
 		53113B772619110200D1C5DC /* googleinit.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B3E2619110200D1C5DC /* googleinit.h */; };
 		53113B782619110200D1C5DC /* mutex.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113B3F2619110200D1C5DC /* mutex.h */; };
-		53113B7A2619112100D1C5DC /* vlog_is_on.h.in in Headers */ = {isa = PBXBuildFile; fileRef = 53113B122619110200D1C5DC /* vlog_is_on.h.in */; settings = {ATTRIBUTES = (Public, ); }; };
-		53113B7B2619112100D1C5DC /* logging.h.in in Headers */ = {isa = PBXBuildFile; fileRef = 53113B132619110200D1C5DC /* logging.h.in */; settings = {ATTRIBUTES = (Public, ); }; };
-		53113B7C2619112100D1C5DC /* stl_logging.h.in in Headers */ = {isa = PBXBuildFile; fileRef = 53113B142619110200D1C5DC /* stl_logging.h.in */; settings = {ATTRIBUTES = (Public, ); }; };
-		53113B7D2619112100D1C5DC /* raw_logging.h.in in Headers */ = {isa = PBXBuildFile; fileRef = 53113B152619110200D1C5DC /* raw_logging.h.in */; settings = {ATTRIBUTES = (Public, ); }; };
+		53113DEB2619F1DA00D1C5DC /* stl_logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113DE72619F1DA00D1C5DC /* stl_logging.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		53113DEC2619F1DA00D1C5DC /* vlog_is_on.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113DE82619F1DA00D1C5DC /* vlog_is_on.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		53113DED2619F1DA00D1C5DC /* raw_logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113DE92619F1DA00D1C5DC /* raw_logging.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		53113DEE2619F1DA00D1C5DC /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113DEA2619F1DA00D1C5DC /* logging.h */; settings = {ATTRIBUTES = (Public, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -101,6 +101,10 @@
 		53113B3D2619110200D1C5DC /* commandlineflags.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = commandlineflags.h; sourceTree = "<group>"; };
 		53113B3E2619110200D1C5DC /* googleinit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = googleinit.h; sourceTree = "<group>"; };
 		53113B3F2619110200D1C5DC /* mutex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mutex.h; sourceTree = "<group>"; };
+		53113DE72619F1DA00D1C5DC /* stl_logging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stl_logging.h; sourceTree = "<group>"; };
+		53113DE82619F1DA00D1C5DC /* vlog_is_on.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vlog_is_on.h; sourceTree = "<group>"; };
+		53113DE92619F1DA00D1C5DC /* raw_logging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = raw_logging.h; sourceTree = "<group>"; };
+		53113DEA2619F1DA00D1C5DC /* logging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = logging.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -209,6 +213,10 @@
 		53113B112619110200D1C5DC /* glog */ = {
 			isa = PBXGroup;
 			children = (
+				53113DEA2619F1DA00D1C5DC /* logging.h */,
+				53113DE92619F1DA00D1C5DC /* raw_logging.h */,
+				53113DE72619F1DA00D1C5DC /* stl_logging.h */,
+				53113DE82619F1DA00D1C5DC /* vlog_is_on.h */,
 				53113B122619110200D1C5DC /* vlog_is_on.h.in */,
 				53113B132619110200D1C5DC /* logging.h.in */,
 				53113B142619110200D1C5DC /* stl_logging.h.in */,
@@ -261,10 +269,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				53113B532619110200D1C5DC /* stacktrace_generic-inl.h in Headers */,
-				53113B7A2619112100D1C5DC /* vlog_is_on.h.in in Headers */,
-				53113B7B2619112100D1C5DC /* logging.h.in in Headers */,
-				53113B7C2619112100D1C5DC /* stl_logging.h.in in Headers */,
-				53113B7D2619112100D1C5DC /* raw_logging.h.in in Headers */,
+				53113DEE2619F1DA00D1C5DC /* logging.h in Headers */,
+				53113DED2619F1DA00D1C5DC /* raw_logging.h in Headers */,
+				53113DEB2619F1DA00D1C5DC /* stl_logging.h in Headers */,
+				53113DEC2619F1DA00D1C5DC /* vlog_is_on.h in Headers */,
 				53113B522619110200D1C5DC /* log_severity.h in Headers */,
 				53113B772619110200D1C5DC /* googleinit.h in Headers */,
 				53113B442619110200D1C5DC /* googletest.h in Headers */,
@@ -517,6 +525,7 @@
 				"HEADER_SEARCH_PATHS[arch=*]" = "${PROJECT_DIR}/../src/**";
 				INFOPLIST_FILE = Glog/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -529,6 +538,7 @@
 					"-fdeclspec",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = FB.Flipper.Glog;
+				PRODUCT_MODULE_NAME = glog;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -546,6 +556,7 @@
 				"HEADER_SEARCH_PATHS[arch=*]" = "${PROJECT_DIR}/../src/**";
 				INFOPLIST_FILE = Glog/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -558,6 +569,7 @@
 					"-fdeclspec",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = FB.Flipper.Glog;
+				PRODUCT_MODULE_NAME = glog;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
