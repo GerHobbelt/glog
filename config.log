@@ -30,8 +30,8 @@ Kernel configured for up to 12 processors.
 Processor type: i486 (Intel 80486)
 Processors active: 0 1 2 3 4 5 6 7 8 9 10 11
 Primary memory available: 64.00 gigabytes
-Default processor set: 892 tasks, 6007 threads, 12 processors
-Load average: 3.45, Mach factor: 8.60
+Default processor set: 1127 tasks, 7246 threads, 12 processors
+Load average: 5.83, Mach factor: 6.34
 /bin/machine           = unknown
 /usr/bin/oslevel       = unknown
 /bin/universe          = unknown
@@ -48,6 +48,7 @@ PATH: /Applications/Xcode_12.4.0_fb.app/Contents/Developer/usr/local/bin
 PATH: /Users/prit91/.rvm/gems/ruby-2.7.0/bin
 PATH: /Users/prit91/.rvm/gems/ruby-2.7.0@global/bin
 PATH: /Users/prit91/.rvm/rubies/ruby-2.7.0/bin
+PATH: /Users/prit91/.rvm/bin
 PATH: /Users/prit91/.cargo/bin
 PATH: /Library/Frameworks/Python.framework/Versions/3.7/bin
 PATH: /opt/facebook/bin
@@ -67,7 +68,6 @@ PATH: /opt/android_sdk/tools
 PATH: /opt/android_sdk/platform-tools
 PATH: /opt/android_sdk/platform-tools}
 PATH: /Library/Java/JavaVirtualMachines/jdk1.8.0_144.jdk/Contents/Home/bin
-PATH: /Users/prit91/.rvm/bin
 
 
 ## ----------- ##
@@ -138,7 +138,7 @@ configure:3853: /Applications/Xcode_12.4.0_fb.app/Contents/Developer/Toolchains/
 configure:3857: $? = 0
 configure:3864: ./conftest
 dyld: attempt to run simulator program outside simulator (DYLD_ROOT_PATH not set)
-./configure: line 3866: 15287 Abort trap: 6           ./conftest$ac_cv_exeext
+./configure: line 3866: 20554 Abort trap: 6           ./conftest$ac_cv_exeext
 configure:3868: $? = 134
 configure:3883: result: yes
 configure:3888: checking for suffix of object files

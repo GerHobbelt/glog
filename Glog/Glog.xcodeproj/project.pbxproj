@@ -41,7 +41,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		53113AF426190FE700D1C5DC /* Glog.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Glog.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		53113AF426190FE700D1C5DC /* glog.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = glog.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		53113AF726190FE700D1C5DC /* Glog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Glog.h; sourceTree = "<group>"; };
 		53113AF826190FE700D1C5DC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		53113B012619110200D1C5DC /* stacktrace_x86-inl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "stacktrace_x86-inl.h"; sourceTree = "<group>"; };
@@ -129,7 +129,7 @@
 		53113AF526190FE700D1C5DC /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				53113AF426190FE700D1C5DC /* Glog.framework */,
+				53113AF426190FE700D1C5DC /* glog.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -314,7 +314,7 @@
 			);
 			name = Glog;
 			productName = Glog;
-			productReference = 53113AF426190FE700D1C5DC /* Glog.framework */;
+			productReference = 53113AF426190FE700D1C5DC /* glog.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 /* End PBXNativeTarget section */
@@ -539,7 +539,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = FB.Flipper.Glog;
 				PRODUCT_MODULE_NAME = glog;
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = glog;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -570,7 +570,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = FB.Flipper.Glog;
 				PRODUCT_MODULE_NAME = glog;
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = glog;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

@@ -20,7 +20,7 @@ xcrun xcodebuild build \
 
 rm -rf "${OUTPUT_DIR}/iphoneos"
 mkdir -p "${OUTPUT_DIR}/iphoneos"
-ditto "${DERIVED_DATA_PATH}/Build/Products/Release-iphoneos/Glog.framework" "${OUTPUT_DIR}/iphoneos/${FWNAME}.framework"
+ditto "${DERIVED_DATA_PATH}/Build/Products/Release-iphoneos/glog.framework" "${OUTPUT_DIR}/iphoneos/${FWNAME}.framework"
 rm -rf "${DERIVED_DATA_PATH}"
 
 # iOS Simulator
@@ -33,7 +33,7 @@ xcrun xcodebuild build \
 
 rm -rf "${OUTPUT_DIR}/iphonesimulator"
 mkdir -p "${OUTPUT_DIR}/iphonesimulator"
-ditto "${DERIVED_DATA_PATH}/Build/Products/Release-iphonesimulator/Glog.framework" "${OUTPUT_DIR}/iphonesimulator/${FWNAME}.framework"
+ditto "${DERIVED_DATA_PATH}/Build/Products/Release-iphonesimulator/glog.framework" "${OUTPUT_DIR}/iphonesimulator/${FWNAME}.framework"
 rm -rf "${DERIVED_DATA_PATH}"
 
 #
