@@ -199,8 +199,12 @@ void ATTRIBUTE_NOINLINE CheckStackTrace(int i) {
 
 //-----------------------------------------------------------------------//
 
-int main(int, char ** argv) {
-  FLAGS_logtostderr = true;
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_stacktrace_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
+	FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
 
   CheckStackTrace(0);

@@ -56,7 +56,11 @@ static void* DieInThread(void*) {
   // returns an uint64 but in some other environments pthread_self()
   // returns a pointer.  Hence we use C-style cast here, rather than
   // reinterpret/static_cast, to support both types of environments.
+#if defined(PTW32_VERSION_MAJOR)
+  fprintf(stderr, "0x%p is dying\n", (void*)pthread_self().p);
+#else
   fprintf(stderr, "0x%lx is dying\n", (long)pthread_self());
+#endif
   // Use volatile to prevent from these to be optimized away.
   volatile int a = 0;
   volatile int b = 1 / a;
@@ -70,7 +74,11 @@ static void WriteToStdout(const char* data, int size) {
   }
 }
 
-int main(int argc, char **argv) {
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_signalhandler_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
 #if defined(HAVE_STACKTRACE) && defined(HAVE_SYMBOLIZE)
   InitGoogleLogging(argv[0]);
 #ifdef HAVE_LIB_GFLAGS

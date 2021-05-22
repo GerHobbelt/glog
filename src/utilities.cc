@@ -334,8 +334,14 @@ void SetCrashReason(const CrashReason* r) {
 }
 
 void InitGoogleLoggingUtilities(const char* argv0) {
+#if !defined(BUILD_MONOLITHIC)
   CHECK(!IsGoogleLoggingInitialized())
       << "You called InitGoogleLogging() twice!";
+#else
+  // we may invoke this API multiple times in monolithic test builds
+  if (IsGoogleLoggingInitialized())
+    return;
+#endif
   const char* slash = strrchr(argv0, '/');
 #ifdef OS_WINDOWS
   if (!slash)  slash = strrchr(argv0, '\\');

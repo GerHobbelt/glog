@@ -187,7 +187,11 @@ static void TestSTLLogging() {
 #endif
 }
 
-int main(int, char**) {
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_stl_logging_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
   TestSTLLogging();
   std::cout << "PASS\n";
   return 0;
@@ -197,8 +201,12 @@ int main(int, char**) {
 
 #include <iostream>
 
-int main(int, char**) {
-  std::cout << "We don't support stl_logging for this compiler.\n"
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_stl_logging_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
+	std::cout << "We don't support stl_logging for this compiler.\n"
             << "(we need compiler support of 'using ::operator<<' "
             << "for this feature.)\n";
   return 0;

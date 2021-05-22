@@ -194,7 +194,7 @@ void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data) {
     << setw(2) << l.time.day()
     << ' '
     << setw(2) << l.time.hour() << ':'
-    << setw(2) << l.time.min()  << ':'
+    << setw(2) << l.time.minute()  << ':'
     << setw(2) << l.time.sec() << "."
     << setw(6) << l.time.usec()
     << ' '
@@ -204,8 +204,12 @@ void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data) {
     << l.filename << ':' << l.line_number << "]";
 }
 
-int main(int argc, char **argv) {
-  FLAGS_colorlogtostderr = false;
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_logging_custom_prefix_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
+	FLAGS_colorlogtostderr = false;
   FLAGS_timestamp_in_logfile_name = true;
 #ifdef HAVE_LIB_GFLAGS
   ParseCommandLineFlags(&argc, &argv, true);
@@ -1245,7 +1249,7 @@ TEST(DVLog, Basic) {
   // We are expecting that nothing is logged.
   EXPECT_CALL(log, Log(_, _, _)).Times(0);
 #else
-  EXPECT_CALL(log, Log(INFO, __FILE__, "debug log"));
+  EXPECT_CALL(log, Log(GLOG_INFO, __FILE__, "debug log"));
 #endif
 
   FLAGS_v = 1;
@@ -1266,13 +1270,13 @@ TEST(LogAtLevel, Basic) {
   ScopedMockLog log;
 
   // The function version outputs "logging.h" as a file name.
-  EXPECT_CALL(log, Log(WARNING, StrNe(__FILE__), "function version"));
-  EXPECT_CALL(log, Log(INFO, __FILE__, "macro version"));
+  EXPECT_CALL(log, Log(GLOG_WARNING, StrNe(__FILE__), "function version"));
+  EXPECT_CALL(log, Log(GLOG_INFO, __FILE__, "macro version"));
 
-  int severity = WARNING;
+  int severity = GLOG_WARNING;
   LogAtLevel(severity, "function version");
 
-  severity = INFO;
+  severity = GLOG_INFO;
   // We can use the macro version as a C++ stream.
   LOG_AT_LEVEL(severity) << "macro" << ' ' << "version";
 }
@@ -1293,9 +1297,9 @@ TEST(TestExitOnDFatal, ToBeOrNotToBe) {
     // downgraded to ERROR if not debugging.
     const LogSeverity severity =
 #ifdef NDEBUG
-        ERROR;
+		GLOG_ERROR;
 #else
-        FATAL;
+		GLOG_FATAL;
 #endif
     EXPECT_CALL(log, Log(severity, __FILE__, "This should not be fatal"));
     LOG(DFATAL) << "This should not be fatal";

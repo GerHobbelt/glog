@@ -40,9 +40,9 @@
 
 namespace {
 
-using GOOGLE_NAMESPACE::INFO;
-using GOOGLE_NAMESPACE::WARNING;
-using GOOGLE_NAMESPACE::ERROR;
+using GOOGLE_NAMESPACE::GLOG_INFO;
+using GOOGLE_NAMESPACE::GLOG_WARNING;
+using GOOGLE_NAMESPACE::GLOG_ERROR;
 using GOOGLE_NAMESPACE::glog_testing::ScopedMockLog;
 using std::string;
 using testing::_;
@@ -55,10 +55,10 @@ TEST(ScopedMockLogTest, InterceptsLog) {
   ScopedMockLog log;
 
   InSequence s;
-  EXPECT_CALL(log, Log(WARNING, HasSubstr("/mock-log_test.cc"), "Fishy."));
-  EXPECT_CALL(log, Log(INFO, _, "Working..."))
+  EXPECT_CALL(log, Log(GLOG_WARNING, HasSubstr("/mock-log_test.cc"), "Fishy."));
+  EXPECT_CALL(log, Log(GLOG_INFO, _, "Working..."))
       .Times(2);
-  EXPECT_CALL(log, Log(ERROR, _, "Bad!!"));
+  EXPECT_CALL(log, Log(GLOG_ERROR, _, "Bad!!"));
 
   LOG(WARNING) << "Fishy.";
   LOG(INFO) << "Working...";
@@ -86,20 +86,24 @@ void LogForest() {
 TEST(ScopedMockLogTest, LogDuringIntercept) {
   ScopedMockLog log;
   InSequence s;
-  EXPECT_CALL(log, Log(INFO, __FILE__, "Logging a branch..."))
+  EXPECT_CALL(log, Log(GLOG_INFO, __FILE__, "Logging a branch..."))
       .WillOnce(InvokeWithoutArgs(LogTree));
-  EXPECT_CALL(log, Log(INFO, __FILE__, "Logging the whole tree..."))
+  EXPECT_CALL(log, Log(GLOG_INFO, __FILE__, "Logging the whole tree..."))
       .WillOnce(InvokeWithoutArgs(LogForest));
-  EXPECT_CALL(log, Log(INFO, __FILE__, "Logging the entire forest."));
-  EXPECT_CALL(log, Log(INFO, __FILE__, "Logging the entire forest.."));
-  EXPECT_CALL(log, Log(INFO, __FILE__, "Logging the entire forest..."));
+  EXPECT_CALL(log, Log(GLOG_INFO, __FILE__, "Logging the entire forest."));
+  EXPECT_CALL(log, Log(GLOG_INFO, __FILE__, "Logging the entire forest.."));
+  EXPECT_CALL(log, Log(GLOG_INFO, __FILE__, "Logging the entire forest..."));
   LogBranch();
 }
 
 }  // namespace
 
-int main(int argc, char **argv) {
-  GOOGLE_NAMESPACE::InitGoogleLogging(argv[0]);
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_mock_log_test_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
+	google::InitGoogleLogging(argv[0]);
   testing::InitGoogleMock(&argc, argv);
 
   return RUN_ALL_TESTS();

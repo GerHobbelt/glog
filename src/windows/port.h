@@ -64,6 +64,10 @@
 
 #include "glog/logging.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef _MSC_VER
 
 /* 4244: otherwise we get problems when substracting two size_t's to an int
@@ -175,6 +179,10 @@ inline char* strerror_r(int errnum, char* buf, size_t buflen) {
 #ifndef __cplusplus
 /* I don't see how to get inlining for C code in MSVC.  Ah well. */
 #define inline
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif  /* _WIN32 */

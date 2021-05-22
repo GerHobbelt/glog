@@ -56,8 +56,12 @@ int CheckNoReturn(bool b) {
 struct A { };
 std::ostream &operator<<(std::ostream &str, const A&) {return str;}
 
-int main(int, char* argv[]) {
-  FLAGS_logtostderr = true;
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_logging_striptest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
+	FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
   if (FLAGS_check_mode) {
     printf("%s\n", DEBUG_MODE ? "dbg" : "opt");
