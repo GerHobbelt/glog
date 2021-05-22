@@ -225,7 +225,10 @@ int main(int argc, const char** argv) {
   LogWithLevels(0, 0, 0, 0);  // simulate "before global c-tors"
   const string early_stderr = GetCapturedTestStderr();
 
+  // In a monolithic build, we may already have executed other google.log tests...
+#if !defined(BUILD_MONOLITHIC)
   EXPECT_FALSE(IsGoogleLoggingInitialized());
+#endif
 
   // Setting a custom prefix generator (it will use the default format so that
   // the golden outputs can be reused):
