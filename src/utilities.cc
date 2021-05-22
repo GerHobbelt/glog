@@ -60,10 +60,10 @@ using std::string;
 
 _START_GOOGLE_NAMESPACE_
 
-static const char* g_program_invocation_short_name = NULL;
+static std::string g_program_invocation_short_name;
 
 bool IsGoogleLoggingInitialized() {
-  return g_program_invocation_short_name != NULL;
+  return !g_program_invocation_short_name.empty();
 }
 
 _END_GOOGLE_NAMESPACE_
@@ -172,8 +172,8 @@ _START_GOOGLE_NAMESPACE_
 namespace glog_internal_namespace_ {
 
 const char* ProgramInvocationShortName() {
-  if (g_program_invocation_short_name != NULL) {
-    return g_program_invocation_short_name;
+  if (!g_program_invocation_short_name.empty()) {
+    return g_program_invocation_short_name.c_str();
   } else {
     // TODO(hamaji): Use /proc/self/cmdline and so?
     return "UNKNOWN";
@@ -350,7 +350,7 @@ void InitGoogleLoggingUtilities(const char* argv0) {
 void ShutdownGoogleLoggingUtilities() {
   CHECK(IsGoogleLoggingInitialized())
       << "You called ShutdownGoogleLogging() without calling InitGoogleLogging() first!";
-  g_program_invocation_short_name = NULL;
+  g_program_invocation_short_name.clear();
 #ifdef HAVE_SYSLOG_H
   closelog();
 #endif
