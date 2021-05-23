@@ -5,7 +5,9 @@
 
 int glog_demangle_unittest_main(int argc, const char** argv);
 int glog_logging_custom_prefix_unittest_main(int argc, const char** argv);
-int glog_logging_striptest_main(int argc, const char** argv);
+int glog_logging_striptest0_main(int argc, const char** argv);
+int glog_logging_striptest2_main(int argc, const char** argv);
+int glog_logging_striptest10_main(int argc, const char** argv);
 int glog_logging_unittest_main(int argc, const char** argv);
 int glog_mock_log_test_main(int argc, const char** argv);
 int glog_signalhandler_unittest_main(int argc, const char** argv);

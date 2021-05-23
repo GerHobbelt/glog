@@ -39,10 +39,21 @@
 #include "config.h"
 
 DECLARE_bool(logtostderr);
+
+#if defined(BUILD_MONOLITHIC) && (GOOGLE_STRIP_LOG != 0)
+DECLARE_bool(check_mode);
+#else
 GLOG_DEFINE_bool(check_mode, false, "Prints 'opt' or 'dbg'");
+#endif
 
 using std::string;
 using namespace GOOGLE_NAMESPACE;
+
+#if defined(BUILD_MONOLITHIC) && (GOOGLE_STRIP_LOG != 0)
+
+extern int CheckNoReturn(bool b);
+
+#else
 
 int CheckNoReturn(bool b) {
   string s;
@@ -53,11 +64,17 @@ int CheckNoReturn(bool b) {
   }
 }
 
+#endif
+
 struct A { };
-std::ostream &operator<<(std::ostream &str, const A&) {return str;}
+static std::ostream &operator<<(std::ostream &str, const A&) {return str;}
 
 #if defined(BUILD_MONOLITHIC)
-#define main(cnt, arr)      glog_logging_striptest_main(cnt, arr)
+#define _STRI(x)	x
+#define STRI(x)	_STRI(x)
+#define CAT2(a,b,c)		a ## b ## c
+#define CAT(a,b,c)		CAT2(a,b,c)
+#define main      CAT(glog_logging_striptest, GOOGLE_STRIP_LOG, _main)
 #endif
 
 int main(int argc, const char** argv) {

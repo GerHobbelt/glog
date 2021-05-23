@@ -92,6 +92,19 @@ static const char TEST_SRC_DIR[] = ".";
 
 static const uint32_t PTR_TEST_VALUE = 0x12345678;
 
+#if defined(BUILD_MONOLITHIC) && !defined(BUILD_MONOLITHIC_SINGLE_INSTANCE_NOW)
+
+DECLARE_string(test_tmpdir);
+DECLARE_string(test_srcdir);
+DECLARE_bool(run_benchmark);
+#ifdef NDEBUG
+DECLARE_int32(benchmark_iters);
+#else
+DECLARE_int32(benchmark_iters);
+#endif
+
+#else
+
 DEFINE_string(test_tmpdir, GetTempDir(), "Dir we use for temp files");
 DEFINE_string(test_srcdir, TEST_SRC_DIR,
               "Source-dir root, needed to find glog_unittest_flagfile");
@@ -100,6 +113,8 @@ DEFINE_bool(run_benchmark, false, "If true, run benchmarks");
 DEFINE_int32(benchmark_iters, 100000000, "Number of iterations per benchmark");
 #else
 DEFINE_int32(benchmark_iters, 100000, "Number of iterations per benchmark");
+#endif
+
 #endif
 
 #ifdef HAVE_LIB_GTEST
@@ -237,7 +252,15 @@ static inline void CalledAbort() {
 
 #define BENCHMARK(n) static BenchmarkRegisterer __benchmark_ ## n (#n, &n);
 
+#if defined(BUILD_MONOLITHIC) && !defined(BUILD_MONOLITHIC_SINGLE_INSTANCE_NOW)
+
+extern map<string, void (*)(int)> g_benchlist;  // the benchmarks to run
+
+#else
+
 map<string, void (*)(int)> g_benchlist;  // the benchmarks to run
+
+#endif
 
 class BenchmarkRegisterer {
  public:
@@ -588,9 +611,26 @@ static inline void SleepForMilliseconds(int t) {
 
 // Add hook for operator new to ensure there are no memory allocation.
 
+#if defined(BUILD_MONOLITHIC) && !defined(BUILD_MONOLITHIC_SINGLE_INSTANCE_NOW)
+
+extern void (*g_new_hook)();
+
+#else
+
 void (*g_new_hook)() = NULL;
 
+#endif
+
 _END_GOOGLE_NAMESPACE_
+
+#if defined(BUILD_MONOLITHIC) && !defined(BUILD_MONOLITHIC_SINGLE_INSTANCE_NOW)
+
+void* operator new(size_t size);
+void* operator new[](size_t size);
+void operator delete(void* p);
+void operator delete[](void* p);
+
+#else
 
 void* operator new(size_t size) {
   if (GOOGLE_NAMESPACE::g_new_hook) {
@@ -610,3 +650,5 @@ void operator delete(void* p) {
 void operator delete[](void* p) {
   ::operator delete(p);
 }
+
+#endif
