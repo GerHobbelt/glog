@@ -144,6 +144,7 @@ TEST(Demangle, FromFile) {
 
 #endif
 
+
 #if defined(BUILD_MONOLITHIC)
 #define main(cnt, arr)      glog_demangle_unittest_main(cnt, arr)
 #endif
