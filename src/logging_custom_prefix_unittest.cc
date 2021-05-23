@@ -29,6 +29,9 @@
 //
 // Author: Ray Sidney
 
+#define GTEST_DONT_DEFINE_TEST 1
+#define TEST(test_suite_name, test_name)	GTEST_TEST(CustomPrefix ## test_suite_name, test_name)
+
 #include "utilities.h"
 
 #include <fcntl.h>
@@ -494,7 +497,7 @@ TEST(DeathRawCHECK, logging) {
                "RAW: Check 1 == 2 failed: failure 2");
 }
 
-void TestLogString() {
+static void TestLogString() {
   vector<string> errors;
   vector<string> *no_errors = NULL;
 
@@ -511,7 +514,7 @@ void TestLogString() {
   }
 }
 
-void TestLogToString() {
+static void TestLogToString() {
   string error;
   string* no_error = NULL;
 
@@ -546,7 +549,7 @@ class TestLogSinkImpl : public LogSink {
   }
 };
 
-void TestLogSink() {
+static void TestLogSink() {
   TestLogSinkImpl sink;
   LogSink *no_sink = NULL;
 
@@ -585,7 +588,7 @@ enum {
   CASE_B
 };
 
-void TestCHECK() {
+static void TestCHECK() {
   // Tests using CHECK*() on int values.
   CHECK(1 == 1);
   CHECK_EQ(1, 1);
@@ -611,7 +614,7 @@ void TestCHECK() {
 #endif
 }
 
-void TestDCHECK() {
+static void TestDCHECK() {
 #ifdef NDEBUG
   DCHECK( 1 == 2 ) << " DCHECK's shouldn't be compiled in normal mode";
 #endif
@@ -631,7 +634,7 @@ void TestDCHECK() {
   delete orig_ptr;
 }
 
-void TestSTREQ() {
+static void TestSTREQ() {
   CHECK_STREQ("this", "this");
   CHECK_STREQ(NULL, NULL);
   CHECK_STRCASEEQ("this", "tHiS");
