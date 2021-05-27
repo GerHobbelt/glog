@@ -1791,91 +1791,99 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   RAW_DCHECK(data_->num_chars_to_log_ > 0 &&
              data_->message_text_[data_->num_chars_to_log_-1] == '\n', "");
 
-  // Messages of a given severity get logged to lower severity logs, too
+  LogDestination::LogToSinks(data_->severity_,
+                             data_->fullname_, data_->basename_,
+                             data_->line_, &data_->tm_time_,
+                             data_->message_text_ + data_->num_prefix_chars_,
+                             (data_->num_chars_to_log_ -
+                              data_->num_prefix_chars_ - 1),
+                             data_->usecs_);
 
-  if (!already_warned_before_initgoogle && !IsGoogleLoggingInitialized()) {
-    const char w[] = "WARNING: Logging before InitGoogleLogging() is "
-                     "written to STDERR\n";
-    WriteToStderr(w, strlen(w));
-    already_warned_before_initgoogle = true;
-  }
+//  // Messages of a given severity get logged to lower severity logs, too
 
-  // global flag: never log to file if set.  Also -- don't log to a
-  // file if we haven't parsed the command line flags to get the
-  // program name.
-  if (FLAGS_logtostderr || !IsGoogleLoggingInitialized()) {
-    ColoredWriteToStderr(data_->severity_,
-                         data_->message_text_, data_->num_chars_to_log_);
+//  if (!already_warned_before_initgoogle && !IsGoogleLoggingInitialized()) {
+//    const char w[] = "WARNING: Logging before InitGoogleLogging() is "
+//                     "written to STDERR\n";
+//    WriteToStderr(w, strlen(w));
+//    already_warned_before_initgoogle = true;
+//  }
 
-    // this could be protected by a flag if necessary.
-    LogDestination::LogToSinks(data_->severity_,
-                               data_->fullname_, data_->basename_,
-                               data_->line_, &data_->tm_time_,
-                               data_->message_text_ + data_->num_prefix_chars_,
-                               (data_->num_chars_to_log_ -
-                                data_->num_prefix_chars_ - 1),
-                               data_->usecs_);
-  } else {
+//  // global flag: never log to file if set.  Also -- don't log to a
+//  // file if we haven't parsed the command line flags to get the
+//  // program name.
+//  if (FLAGS_logtostderr || !IsGoogleLoggingInitialized()) {
+//    ColoredWriteToStderr(data_->severity_,
+//                         data_->message_text_, data_->num_chars_to_log_);
 
-    // log this message to all log files of severity <= severity_
-    LogDestination::LogToAllLogfiles(data_->severity_, data_->timestamp_,
-                                     data_->message_text_,
-                                     data_->num_chars_to_log_);
+//    // this could be protected by a flag if necessary.
+//    LogDestination::LogToSinks(data_->severity_,
+//                               data_->fullname_, data_->basename_,
+//                               data_->line_, &data_->tm_time_,
+//                               data_->message_text_ + data_->num_prefix_chars_,
+//                               (data_->num_chars_to_log_ -
+//                                data_->num_prefix_chars_ - 1),
+//                               data_->usecs_);
+//  } else {
 
-    LogDestination::MaybeLogToStderr(data_->severity_, data_->message_text_,
-                                     data_->num_chars_to_log_,
-                                     data_->num_prefix_chars_);
-    LogDestination::MaybeLogToEmail(data_->severity_, data_->message_text_,
-                                    data_->num_chars_to_log_);
-    LogDestination::LogToSinks(data_->severity_,
-                               data_->fullname_, data_->basename_,
-                               data_->line_, &data_->tm_time_,
-                               data_->message_text_ + data_->num_prefix_chars_,
-                               (data_->num_chars_to_log_
-                                - data_->num_prefix_chars_ - 1),
-                               data_->usecs_);
-    // NOTE: -1 removes trailing \n
-  }
+//    // log this message to all log files of severity <= severity_
+//    LogDestination::LogToAllLogfiles(data_->severity_, data_->timestamp_,
+//                                     data_->message_text_,
+//                                     data_->num_chars_to_log_);
 
-  // If we log a FATAL message, flush all the log destinations, then toss
-  // a signal for others to catch. We leave the logs in a state that
-  // someone else can use them (as long as they flush afterwards)
-  if (data_->severity_ == GLOG_FATAL && exit_on_dfatal) {
-    if (data_->first_fatal_) {
-      // Store crash information so that it is accessible from within signal
-      // handlers that may be invoked later.
-      RecordCrashReason(&crash_reason);
-      SetCrashReason(&crash_reason);
+//    LogDestination::MaybeLogToStderr(data_->severity_, data_->message_text_,
+//                                     data_->num_chars_to_log_,
+//                                     data_->num_prefix_chars_);
+//    LogDestination::MaybeLogToEmail(data_->severity_, data_->message_text_,
+//                                    data_->num_chars_to_log_);
+//    LogDestination::LogToSinks(data_->severity_,
+//                               data_->fullname_, data_->basename_,
+//                               data_->line_, &data_->tm_time_,
+//                               data_->message_text_ + data_->num_prefix_chars_,
+//                               (data_->num_chars_to_log_
+//                                - data_->num_prefix_chars_ - 1),
+//                               data_->usecs_);
+//    // NOTE: -1 removes trailing \n
+//  }
 
-      // Store shortened fatal message for other logs and GWQ status
-      const int copy = min<int>(data_->num_chars_to_log_,
-                                sizeof(fatal_message)-1);
-      memcpy(fatal_message, data_->message_text_, copy);
-      fatal_message[copy] = '\0';
-      fatal_time = data_->timestamp_;
-    }
+//  // If we log a FATAL message, flush all the log destinations, then toss
+//  // a signal for others to catch. We leave the logs in a state that
+//  // someone else can use them (as long as they flush afterwards)
+//  if (data_->severity_ == GLOG_FATAL && exit_on_dfatal) {
+//    if (data_->first_fatal_) {
+//      // Store crash information so that it is accessible from within signal
+//      // handlers that may be invoked later.
+//      RecordCrashReason(&crash_reason);
+//      SetCrashReason(&crash_reason);
 
-    if (!FLAGS_logtostderr) {
-      for (int i = 0; i < NUM_SEVERITIES; ++i) {
-        if ( LogDestination::log_destinations_[i] )
-          LogDestination::log_destinations_[i]->logger_->Write(true, 0, "", 0);
-      }
-    }
+//      // Store shortened fatal message for other logs and GWQ status
+//      const int copy = min<int>(data_->num_chars_to_log_,
+//                                sizeof(fatal_message)-1);
+//      memcpy(fatal_message, data_->message_text_, copy);
+//      fatal_message[copy] = '\0';
+//      fatal_time = data_->timestamp_;
+//    }
 
-    // release the lock that our caller (directly or indirectly)
-    // LogMessage::~LogMessage() grabbed so that signal handlers
-    // can use the logging facility. Alternately, we could add
-    // an entire unsafe logging interface to bypass locking
-    // for signal handlers but this seems simpler.
-    log_mutex.Unlock();
-    LogDestination::WaitForSinks(data_);
+//    if (!FLAGS_logtostderr) {
+//      for (int i = 0; i < NUM_SEVERITIES; ++i) {
+//        if ( LogDestination::log_destinations_[i] )
+//          LogDestination::log_destinations_[i]->logger_->Write(true, 0, "", 0);
+//      }
+//    }
 
-    const char* message = "*** Check failure stack trace: ***\n";
-    if (write(STDERR_FILENO, message, strlen(message)) < 0) {
-      // Ignore errors.
-    }
-    Fail();
-  }
+//    // release the lock that our caller (directly or indirectly)
+//    // LogMessage::~LogMessage() grabbed so that signal handlers
+//    // can use the logging facility. Alternately, we could add
+//    // an entire unsafe logging interface to bypass locking
+//    // for signal handlers but this seems simpler.
+//    log_mutex.Unlock();
+//    LogDestination::WaitForSinks(data_);
+
+//    const char* message = "*** Check failure stack trace: ***\n";
+//    if (write(STDERR_FILENO, message, strlen(message)) < 0) {
+//      // Ignore errors.
+//    }
+//    Fail();
+//  }
 }
 
 void LogMessage::RecordCrashReason(
