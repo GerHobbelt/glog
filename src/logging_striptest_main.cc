@@ -91,4 +91,5 @@ int main(int argc, const char** argv) {
   bool flag = true;
   (flag ? LOG(INFO) : LOG(ERROR)) << "TESTMESSAGE COND";
   LOG(FATAL) << "TESTMESSAGE FATAL";
+  return 0;
 }
