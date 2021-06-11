@@ -111,7 +111,17 @@ static void CheckRetAddrIsInFunction(void *ret_addr, const AddressRange &range)
 
 //-----------------------------------------------------------------------//
 
+#ifndef __GNUC__
+// On non-GNU environment, we use the address of `CheckStackTrace` to
+// guess the address range of this function. This guess is wrong for
+// non-static function on Windows. This is probably because
+// `&CheckStackTrace` returns the address of a trampoline like PLT,
+// not the actual address of `CheckStackTrace`.
+// See https://github.com/google/glog/issues/421 for the detail.
+static
+#endif
 void ATTRIBUTE_NOINLINE CheckStackTrace(int);
+
 static void ATTRIBUTE_NOINLINE CheckStackTraceLeaf(void) {
   const int STACK_LEN = 10;
   void *stack[STACK_LEN];
