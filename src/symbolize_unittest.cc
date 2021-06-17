@@ -391,7 +391,11 @@ __declspec(noinline) void TestWithReturnAddress() {
 	  ;
   const char *symbol = TrySymbolize(return_address);
   CHECK(symbol != NULL);
+#if defined(BUILD_MONOLITHIC)
+  CHECK_STREQ(symbol, "glog_symbolize_unittest_main");
+#else
   CHECK_STREQ(symbol, "main");
+#endif
   cout << "Test case TestWithReturnAddress passed." << endl;
 }
 # endif  // __ELF__

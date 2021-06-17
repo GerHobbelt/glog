@@ -265,7 +265,7 @@ map<string, void (*)(int)> g_benchlist;  // the benchmarks to run
 class BenchmarkRegisterer {
  public:
   BenchmarkRegisterer(const char* name, void (*function)(int iters)) {
-    EXPECT_TRUE(g_benchlist.insert(std::make_pair(name, function)).second);
+	  GTEST_EXPECT_TRUE_W_MSG(g_benchlist.insert(std::make_pair(name, function)).second, "did you define '" << name << "' in multiple places perhaps?");
   }
 };
 

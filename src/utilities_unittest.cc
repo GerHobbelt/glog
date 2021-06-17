@@ -59,4 +59,6 @@ int main(int argc, const char** argv) {
   InitGoogleTest(&argc, argv);
 
   CHECK_EQ(RUN_ALL_TESTS(), 0);
+
+  return 0;
 }

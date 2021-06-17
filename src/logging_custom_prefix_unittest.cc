@@ -119,7 +119,7 @@ static void TestTruncate();
 static void TestCustomLoggerDeletionOnShutdown();
 
 static int x = -1;
-static void BM_Check1(int n) {
+static void BM_Check1P(int n) {
   while (n-- > 0) {
     CHECK_GE(n, x);
     CHECK_GE(n, x);
@@ -131,10 +131,10 @@ static void BM_Check1(int n) {
     CHECK_GE(n, x);
   }
 }
-BENCHMARK(BM_Check1);
+BENCHMARK(BM_Check1P);
 
 static void CheckFailure(int a, int b, const char* file, int line, const char* msg);
-static void BM_Check3(int n) {
+static void BM_Check3P(int n) {
   while (n-- > 0) {
     if (n < x) CheckFailure(n, x, __FILE__, __LINE__, "n < x");
     if (n < x) CheckFailure(n, x, __FILE__, __LINE__, "n < x");
@@ -146,9 +146,9 @@ static void BM_Check3(int n) {
     if (n < x) CheckFailure(n, x, __FILE__, __LINE__, "n < x");
   }
 }
-BENCHMARK(BM_Check3);
+BENCHMARK(BM_Check3P);
 
-static void BM_Check2(int n) {
+static void BM_Check2P(int n) {
   if (n == 17) {
     x = 5;
   }
@@ -163,25 +163,33 @@ static void BM_Check2(int n) {
     CHECK(n >= x);
   }
 }
-BENCHMARK(BM_Check2);
+BENCHMARK(BM_Check2P);
 
 static void CheckFailure(int, int, const char* /* file */, int /* line */,
                          const char* /* msg */) {
 }
 
-static void BM_logspeed(int n) {
+static void BM_logspeed_P(int n) {
   while (n-- > 0) {
     LOG(INFO) << "test message";
   }
 }
-BENCHMARK(BM_logspeed);
+BENCHMARK(BM_logspeed_P);
 
-static void BM_vlog(int n) {
+static void BM_vlog_P(int n) {
   while (n-- > 0) {
     VLOG(1) << "test message";
   }
 }
-BENCHMARK(BM_vlog);
+BENCHMARK(BM_vlog_P);
+
+
+TEST(GoogleLog, Prefix_golden_test) {
+	// TODO: The golden test portion of this test is very flakey.
+	EXPECT_TRUE(
+		MungeAndDiffTestStderr(FLAGS_test_srcdir + "/src/logging_custom_prefix_unittest.err"));
+}
+
 
 // Dynamically generate a prefix using the default format and write it to the stream.
 void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data) {
@@ -267,10 +275,6 @@ int main(int argc, const char** argv) {
   TestCHECK();
   TestDCHECK();
   TestSTREQ();
-
-  // TODO: The golden test portion of this test is very flakey.
-  EXPECT_TRUE(
-      MungeAndDiffTestStderr(FLAGS_test_srcdir + "/src/logging_custom_prefix_unittest.err"));
 
   FLAGS_logtostderr = false;
 
