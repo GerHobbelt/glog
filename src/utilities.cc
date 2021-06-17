@@ -160,7 +160,28 @@ static void DumpStackTraceAndExit() {
 #endif  // HAVE_SIGACTION
   }
 
-  abort();
+  // [[noreturn]] void Abort(const char* msg) {
+	  fprintf(stderr, "Abort on Fatal Failure...\n");
+	  //fputs(msg, stderr);
+	  //fputs("\n", stderr);
+	  fflush(stderr);
+	  DebugBreak();
+	  static int attempts = 0;
+	  if (!attempts)
+	  {
+		  attempts++;
+		  //fprintf(stderr, "Throwing C++ exception\n");
+		  throw std::exception("aborting");
+	  }
+	  attempts++;
+	  fprintf(stderr, "Triggering SEH exception\n");
+	  fflush(stderr);
+	  volatile int* pInt = 0x00000000;
+	  *pInt = 20;
+#if 0
+	  abort();
+#endif
+  // }
 }
 
 _END_GOOGLE_NAMESPACE_

@@ -1664,19 +1664,29 @@ void LogMessage::Init(const char* file,
   }
 }
 
-LogMessage::~LogMessage() {
-  Flush();
+__declspec(nothrow) void
+LogMessage::__FlushAndFailAtEnd() throw() {
+	try {
+		Flush();
 #ifdef GLOG_THREAD_LOCAL_STORAGE
-  if (data_ == static_cast<void*>(&thread_msg_data)) {
-    data_->~LogMessageData();
-    thread_data_available = true;
-  }
-  else {
-    delete allocated_;
-  }
+		if (data_ == static_cast<void*>(&thread_msg_data)) {
+			data_->~LogMessageData();
+			thread_data_available = true;
+		}
+		else {
+			delete allocated_;
+		}
 #else // !defined(GLOG_THREAD_LOCAL_STORAGE)
-  delete allocated_;
+		delete allocated_;
 #endif // defined(GLOG_THREAD_LOCAL_STORAGE)
+	}
+	catch (...) {
+		fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.");
+	}
+}
+
+LogMessage::~LogMessage() {
+	__FlushAndFailAtEnd();
 }
 
 int LogMessage::preserved_errno() const {
@@ -2492,9 +2502,21 @@ LogMessageFatal::LogMessageFatal(const char* file, int line,
                                  const CheckOpString& result) :
     LogMessage(file, line, result) {}
 
+__declspec(nothrow) void 
+LogMessageFatal::__FlushAndFailAtEnd() throw() {
+	try
+	{
+		Flush();
+		LogMessage::Fail();
+	}
+	catch (...)
+	{
+		fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.");
+	}
+}
+
 LogMessageFatal::~LogMessageFatal() {
-    Flush();
-    LogMessage::Fail();
+	__FlushAndFailAtEnd();
 }
 
 namespace base {
