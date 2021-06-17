@@ -239,12 +239,12 @@ void Mutex::ReaderUnlock() { Unlock(); }
 #elif defined(HAVE_PTHREAD) && defined(HAVE_RWLOCK)
 
 #define SAFE_PTHREAD(fncall)  do {   /* run fncall if is_safe_ is true */  \
-  if (is_safe_ && fncall(&mutex_) != 0) abort();                           \
+  if (is_safe_ && fncall(&mutex_) != 0) logging_fail();                           \
 } while (0)
 
 Mutex::Mutex() {
   SetIsSafe();
-  if (is_safe_ && pthread_rwlock_init(&mutex_, NULL) != 0) abort();
+  if (is_safe_ && pthread_rwlock_init(&mutex_, NULL) != 0) logging_fail();
 }
 Mutex::~Mutex()            { SAFE_PTHREAD(pthread_rwlock_destroy); }
 void Mutex::Lock()         { SAFE_PTHREAD(pthread_rwlock_wrlock); }
@@ -261,12 +261,12 @@ void Mutex::ReaderUnlock() { SAFE_PTHREAD(pthread_rwlock_unlock); }
 #elif defined(HAVE_PTHREAD)
 
 #define SAFE_PTHREAD(fncall)  do {   /* run fncall if is_safe_ is true */  \
-  if (is_safe_ && fncall(&mutex_) != 0) abort();                           \
+  if (is_safe_ && fncall(&mutex_) != 0) logging_fail();                           \
 } while (0)
 
 Mutex::Mutex()             {
   SetIsSafe();
-  if (is_safe_ && pthread_mutex_init(&mutex_, NULL) != 0) abort();
+  if (is_safe_ && pthread_mutex_init(&mutex_, NULL) != 0) logging_fail();
 }
 Mutex::~Mutex()            { SAFE_PTHREAD(pthread_mutex_destroy); }
 void Mutex::Lock()         { SAFE_PTHREAD(pthread_mutex_lock); }

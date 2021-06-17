@@ -160,28 +160,8 @@ static void DumpStackTraceAndExit() {
 #endif  // HAVE_SIGACTION
   }
 
-  // [[noreturn]] void Abort(const char* msg) {
-	  fprintf(stderr, "Abort on Fatal Failure...\n");
-	  //fputs(msg, stderr);
-	  //fputs("\n", stderr);
-	  fflush(stderr);
-	  DebugBreak();
-	  static int attempts = 0;
-	  if (!attempts)
-	  {
-		  attempts++;
-		  //fprintf(stderr, "Throwing C++ exception\n");
-		  throw std::exception("aborting");
-	  }
-	  attempts++;
-	  fprintf(stderr, "Triggering SEH exception\n");
-	  fflush(stderr);
-	  volatile int* pInt = 0x00000000;
-	  *pInt = 20;
-#if 0
-	  abort();
-#endif
-  // }
+  // as we're very probably called from within Fail(), we MUST NOT call the Fail() method for risk of stack overflow and Very Bad Things Happening(tm).
+  logging_fail();
 }
 
 _END_GOOGLE_NAMESPACE_

@@ -1881,9 +1881,8 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     LogDestination::WaitForSinks(data_);
 
     const char* message = "*** Check failure stack trace: ***\n";
-    if (write(STDERR_FILENO, message, strlen(message)) < 0) {
-      // Ignore errors.
-    }
+	fputs(message, stderr);  	// Ignore errors.
+	fflush(stderr);
     Fail();
   }
 }
@@ -1902,32 +1901,43 @@ void LogMessage::RecordCrashReason(
 #endif
 }
 
-#ifdef HAVE___ATTRIBUTE__
-# define ATTRIBUTE_NORETURN __attribute__((noreturn))
-#else
-# define ATTRIBUTE_NORETURN
+[[noreturn]] void logging_fail() {
+  // [[noreturn]] void Abort(const char* msg) {
+	  fprintf(stderr, "Abort on Fatal Failure...\n");
+	  //fputs(msg, stderr);
+	  //fputs("\n", stderr);
+	  fflush(stderr);
+	  DebugBreak();
+	  static int attempts = 0;
+	  if (!attempts)
+	  {
+		  attempts++;
+		  //fprintf(stderr, "Throwing C++ exception\n");
+		  throw std::exception("aborting");
+	  }
+	  attempts++;
+	  fprintf(stderr, "Triggering SEH exception\n");
+	  fflush(stderr);
+	  volatile int* pInt = 0x00000000;
+	  *pInt = 20;
+#if 0
+	  abort();
 #endif
-
-#if defined(OS_WINDOWS)
-__declspec(noreturn)
-#endif
-static void logging_fail() ATTRIBUTE_NORETURN;
-
-static void logging_fail() {
-  abort();
+  // }
 }
 
-typedef void (*logging_fail_func_t)() ATTRIBUTE_NORETURN;
+typedef void (*logging_fail_func_t)();
 
 GOOGLE_GLOG_DLL_DECL
 logging_fail_func_t g_logging_fail_func = &logging_fail;
 
-void InstallFailureFunction(void (*fail_func)()) {
-  g_logging_fail_func = (logging_fail_func_t)fail_func;
+void InstallFailureFunction(logging_fail_func_t fail_func) {
+  g_logging_fail_func = fail_func;
 }
 
-void LogMessage::Fail() {
+[[noreturn]] void LogMessage::Fail() {
   g_logging_fail_func();
+  throw std::exception("LogMessage::Fail::aborting...");
 }
 
 // L >= log_mutex (callers must hold the log_mutex).
