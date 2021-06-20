@@ -60,6 +60,8 @@
 #include "glog/raw_logging.h"
 #include "googletest.h"
 
+#include "testing.h"
+
 DECLARE_string(log_backtrace_at);  // logging.cc
 
 #ifdef HAVE_LIB_GFLAGS

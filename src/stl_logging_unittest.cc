@@ -29,6 +29,8 @@
 
 #include "config.h"
 
+#include "testing.h"
+
 #ifdef HAVE_USING_OPERATOR
 
 #include <functional>

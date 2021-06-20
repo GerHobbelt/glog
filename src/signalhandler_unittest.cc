@@ -43,6 +43,8 @@
 #include <string>
 #include "glog/logging.h"
 
+#include "testing.h"
+
 #ifdef HAVE_LIB_GFLAGS
 #include <gflags/gflags.h>
 using namespace GFLAGS_NAMESPACE;

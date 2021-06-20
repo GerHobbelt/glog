@@ -38,6 +38,8 @@
 #include "base/commandlineflags.h"
 #include "config.h"
 
+#include "testing.h"
+
 DECLARE_bool(logtostderr);
 
 #if defined(BUILD_MONOLITHIC) && (GOOGLE_STRIP_LOG != 0)

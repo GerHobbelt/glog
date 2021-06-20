@@ -38,6 +38,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "testing.h"
+
 namespace {
 
 using GOOGLE_NAMESPACE::GLOG_INFO;

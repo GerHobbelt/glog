@@ -1,7 +1,11 @@
 #ifndef GLOG_TESTING_H_
 #define GLOG_TESTING_H_
 
-//#if defined(BUILD_MONOLITHIC)
+#if defined(BUILD_MONOLITHIC)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int glog_demangle_unittest_main(int argc, const char** argv);
 int glog_logging_custom_prefix_unittest_main(int argc, const char** argv);
@@ -16,7 +20,11 @@ int glog_stl_logging_unittest_main(int argc, const char** argv);
 int glog_symbolize_unittest_main(int argc, const char** argv);
 int glog_utilities_unittest_main(int argc, const char** argv);
 
-//#endif
+#ifdef __cplusplus
+}
+#endif
+
+#endif
 
 #endif
 
