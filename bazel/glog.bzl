@@ -54,6 +54,7 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
         "-DHAVE_STDINT_H",
         "-DHAVE_STRING_H",
         "-DHAVE_UNWIND_H",
+        "-DGLOG_CUSTOM_PREFIX_SUPPORT",
         "-I%s/glog_internal" % gendir,
     ] + (["-DHAVE_LIB_GFLAGS"] if with_gflags else [])
 
@@ -188,6 +189,8 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
 
     common_config = {
         "@ac_cv_cxx11_atomic@": "1",
+        "@ac_cv_cxx11_constexpr@": "1",
+        "@ac_cv_cxx11_chrono@": "1",
         "@ac_cv_cxx11_nullptr_t@": "1",
         "@ac_cv_cxx_using_operator@": "1",
         "@ac_cv_have_inttypes_h@": "0",
