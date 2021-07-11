@@ -85,6 +85,13 @@
 #define DEFINE_int32(name, value, meaning) \
   DEFINE_VARIABLE(GOOGLE_NAMESPACE::int32, I, name, value, meaning, int32)
 
+/* https://docs.microsoft.com/en-us/cpp/error-messages/tool-errors/linker-tools-error-lnk2005?view=msvc-160 */
+#if defined(_MSC_VER)                                                       
+#define DECLSPEC_SELECT_ANY    __declspec(selectany)
+#else
+#define DECLSPEC_SELECT_ANY    /**/
+#endif
+
 // Special case for string, because we have to specify the namespace
 // std::string, which doesn't play nicely with our FLAG__namespace hackery.
 #define DECLARE_string(name)                                            \
@@ -95,8 +102,11 @@
 #define DEFINE_string(name, value, meaning)                             \
   namespace fLS {                                                       \
     std::string FLAGS_##name##_buf(value);                              \
-    GOOGLE_GLOG_DLL_DECL std::string& FLAGS_##name = FLAGS_##name##_buf; \
-    char FLAGS_no##name;                                                \
+    GOOGLE_GLOG_DLL_DECL                                                \
+	DECLSPEC_SELECT_ANY                                                 \
+    std::string& FLAGS_##name = FLAGS_##name##_buf;                     \
+    static                                                              \
+	char FLAGS_no##name = 0;                                            \
   }                                                                     \
   using fLS::FLAGS_##name
 
