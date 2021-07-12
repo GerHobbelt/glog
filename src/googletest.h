@@ -118,11 +118,13 @@ DEFINE_int32(benchmark_iters, 100000, "Number of iterations per benchmark");
 #endif
 
 #ifdef HAVE_LIB_GTEST
+
 # include <gtest/gtest.h>
 // Use our ASSERT_DEATH implementation.
 # undef ASSERT_DEATH
 # undef ASSERT_DEBUG_DEATH
 using testing::InitGoogleTest;
+
 #else
 
 _START_GOOGLE_NAMESPACE_
