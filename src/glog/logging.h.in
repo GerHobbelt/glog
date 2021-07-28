@@ -453,6 +453,9 @@ DECLARE_bool(stop_logging_if_full_disk);
 // Use UTC time for logging
 DECLARE_bool(log_utc_time);
 
+// Sets the maximum rolling file number
+DECLARE_int32(rolling_file_number);
+
 #ifdef MUST_UNDEF_GFLAGS_DECLARE_MACROS
 #undef MUST_UNDEF_GFLAGS_DECLARE_MACROS
 #undef DECLARE_VARIABLE

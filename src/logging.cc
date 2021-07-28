@@ -94,6 +94,8 @@ using std::fflush;
 using std::fprintf;
 using std::perror;
 
+#include <map>
+
 #ifdef __QNX__
 using std::fdopen;
 #endif
@@ -193,6 +195,13 @@ GLOG_DEFINE_string(log_backtrace_at, "",
 
 GLOG_DEFINE_bool(log_utc_time, false,
     "Use UTC time for logging.");
+
+
+GLOG_DEFINE_int32(rolling_file_number, 10,
+    "total log files kept in the disk,"
+    "named log[0-9],if files are all over capacity,will"
+    "delete the oldest log file");
+
 
 // TODO(hamaji): consider windows
 #define PATH_SEPARATOR '/'
@@ -472,6 +481,12 @@ class LogFileObject : public base::Logger {
   // optional argument time_pid_string
   // REQUIRES: lock_ is held
   bool CreateLogfile(const string& time_pid_string);
+
+
+  void GetSuitableFileName(const char* originName,char* outputFileName);
+
+
+
 };
 
 // Encapsulate all log cleaner related states
@@ -1004,8 +1019,8 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
   if (FLAGS_timestamp_in_logfile_name) {
     string_filename += time_pid_string;
   }
-  string_filename += filename_extension_;
-  const char* filename = string_filename.c_str();
+  char filename[256] = {};
+  GetSuitableFileName(string_filename.c_str(), filename);
   //only write to files, create if non-existant.
   int flags = O_WRONLY | O_CREAT;
   if (FLAGS_timestamp_in_logfile_name) {
@@ -1059,43 +1074,6 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
     }
   }
 #endif
-  // We try to create a symlink called <program_name>.<severity>,
-  // which is easier to use.  (Every time we create a new logfile,
-  // we destroy the old symlink and create a new one, so it always
-  // points to the latest logfile.)  If it fails, we're sad but it's
-  // no error.
-  if (!symlink_basename_.empty()) {
-    // take directory from filename
-    const char* slash = strrchr(filename, PATH_SEPARATOR);
-    const string linkname =
-      symlink_basename_ + '.' + LogSeverityNames[severity_];
-    string linkpath;
-    if ( slash ) linkpath = string(filename, static_cast<size_t>(slash-filename+1));  // get dirname
-    linkpath += linkname;
-    unlink(linkpath.c_str());                    // delete old one if it exists
-
-#if defined(OS_WINDOWS)
-    // TODO(hamaji): Create lnk file on Windows?
-#elif defined(HAVE_UNISTD_H)
-    // We must have unistd.h.
-    // Make the symlink be relative (in the same dir) so that if the
-    // entire log directory gets relocated the link is still valid.
-    const char *linkdest = slash ? (slash + 1) : filename;
-    if (symlink(linkdest, linkpath.c_str()) != 0) {
-      // silently ignore failures
-    }
-
-    // Make an additional link to the log file in a place specified by
-    // FLAGS_log_link, if indicated
-    if (!FLAGS_log_link.empty()) {
-      linkpath = FLAGS_log_link + "/" + linkname;
-      unlink(linkpath.c_str());                  // delete old one if it exists
-      if (symlink(filename, linkpath.c_str()) != 0) {
-        // silently ignore failures
-      }
-    }
-#endif
-  }
 
   return true;  // Everything worked
 }
@@ -1206,6 +1184,10 @@ void LogFileObject::Write(bool force_flush,
     }
 
     // Write a header message into the log file
+    std::time_t now = std::time(NULL);
+    struct std::tm t;
+    gmtime_r(&now, &t);
+    std::time_t utc = std::mktime(&t);
     ostringstream file_header_stream;
     file_header_stream.fill('0');
     file_header_stream << "Log file created at: "
@@ -1215,7 +1197,9 @@ void LogFileObject::Write(bool force_flush,
                        << ' '
                        << setw(2) << tm_time.tm_hour << ':'
                        << setw(2) << tm_time.tm_min << ':'
-                       << setw(2) << tm_time.tm_sec << (FLAGS_log_utc_time ? " UTC\n" : "\n")
+                       << setw(2) << tm_time.tm_sec << (FLAGS_log_utc_time ? " UTC" : "")
+                       << now - utc
+                       << "\n"
                        << "Running on machine: "
                        << LogDestination::hostname() << '\n';
 
@@ -1297,6 +1281,110 @@ void LogFileObject::Write(bool force_flush,
   }
 }
 
+vector<std::string> split(const std::string& str, const std::string& delimeter)
+{
+    vector<string> result;
+
+    if (str.empty())
+        return result;
+
+    size_t from = 0;
+    size_t to = string::npos;
+
+    for (char i : delimeter)
+    {
+        auto idx = str.find(i, from);
+        if (idx != string::npos)
+        {
+            to = idx;
+            break;
+        }
+    }
+
+    while (to != string::npos)
+    {
+        auto part = str.substr(from, to - from);
+
+        from = to + 1;
+
+        to = string::npos;
+        for (char i : delimeter)
+        {
+            auto idx = str.find(i, from);
+            if (idx != string::npos)
+            {
+                to = idx;
+                break;
+            }
+        }
+
+        result.emplace_back(part);
+    };
+
+    auto part = str.substr(from);
+    result.push_back(part);
+
+    return result;
+}
+void LogFileObject::GetSuitableFileName(const char* originName, char* outputFileName)
+{
+    std::string dir_delim_("/");
+#ifdef OS_WINDOWS
+    dir_delim_ = "\\";
+#endif
+    std::map< time_t, string> fileMap;
+
+    std::string tmpPath(originName);
+    struct stat file_stat;
+    int error = stat(originName, &file_stat);
+    if (error != 0) {
+        strncpy(outputFileName, originName, strlen(originName));
+        return;
+    }
+
+    fileMap.insert({ file_stat.st_mtime,tmpPath });
+
+    if ((file_stat.st_size >> 20) > MaxLogSize())
+    {
+        vector<string> pathList = split(tmpPath, std::string(dir_delim_));
+        auto fileNameWithExt = pathList.at(pathList.size() - 1);
+        std::string log_directory;
+        std::for_each(pathList.begin(), pathList.end() - 1, [&](const std::string& piece) { log_directory += (piece + dir_delim_); });
+
+        if (FLAGS_rolling_file_number <= 0 || FLAGS_rolling_file_number > 10) FLAGS_rolling_file_number = 10;
+        for (int i = 0; i < FLAGS_rolling_file_number; i++)
+        {
+            string tmpFileName = log_directory + fileNameWithExt + std::to_string(i);
+            struct stat file_stat;
+            int error = stat(tmpFileName.c_str(), &file_stat);
+            if (error == 0) {
+                if ((file_stat.st_size >> 20) < MaxLogSize()) {
+                    strncpy(outputFileName, tmpFileName.c_str(), tmpFileName.size());
+                    return;
+                }
+                fileMap.insert({ file_stat.st_mtime,tmpFileName });
+                // A day is 86400 seconds, so 7 days is 86400 * 7 = 604800 seconds.
+                continue;
+            }
+            else
+            {
+                strncpy(outputFileName, tmpFileName.c_str(), tmpFileName.size());
+                return;
+            }
+        }
+
+        // all full, remove the oldest file
+        auto name = std::min_element(fileMap.begin(), fileMap.end(), [](const auto& l, const auto& r) { return l.first < r.first; });
+        int ret = remove(name->second.c_str());
+        strncpy(outputFileName, name->second.c_str(), name->second.size());
+
+    }
+    else
+    {
+        strncpy(outputFileName, originName, strlen(originName));
+        return;
+    }
+}
 
 LogCleaner::LogCleaner() : enabled_(false), overdue_days_(7), dir_delim_('/') {
 #ifdef OS_WINDOWS
