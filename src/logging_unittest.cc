@@ -132,7 +132,7 @@ static void BM_Check1(int n) {
     CHECK_GE(n, x);
   }
 }
-BENCHMARK(BM_Check1);
+BENCHMARK(BM_Check1)
 
 static void CheckFailure(int a, int b, const char* file, int line, const char* msg);
 static void BM_Check3(int n) {
@@ -147,7 +147,7 @@ static void BM_Check3(int n) {
     if (n < x) CheckFailure(n, x, __FILE__, __LINE__, "n < x");
   }
 }
-BENCHMARK(BM_Check3);
+BENCHMARK(BM_Check3)
 
 static void BM_Check2(int n) {
   if (n == 17) {
@@ -164,7 +164,7 @@ static void BM_Check2(int n) {
     CHECK(n >= x);
   }
 }
-BENCHMARK(BM_Check2);
+BENCHMARK(BM_Check2)
 
 static void CheckFailure(int, int, const char* /* file */, int /* line */,
                          const char* /* msg */) {
@@ -175,14 +175,14 @@ static void BM_logspeed(int n) {
     LOG(INFO) << "test message";
   }
 }
-BENCHMARK(BM_logspeed);
+BENCHMARK(BM_logspeed)
 
 static void BM_vlog(int n) {
   while (n-- > 0) {
     VLOG(1) << "test message";
   }
 }
-BENCHMARK(BM_vlog);
+BENCHMARK(BM_vlog)
 
 
 TEST(GoogleLog, golden_test) {
@@ -1023,9 +1023,10 @@ GLOG_CONSTEXPR int64_t LOG_PERIOD_TOL_NS = 500000;    // 500us
 GLOG_CONSTEXPR size_t MAX_CALLS = 10;
 }  // namespace LogStreamTimes
 
-#ifdef HAVE_CXX11_CHRONO
+#if defined(HAVE_CXX11_CHRONO) && __cplusplus >= 201103L
 struct LogTimeRecorder {
-  size_t m_streamTimes = 0;
+  LogTimeRecorder() : m_streamTimes(0) {}
+  size_t m_streamTimes;
   std::chrono::steady_clock::time_point m_callTimes[LogTimes::MAX_CALLS];
 };
 // The stream operator is called by LOG_EVERY_T every time a logging event
@@ -1043,7 +1044,8 @@ int64 elapsedTime_ns(const std::chrono::steady_clock::time_point& begin,
 }
 #elif defined(OS_WINDOWS)
 struct LogTimeRecorder {
-  size_t m_streamTimes = 0;
+  LogTimeRecorder() : m_streamTimes(0) {}
+  size_t m_streamTimes;
   LARGE_INTEGER m_callTimes[LogTimes::MAX_CALLS];
 };
 std::ostream& operator<<(std::ostream& stream, LogTimeRecorder& t) {
@@ -1054,11 +1056,12 @@ std::ostream& operator<<(std::ostream& stream, LogTimeRecorder& t) {
 int64 elapsedTime_ns(const LARGE_INTEGER& begin, const LARGE_INTEGER& end) {
   LARGE_INTEGER freq;
   QueryPerformanceFrequency(&freq);
-  return (end.QuadPart - begin.QuadPart) * 1000000000 / freq.QuadPart;
+  return (end.QuadPart - begin.QuadPart) * LONGLONG(1000000000) / freq.QuadPart;
 }
 #else
 struct LogTimeRecorder {
-  size_t m_streamTimes = 0;
+  LogTimeRecorder() : m_streamTimes(0) {}
+  size_t m_streamTimes;
   timespec m_callTimes[LogTimes::MAX_CALLS];
 };
 std::ostream& operator<<(std::ostream& stream, LogTimeRecorder& t) {
@@ -1077,11 +1080,11 @@ static void TestLogPeriodically() {
 
   LogTimeRecorder timeLogger;
 
-  GLOG_CONSTEXPR double LOG_PERIOD_SEC = LogTimes::LOG_PERIOD_NS / 1000000000.0;
+  GLOG_CONSTEXPR double LOG_PERIOD_SEC = LogTimes::LOG_PERIOD_NS * 1e-9;
 
   while (timeLogger.m_streamTimes < LogTimes::MAX_CALLS) {
-        LOG_EVERY_T(INFO, LOG_PERIOD_SEC)
-            << timeLogger << "Timed Message #" << timeLogger.m_streamTimes;
+      LOG_EVERY_T(INFO, LOG_PERIOD_SEC)
+          << timeLogger << "Timed Message #" << timeLogger.m_streamTimes;
   }
 
   // Calculate time between each call in nanoseconds for higher resolution to

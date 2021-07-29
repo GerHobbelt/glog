@@ -316,7 +316,7 @@ static void MyUserNameInitializer() {
   }
 
 }
-REGISTER_MODULE_INITIALIZER(utilities, MyUserNameInitializer());
+REGISTER_MODULE_INITIALIZER(utilities, MyUserNameInitializer())
 
 #ifdef HAVE_STACKTRACE
 void DumpStackTraceToString(string* stacktrace) {
