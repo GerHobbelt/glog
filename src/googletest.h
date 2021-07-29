@@ -611,7 +611,7 @@ class Thread {
   }
 
 #if defined(OS_WINDOWS) && !defined(OS_CYGWIN)
-  static DWORD InvokeThreadW(void* self) {
+  static DWORD WINAPI InvokeThreadW(void* self) {
     InvokeThread(self);
     return 0;
   }
