@@ -997,7 +997,7 @@ struct RecordDeletionLogger : public base::Logger {
   virtual void Write(bool force_flush,
                      time_t timestamp,
                      const char* message,
-                     int length) {
+                     size_t length) {
     wrapped_logger_->Write(force_flush, timestamp, message, length);
   }
   virtual void Flush() { wrapped_logger_->Flush(); }
