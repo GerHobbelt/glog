@@ -113,6 +113,11 @@ static void CheckRetAddrIsInFunction(void *ret_addr, const AddressRange &range)
 
 //-----------------------------------------------------------------------//
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-label-as-value"
+#endif
+
 #ifndef __GNUC__
 // On non-GNU environment, we use the address of `CheckStackTrace` to
 // guess the address range of this function. This guess is wrong for
@@ -123,7 +128,6 @@ static void CheckRetAddrIsInFunction(void *ret_addr, const AddressRange &range)
 static
 #endif
 void ATTRIBUTE_NOINLINE CheckStackTrace(int);
-
 static void ATTRIBUTE_NOINLINE CheckStackTraceLeaf(void) {
   const int STACK_LEN = 10;
   void *stack[STACK_LEN];
@@ -143,7 +147,13 @@ static void ATTRIBUTE_NOINLINE CheckStackTraceLeaf(void) {
     printf("Obtained %d stack frames.\n", size);
     for (int i = 0; i < size; i++)
       printf("%s %p\n", strings[i], stack[i]);
-    printf("CheckStackTrace() addr: %p\n", &CheckStackTrace);
+
+    union {
+      void (*p1)(int);
+      void* p2;
+    } p = {&CheckStackTrace};
+
+    printf("CheckStackTrace() addr: %p\n", p.p2);
     free(strings);
 #endif
   }
@@ -192,6 +202,7 @@ static void ATTRIBUTE_NOINLINE CheckStackTrace1(int i) {
     CheckStackTrace2(j);
   DECLARE_ADDRESS_LABEL(end);
 }
+
 #ifndef __GNUC__
 // On non-GNU environment, we use the address of `CheckStackTrace` to
 // guess the address range of this function. This guess is wrong for
@@ -208,6 +219,10 @@ void ATTRIBUTE_NOINLINE CheckStackTrace(int i) {
     CheckStackTrace1(j);
   DECLARE_ADDRESS_LABEL(end);
 }
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 //-----------------------------------------------------------------------//
 

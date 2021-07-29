@@ -31,15 +31,14 @@
 //
 // Unit tests for functions in symbolize.cc.
 
-#include "utilities.h"
-
 #include <csignal>
 #include <iostream>
 
-#include "glog/logging.h"
-#include "symbolize.h"
-#include "googletest.h"
 #include "config.h"
+#include "glog/logging.h"
+#include "googletest.h"
+#include "symbolize.h"
+#include "utilities.h"
 
 #include "testing.h"
 
@@ -55,6 +54,7 @@ using namespace GOOGLE_NAMESPACE;
 
 #define always_inline
 
+#if defined(__ELF__) || defined(OS_WINDOWS) || defined(OS_CYGWIN)
 // A wrapper function for Symbolize() to make the unit test simple.
 static const char *TrySymbolize(void *pc) {
   static char symbol[4096];
@@ -64,6 +64,7 @@ static const char *TrySymbolize(void *pc) {
     return NULL;
   }
 }
+#endif
 
 # if defined(__ELF__)
 
@@ -154,9 +155,9 @@ static void *g_pc_to_symbolize;
 static char g_symbolize_buffer[4096];
 static char *g_symbolize_result;
 
-static void EmptySignalHandler(int signo) {}
+static void EmptySignalHandler(int /*signo*/) {}
 
-static void SymbolizeSignalHandler(int signo) {
+static void SymbolizeSignalHandler(int /*signo*/) {
   if (Symbolize(g_pc_to_symbolize, g_symbolize_buffer,
                 sizeof(g_symbolize_buffer))) {
     g_symbolize_result = g_symbolize_buffer;

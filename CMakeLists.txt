@@ -128,7 +128,7 @@ check_function_exists (fcntl HAVE_FCNTL)
 check_function_exists (pread HAVE_PREAD)
 check_function_exists (pwrite HAVE_PWRITE)
 check_function_exists (sigaction HAVE_SIGACTION)
-check_function_exists (sigaltstack HAVE_SIGALSTACK)
+check_function_exists (sigaltstack HAVE_SIGALTSTACK)
 
 # NOTE gcc does not fail if you pass a non-existent -Wno-* option as an
 # argument. However, it will happily fail if you pass the corresponding -W*
@@ -653,7 +653,7 @@ if (ANDROID)
 endif()
 
 set_target_properties (glog PROPERTIES VERSION ${PROJECT_VERSION})
-set_target_properties (glog PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
+set_target_properties (glog PROPERTIES SOVERSION 1)
 
 if (CYGWIN OR WIN32)
   target_compile_definitions (glog PUBLIC GLOG_NO_ABBREVIATED_SEVERITIES)
