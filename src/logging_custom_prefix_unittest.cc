@@ -194,7 +194,7 @@ void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data) {
     << setw(2) << l.time.day()
     << ' '
     << setw(2) << l.time.hour() << ':'
-    << setw(2) << l.time.min()  << ':'
+    << setw(2) << l.time.minute()  << ':'
     << setw(2) << l.time.sec() << "."
     << setw(6) << l.time.usec()
     << ' '
@@ -204,7 +204,7 @@ void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data) {
     << l.filename << ':' << l.line_number << "]";
 }
 
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
   FLAGS_colorlogtostderr = false;
   FLAGS_timestamp_in_logfile_name = true;
 #ifdef HAVE_LIB_GFLAGS
@@ -981,7 +981,7 @@ struct RecordDeletionLogger : public base::Logger {
   virtual void Write(bool force_flush,
                      time_t timestamp,
                      const char* message,
-                     int length) {
+                     size_t length) {
     wrapped_logger_->Write(force_flush, timestamp, message, length);
   }
   virtual void Flush() { wrapped_logger_->Flush(); }

@@ -50,7 +50,7 @@ TEST(utilities, InitGoogleLoggingDeathTest) {
   ASSERT_DEATH(InitGoogleLogging("foobar"), "");
 }
 
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
   InitGoogleLogging(argv[0]);
   InitGoogleTest(&argc, argv);
 

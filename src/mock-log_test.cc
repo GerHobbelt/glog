@@ -40,9 +40,6 @@
 
 namespace {
 
-using GOOGLE_NAMESPACE::INFO;
-using GOOGLE_NAMESPACE::WARNING;
-using GOOGLE_NAMESPACE::ERROR;
 using GOOGLE_NAMESPACE::glog_testing::ScopedMockLog;
 using std::string;
 using testing::_;
@@ -55,15 +52,15 @@ TEST(ScopedMockLogTest, InterceptsLog) {
   ScopedMockLog log;
 
   InSequence s;
-  EXPECT_CALL(log, Log(WARNING, HasSubstr("/mock-log_test.cc"), "Fishy."));
-  EXPECT_CALL(log, Log(INFO, _, "Working..."))
+  EXPECT_CALL(log, Log(GLOG_WARNING, HasSubstr("/mock-log_test.cc"), "Fishy."));
+  EXPECT_CALL(log, Log(GLOG_INFO, _, "Working..."))
       .Times(2);
-  EXPECT_CALL(log, Log(ERROR, _, "Bad!!"));
+  EXPECT_CALL(log, Log(GLOG_ERROR, _, "Bad!!"));
 
-  LOG(WARNING) << "Fishy.";
-  LOG(INFO) << "Working...";
-  LOG(INFO) << "Working...";
-  LOG(ERROR) << "Bad!!";
+  LOG(GLOG_WARNING) << "Fishy.";
+  LOG(GLOG_INFO) << "Working...";
+  LOG(GLOG_INFO) << "Working...";
+  LOG(GLOG_ERROR) << "Bad!!";
 }
 
 void LogBranch() {

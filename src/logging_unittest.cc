@@ -182,7 +182,7 @@ static void BM_vlog(int n) {
 }
 BENCHMARK(BM_vlog)
 
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
   FLAGS_colorlogtostderr = false;
   FLAGS_timestamp_in_logfile_name = true;
 #ifdef HAVE_LIB_GFLAGS

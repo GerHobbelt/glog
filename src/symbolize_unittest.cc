@@ -398,7 +398,7 @@ __declspec(noinline) void TestWithReturnAddress() {
 # endif  // __ELF__
 #endif  // HAVE_STACKTRACE
 
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
   FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
   InitGoogleTest(&argc, argv);

@@ -81,7 +81,9 @@
 /* file I/O */
 #define PATH_MAX 1024
 #define access  _access
+#ifndef getcwd
 #define getcwd  _getcwd
+#endif
 #define open    _open
 #define read    _read
 #define write   _write
