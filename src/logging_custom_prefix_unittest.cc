@@ -865,7 +865,7 @@ struct MyLogger : public base::Logger {
   virtual void Write(bool /* should_flush */,
                      time_t /* timestamp */,
                      const char* message,
-                     int length) {
+                     size_t length) {
     data.append(message, length);
   }
 

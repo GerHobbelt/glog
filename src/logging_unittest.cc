@@ -184,7 +184,6 @@ static void BM_vlog(int n) {
 }
 BENCHMARK(BM_vlog)
 
-<<<<<<< HEAD
 
 TEST(GoogleLog, golden_test) {
 	// TODO: The golden test portion of this test is very flakey.
@@ -199,11 +198,7 @@ TEST(GoogleLog, golden_test) {
 #endif
 
 int main(int argc, const char** argv) {
-	FLAGS_colorlogtostderr = false;
-=======
-int main(int argc, const char **argv) {
   FLAGS_colorlogtostderr = false;
->>>>>>> xxx
   FLAGS_timestamp_in_logfile_name = true;
 #ifdef HAVE_LIB_GFLAGS
   ParseCommandLineFlags(&argc, &argv, true);

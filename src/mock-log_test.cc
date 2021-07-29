@@ -62,24 +62,24 @@ TEST(ScopedMockLogTest, InterceptsLog) {
       .Times(2);
   EXPECT_CALL(log, Log(GLOG_ERROR, _, "Bad!!"));
 
-  LOG(GLOG_WARNING) << "Fishy.";
-  LOG(GLOG_INFO) << "Working...";
-  LOG(GLOG_INFO) << "Working...";
-  LOG(GLOG_ERROR) << "Bad!!";
+  LOG(WARNING) << "Fishy.";
+  LOG(INFO) << "Working...";
+  LOG(INFO) << "Working...";
+  LOG(ERROR) << "Bad!!";
 }
 
 void LogBranch() {
-  LOG(GLOG_INFO) << "Logging a branch...";
+  LOG(INFO) << "Logging a branch...";
 }
 
 void LogTree() {
-  LOG(GLOG_INFO) << "Logging the whole tree...";
+  LOG(INFO) << "Logging the whole tree...";
 }
 
 void LogForest() {
-  LOG(GLOG_INFO) << "Logging the entire forest.";
-  LOG(GLOG_INFO) << "Logging the entire forest..";
-  LOG(GLOG_INFO) << "Logging the entire forest...";
+  LOG(INFO) << "Logging the entire forest.";
+  LOG(INFO) << "Logging the entire forest..";
+  LOG(INFO) << "Logging the entire forest...";
 }
 
 // The purpose of the following test is to verify that intercepting logging
