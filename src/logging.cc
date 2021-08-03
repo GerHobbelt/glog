@@ -902,11 +902,28 @@ void LogFileObject::FlushUnlocked(){
   next_flush_time_ = CycleClock_Now() + UsecToCycles(next);
 }
 
+#if defined(OS_WINDOWS)
+std::wstring toNativeFilename(const std::string& str)
+{
+	std::wstring ret;
+	int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), NULL, 0);
+	if (len > 0) {
+		ret.resize(len);
+		MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), &ret[0], len);
+	}
+	return ret;
+}
+#endif
+
 bool LogFileObject::CreateLogfile(const string& time_pid_string) {
   string string_filename = base_filename_+filename_extension_+
                            time_pid_string;
   const char* filename = string_filename.c_str();
+#if defined(OS_WINDOWS)
+  int fd = _wopen(toNativeFilename(filename).c_str(), O_WRONLY | O_CREAT | O_EXCL, FLAGS_logfile_mode);
+#else
   int fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, FLAGS_logfile_mode);
+#endif
   if (fd == -1) return false;
 #ifdef HAVE_FCNTL
   // Mark the file close-on-exec. We don't really care if this fails
