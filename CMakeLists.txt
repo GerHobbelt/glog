@@ -9,6 +9,30 @@ if (POLICY CMP0063)
 endif (POLICY CMP0063)
 
 project(glog VERSION 0.6.0 LANGUAGES CXX)
+set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(_check_os)
+_check_os()
+if (TARGET_WINDOWS)
+	if( NOT VERSION_MAJOR )
+	    SET( VERSION_MAJOR 0 )
+	endif()
+
+	if( NOT VERSION_MINOR )
+	    SET( VERSION_MINOR 6 )
+	endif()
+	string(TIMESTAMP CURRENT_TIME "%Y%m%d%H%M" UTC)
+	string(SUBSTRING "${CURRENT_TIME}" 2 4 VERSION_PATCH)
+	string(SUBSTRING "${CURRENT_TIME}" 6 4 VERSION_REVISION)
+	include(_generate_product_version_win)
+	generate_product_version(
+	    ProductVersionFiles
+	    NAME "glog"
+	    VERSION_MAJOR ${VERSION_MAJOR}
+	    VERSION_MINOR ${VERSION_MINOR}
+	    VERSION_PATCH ${VERSION_PATCH}
+	    VERSION_REVISION ${VERSION_REVISION}
+	)
+endif()
 
 set (CPACK_PACKAGE_NAME glog)
 set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Google logging library")
@@ -571,6 +595,7 @@ if (CYGWIN OR WIN32)
   list (APPEND GLOG_SRCS
     src/windows/port.cc
     src/windows/port.h
+    ${ProductVersionFiles}
   )
 endif (CYGWIN OR WIN32)
 
