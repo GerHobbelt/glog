@@ -30,7 +30,7 @@ particular `severity level <#severity-levels>`__>), e.g.,
 
    #include <glog/logging.h>
 
-   int main(int argc, char* argv[]) {
+   int main(int argc, const char** argv) {
        // Initialize Google’s logging library.
        google::InitGoogleLogging(argv[0]);
 
@@ -626,7 +626,7 @@ by :cpp:`InstallFailureFunction`.
      exit(1);
    }
 
-   int main(int argc, char* argv[]) {
+   int main(int argc, const char** argv) {
      google::InstallFailureFunction(&YourFailureFunction);
    }
 

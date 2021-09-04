@@ -409,7 +409,7 @@ __declspec(noinline) void TestWithReturnAddress() {
 #endif
 
 int main(int argc, const char** argv) {
-	FLAGS_logtostderr = true;
+  FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
   InitGoogleTest(&argc, argv);
 #if defined(HAVE_SYMBOLIZE) && defined(HAVE_STACKTRACE)

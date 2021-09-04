@@ -57,7 +57,7 @@ TEST(utilities, InitGoogleLoggingDeathTest) {
 #endif
 
 int main(int argc, const char** argv) {
-	InitGoogleLogging(argv[0]);
+  InitGoogleLogging(argv[0]);
   InitGoogleTest(&argc, argv);
 
   CHECK_EQ(RUN_ALL_TESTS(), 0);
