@@ -1738,8 +1738,15 @@ void LogMessage::Flush() {
   // the actual logging action per se.
   {
     MutexLock l(&log_mutex);
-    (this->*(data_->send_method_))();
-    ++num_messages_[static_cast<int>(data_->severity_)];
+	try
+	{
+		(this->*(data_->send_method_))();
+	}
+	catch (...)
+	{
+		// nada
+	}
+	++num_messages_[static_cast<int>(data_->severity_)];
   }
   LogDestination::WaitForSinks(data_);
 
@@ -1752,7 +1759,7 @@ void LogMessage::Flush() {
   if (append_newline) {
     // Fix the ostrstream back how it was before we screwed with it.
     // It's 99.44% certain that we don't need to worry about doing this.
-    data_->message_text_[data_->num_chars_to_log_-1] = original_final_char;
+    data_->message_text_[--data_->num_chars_to_log_] = original_final_char;
   }
 
   // If errno was already set before we enter the logging call, we'll
