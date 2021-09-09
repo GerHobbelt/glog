@@ -521,7 +521,7 @@ static inline void WriteToFile(const string& body, const string& file) {
 
 static inline bool MungeAndDiffTestStderr(const string& golden_filename) {
   CapturedStream* cap = s_captured_streams[STDERR_FILENO];
-  CHECK(cap) << ": did you forget CaptureTestStderr()?";
+  CHECK(cap) << ": did you forget CaptureTestStderr()?\n";
 
   if (!cap)
 	  return false;

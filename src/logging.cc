@@ -1675,7 +1675,7 @@ LogMessage::__FlushAndFailAtEnd() throw() {
 #endif // defined(GLOG_THREAD_LOCAL_STORAGE)
 	}
 	catch (...) {
-		fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.");
+		fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.\n");
 	}
 }
 
@@ -1774,6 +1774,8 @@ void LogMessage::Flush() {
   // Note that this message is now safely logged.  If we're asked to flush
   // again, as a result of destruction, say, we'll do nothing on future calls.
   data_->has_been_flushed_ = true;
+
+  data_->stream_.clear();
 }
 
 // Copy of first FATAL log message so that we can print it out again
@@ -2517,7 +2519,7 @@ LogMessageFatal::__FlushAndFailAtEnd() throw() {
 	}
 	catch (...)
 	{
-		fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.");
+		fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.\n");
 	}
 }
 
