@@ -352,7 +352,7 @@ class CapturedStream {
   // Remove output redirection
   void StopCapture() {
     // Restore original stream
-    if (uncaptured_fd_ != -1) {
+    if (this && this->uncaptured_fd_ != -1) {
       fflush(NULL);
       CHECK(dup2(uncaptured_fd_, fd_) != -1);
     }
@@ -522,6 +522,9 @@ static inline void WriteToFile(const string& body, const string& file) {
 static inline bool MungeAndDiffTestStderr(const string& golden_filename) {
   CapturedStream* cap = s_captured_streams[STDERR_FILENO];
   CHECK(cap) << ": did you forget CaptureTestStderr()?";
+
+  if (!cap)
+	  return false;
 
   cap->StopCapture();
 
