@@ -61,9 +61,8 @@ int CheckNoReturn(bool b) {
   string s;
   if (b) {
     LOG(FATAL) << "Fatal";
-  } else {
-    return 0;
-  }
+  } 
+  return 0;
 }
 
 #endif
