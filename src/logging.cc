@@ -1896,31 +1896,29 @@ void LogMessage::RecordCrashReason(
 }
 
 [[noreturn]] void logging_fail() {
-  // [[noreturn]] void Abort(const char* msg) {
-	  fprintf(stderr, "Abort on Fatal Failure...\n");
-	  //fputs(msg, stderr);
-	  //fputs("\n", stderr);
+	  fprintf(stderr, "Abort on Fatal Failure (logging_fail)...\n");
 	  fflush(stderr);
-	  DebugBreak();
+	  if (IsDebuggerPresent())
+		DebugBreak();
 	  static int attempts = 0;
 	  if (!attempts)
 	  {
 		  attempts++;
-		  //fprintf(stderr, "Throwing C++ exception\n");
+		  fprintf(stderr, "Throwing C++ exception (abort)\n");
+		  fflush(stderr);
 		  throw std::exception("aborting");
 	  }
 	  attempts++;
-	  fprintf(stderr, "Triggering SEH exception\n");
+	  fprintf(stderr, "Triggering SEH exception (abort)\n");
 	  fflush(stderr);
 	  volatile int* pInt = 0x00000000;
 	  *pInt = 20;
 #if 0
 	  abort();
 #endif
-  // }
 }
 
-GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = reinterpret_cast<logging_fail_func_t>(&abort);
+GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = &logging_fail;
 
 void InstallFailureFunction(logging_fail_func_t fail_func) {
   g_logging_fail_func = fail_func;
