@@ -54,6 +54,9 @@
 #ifdef HAVE_PWD_H
 # include <pwd.h>
 #endif
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
 
 #include "base/googleinit.h"
 
@@ -92,6 +95,12 @@ static void DebugWriteToStderr(const char* data, void *) {
   if (write(STDERR_FILENO, data, strlen(data)) < 0) {
     // Ignore errors.
   }
+#if defined(__ANDROID__)
+  // ANDROID_LOG_FATAL as fatal error occurred and now is dumping call stack.
+  __android_log_write(ANDROID_LOG_FATAL,
+                      glog_internal_namespace_::ProgramInvocationShortName(),
+                      data);
+#endif
 }
 
 static void DebugWriteToString(const char* data, void *arg) {
@@ -291,15 +300,6 @@ pid_t GetTID() {
 #else
   return -1;
 #endif
-}
-
-const char* const_basename(const char* filepath) {
-  const char* base = strrchr(filepath, '/');
-#ifdef GLOG_OS_WINDOWS  // Look for either path separator in Windows
-  if (!base)
-    base = strrchr(filepath, '\\');
-#endif
-  return base ? (base+1) : filepath;
 }
 
 static string g_my_user_name;

@@ -26,10 +26,10 @@ expand_template = rule(
 )
 
 def dict_union(x, y):
-  z = {}
-  z.update(x)
-  z.update(y)
-  return z
+    z = {}
+    z.update(x)
+    z.update(y)
+    return z
 
 def glog_library(namespace = "google", with_gflags = 1, **kwargs):
     if native.repository_name() != "@":
@@ -53,7 +53,6 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
         "-DHAVE_CXX11_NULLPTR_T",
         "-DHAVE_STDINT_H",
         "-DHAVE_STRING_H",
-        "-DHAVE_UNWIND_H",
         "-DGLOG_CUSTOM_PREFIX_SUPPORT",
         "-I%s/glog_internal" % gendir,
     ] + (["-DHAVE_LIB_GFLAGS"] if with_gflags else [])
@@ -70,6 +69,7 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
         "-DHAVE_SYS_UTSNAME_H",
         # For src/utilities.cc.
         "-DHAVE_SYS_TIME_H",
+        "-DHAVE_UNWIND_H",
         # Enable dumping stacktrace upon sigaction.
         "-DHAVE_SIGACTION",
         # For logging.cc.
@@ -78,6 +78,8 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
     ]
 
     linux_or_darwin_copts = wasm_copts + [
+        # Symbols explicitly marked as not being exported
+        "-DGLOG_NO_EXPORT=__attribute__((visibility(\\\"hidden\\\")))",
         # For src/utilities.cc.
         "-DHAVE_SYS_SYSCALL_H",
         # For src/logging.cc to create symlinks.
@@ -92,10 +94,13 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
     darwin_only_copts = [
         # For stacktrace.
         "-DHAVE_DLADDR",
+        # Avoid deprecated syscall().
+        "-DHAVE_PTHREAD_THREADID_NP",
     ]
 
     windows_only_copts = [
         "-DGLOG_NO_ABBREVIATED_SEVERITIES",
+        "-DGLOG_NO_EXPORT=",
         "-DHAVE_SNPRINTF",
         "-I" + src_windows,
     ]
@@ -114,6 +119,8 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
         visibility = ["//visibility:public"],
         srcs = [
             ":config_h",
+            "src/base.cc",
+            "src/base.h",
             "src/base/commandlineflags.h",
             "src/base/googleinit.h",
             "src/base/mutex.h",
@@ -139,13 +146,13 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
             "//conditions:default": [],
         }),
         hdrs = [
-                "src/glog/log_severity.h",
-                "src/glog/platform.h",
-                ":logging_h",
-                ":raw_logging_h",
-                ":stl_logging_h",
-                ":vlog_is_on_h",
-            ],
+            "src/glog/log_severity.h",
+            "src/glog/platform.h",
+            ":logging_h",
+            ":raw_logging_h",
+            ":stl_logging_h",
+            ":vlog_is_on_h",
+        ],
         strip_include_prefix = "src",
         defines = select({
             # GOOGLE_GLOG_DLL_DECL is normally set by export.h, but that's not

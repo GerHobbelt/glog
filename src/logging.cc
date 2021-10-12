@@ -29,6 +29,7 @@
 
 #define _GNU_SOURCE 1 // needed for O_NOFOLLOW and pread()/pwrite()
 
+#include "base.h"
 #include "utilities.h"
 
 #include <algorithm>
@@ -379,13 +380,6 @@ struct LogMessage::LogMessageData  {
   void operator=(const LogMessageData&);
 };
 
-// A mutex that allows only one thread to log at a time, to keep things from
-// getting jumbled.  Some other very uncommon logging operations (like
-// changing the destination file for log messages of a given severity) also
-// lock this mutex.  Please be sure that anybody who might possibly need to
-// lock it does so.
-static Mutex log_mutex;
-
 // Number of messages sent at each severity.  Under log_mutex.
 int64 LogMessage::num_messages_[NUM_SEVERITIES] = {0, 0, 0, 0};
 
@@ -395,9 +389,6 @@ static bool stop_writing = false;
 const char*const LogSeverityNames[NUM_SEVERITIES] = {
   "INFO", "WARNING", "ERROR", "FATAL"
 };
-
-// Has the user called SetExitOnDFatal(true)?
-static bool exit_on_dfatal = true;
 
 const char* GetLogSeverityName(LogSeverity severity) {
   return LogSeverityNames[severity];
@@ -779,10 +770,11 @@ static void WriteToStderr(const char* message, size_t len) {
 }
 
 inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
-					     const char* message, size_t message_len, size_t /*prefix_len*/) {
+					     const char* message, size_t message_len, size_t prefix_len) {
   if ((severity >= FLAGS_stderrthreshold) || FLAGS_alsologtostderr) {
     ColoredWriteToStderr(severity, message, message_len);
 #ifdef GLOG_OS_WINDOWS
+    (void) prefix_len;
     // On Windows, also output to the debugger
     ::OutputDebugStringA(message);
 #elif defined(__ANDROID__)
@@ -796,6 +788,8 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
     __android_log_write(android_log_levels[severity],
                         glog_internal_namespace_::ProgramInvocationShortName(),
                         message + prefix_len);
+#else
+    (void) prefix_len;
 #endif
   }
 }
@@ -1691,23 +1685,6 @@ ostream& LogMessage::stream() {
   return data_->stream_;
 }
 
-namespace {
-#if defined(__ANDROID__)
-int AndroidLogLevel(const int severity) {
-  switch (severity) {
-    case 3:
-      return ANDROID_LOG_FATAL;
-    case 2:
-      return ANDROID_LOG_ERROR;
-    case 1:
-      return ANDROID_LOG_WARN;
-    default:
-      return ANDROID_LOG_INFO;
-  }
-}
-#endif  // defined(__ANDROID__)
-}  // namespace
-
 // Flush buffered message, called by the destructor, or any other function
 // that needs to synchronize the log.
 void LogMessage::Flush() {
@@ -1749,12 +1726,6 @@ void LogMessage::Flush() {
 	++num_messages_[static_cast<int>(data_->severity_)];
   }
   LogDestination::WaitForSinks(data_);
-
-#if defined(__ANDROID__)
-  const int level = AndroidLogLevel((int)data_->severity_);
-  const std::string text = std::string(data_->message_text_);
-  __android_log_write(level, "native", text.substr(0,data_->num_chars_to_log_).c_str());
-#endif  // defined(__ANDROID__)
 
   if (append_newline) {
     // Fix the ostrstream back how it was before we screwed with it.
@@ -1886,6 +1857,12 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     const char* message = "*** Check failure stack trace: ***\n";
 	fputs(message, stderr);  	// Ignore errors.
 	fflush(stderr);
+#if defined(__ANDROID__)
+    // ANDROID_LOG_FATAL as this message is of FATAL severity.
+    __android_log_write(ANDROID_LOG_FATAL,
+                        glog_internal_namespace_::ProgramInvocationShortName(),
+                        message);
+#endif
     Fail();
   }
 }
@@ -2121,33 +2098,6 @@ void LogToStderr() {
   LogDestination::LogToStderr();
 }
 
-namespace base {
-namespace internal {
-
-bool GetExitOnDFatal();
-bool GetExitOnDFatal() {
-  MutexLock l(&log_mutex);
-  return exit_on_dfatal;
-}
-
-// Determines whether we exit the program for a LOG(DFATAL) message in
-// debug mode.  It does this by skipping the call to Fail/FailQuietly.
-// This is intended for testing only.
-//
-// This can have some effects on LOG(FATAL) as well.  Failure messages
-// are always allocated (rather than sharing a buffer), the crash
-// reason is not recorded, the "gwq" status message is not updated,
-// and the stack trace is not recorded.  The LOG(FATAL) *will* still
-// exit the program.  Since this function is used only in testing,
-// these differences are acceptable.
-void SetExitOnDFatal(bool value);
-void SetExitOnDFatal(bool value) {
-  MutexLock l(&log_mutex);
-  exit_on_dfatal = value;
-}
-
-}  // namespace internal
-}  // namespace base
 
 // Shell-escaping as we need to shell out ot /bin/mail.
 static const char kDontNeedShellEscapeChars[] =
