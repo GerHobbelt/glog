@@ -41,7 +41,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-#include "glog/logging.h"
+#include <glog/logging.h>
 
 #include "testing.h"
 

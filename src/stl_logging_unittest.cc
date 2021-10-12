@@ -60,8 +60,8 @@
 # endif
 #endif
 
-#include "glog/logging.h"
-#include "glog/stl_logging.h"
+#include <glog/logging.h>
+#include <glog/stl_logging.h>
 #include "googletest.h"
 
 using namespace std;

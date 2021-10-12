@@ -28,39 +28,31 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // Author: Shinichiro Hamaji
-#include "utilities.h"
-#include "googletest.h"
-#include <glog/logging.h>
+//
+// Detect supported platforms.
 
-#include "testing.h"
+#ifndef GLOG_PLATFORM_H
+#define GLOG_PLATFORM_H
 
-#ifdef HAVE_LIB_GFLAGS
-#include <gflags/gflags.h>
-using namespace GFLAGS_NAMESPACE;
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+#define GLOG_OS_WINDOWS
+#elif defined(__CYGWIN__) || defined(__CYGWIN32__)
+#define GLOG_OS_CYGWIN
+#elif defined(linux) || defined(__linux) || defined(__linux__)
+#ifndef GLOG_OS_LINUX
+#define GLOG_OS_LINUX
+#endif
+#elif defined(macintosh) || defined(__APPLE__) || defined(__APPLE_CC__)
+#define GLOG_OS_MACOSX
+#elif defined(__FreeBSD__)
+#define GLOG_OS_FREEBSD
+#elif defined(__NetBSD__)
+#define GLOG_OS_NETBSD
+#elif defined(__OpenBSD__)
+#define GLOG_OS_OPENBSD
+#else
+// TODO(hamaji): Add other platforms.
+#error Platform not supported by glog. Please consider to contribute platform information by submitting a pull request on Github.
 #endif
 
-using namespace GOOGLE_NAMESPACE;
-
-TEST(utilities, sync_val_compare_and_swap) {
-  bool now_entering = false;
-  EXPECT_FALSE(sync_val_compare_and_swap(&now_entering, false, true));
-  EXPECT_TRUE(sync_val_compare_and_swap(&now_entering, false, true));
-  EXPECT_TRUE(sync_val_compare_and_swap(&now_entering, false, true));
-}
-
-TEST(utilities, InitGoogleLoggingDeathTest) {
-  ASSERT_DEATH(InitGoogleLogging("foobar"), "");
-}
-
-#if defined(BUILD_MONOLITHIC)
-#define main(cnt, arr)      glog_utilities_unittest_main(cnt, arr)
-#endif
-
-int main(int argc, const char** argv) {
-  InitGoogleLogging(argv[0]);
-  InitGoogleTest(&argc, argv);
-
-  CHECK_EQ(RUN_ALL_TESTS(), 0);
-
-  return 0;
-}
+#endif // GLOG_PLATFORM_H

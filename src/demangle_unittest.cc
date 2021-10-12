@@ -36,7 +36,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include "glog/logging.h"
+#include <glog/logging.h>
 #include "demangle.h"
 #include "googletest.h"
 #include "config.h"
@@ -64,7 +64,7 @@ static const char *DemangleIt(const char * const mangled) {
   }
 }
 
-#if defined(OS_WINDOWS)
+#if defined(GLOG_OS_WINDOWS)
 
 TEST(Demangle, Windows) {
   EXPECT_STREQ(

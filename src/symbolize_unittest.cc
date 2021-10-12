@@ -35,7 +35,7 @@
 #include <iostream>
 
 #include "config.h"
-#include "glog/logging.h"
+#include <glog/logging.h>
 #include "googletest.h"
 #include "symbolize.h"
 #include "utilities.h"
@@ -54,7 +54,7 @@ using namespace GOOGLE_NAMESPACE;
 
 #define always_inline
 
-#if defined(__ELF__) || defined(OS_WINDOWS) || defined(OS_CYGWIN)
+#if defined(__ELF__) || defined(GLOG_OS_WINDOWS) || defined(GLOG_OS_CYGWIN)
 // A wrapper function for Symbolize() to make the unit test simple.
 static const char *TrySymbolize(void *pc) {
   static char symbol[4096];
@@ -362,7 +362,7 @@ static void ATTRIBUTE_NOINLINE TestWithReturnAddress() {
 #endif
 }
 
-# elif defined(OS_WINDOWS) || defined(OS_CYGWIN)
+# elif defined(GLOG_OS_WINDOWS) || defined(GLOG_OS_CYGWIN)
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -422,10 +422,10 @@ int main(int argc, const char** argv) {
   TestWithPCInsideNonInlineFunction();
   TestWithReturnAddress();
   return RUN_ALL_TESTS();
-# elif defined(OS_WINDOWS) || defined(OS_CYGWIN)
+# elif defined(GLOG_OS_WINDOWS) || defined(GLOG_OS_CYGWIN)
   TestWithReturnAddress();
   return RUN_ALL_TESTS();
-# else  // OS_WINDOWS
+# else  // GLOG_OS_WINDOWS
   printf("PASS (no symbolize_unittest support)\n");
   return 0;
 # endif  // __ELF__

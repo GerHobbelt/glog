@@ -161,7 +161,7 @@ static void DumpStackTraceAndExit() {
     sigemptyset(&sig_action.sa_mask);
     sig_action.sa_handler = SIG_DFL;
     sigaction(SIGABRT, &sig_action, NULL);
-#elif defined(OS_WINDOWS)
+#elif defined(GLOG_OS_WINDOWS)
     signal(SIGABRT, SIG_DFL);
 #endif  // HAVE_SIGACTION
   }
@@ -187,7 +187,7 @@ const char* ProgramInvocationShortName() {
   }
 }
 
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
 struct timeval {
   long tv_sec, tv_usec;
 };
@@ -250,9 +250,9 @@ bool PidHasChanged() {
 
 pid_t GetTID() {
   // On Linux and MacOSX, we try to use gettid().
-#if defined OS_LINUX || defined OS_MACOSX
+#if defined GLOG_OS_LINUX || defined GLOG_OS_MACOSX
 #ifndef __NR_gettid
-#ifdef OS_MACOSX
+#ifdef GLOG_OS_MACOSX
 #define __NR_gettid SYS_gettid
 #elif ! defined __i386__
 #error "Must define __NR_gettid for non-x86 platforms"
@@ -262,7 +262,7 @@ pid_t GetTID() {
 #endif
   static bool lacks_gettid = false;
   if (!lacks_gettid) {
-#if (defined(OS_MACOSX) && defined(HAVE_PTHREAD_THREADID_NP))
+#if (defined(GLOG_OS_MACOSX) && defined(HAVE_PTHREAD_THREADID_NP))
     uint64_t tid64;
     const int error = pthread_threadid_np(NULL, &tid64);
     pid_t tid = error ? -1 : static_cast<pid_t>(tid64);
@@ -278,12 +278,12 @@ pid_t GetTID() {
     // the value change to "true".
     lacks_gettid = true;
   }
-#endif  // OS_LINUX || OS_MACOSX
+#endif  // GLOG_OS_LINUX || GLOG_OS_MACOSX
 
   // If gettid() could not be used, we use one of the following.
-#if defined OS_LINUX
+#if defined GLOG_OS_LINUX
   return getpid();  // Linux:  getpid returns thread ID when gettid is absent
-#elif defined OS_WINDOWS && !defined OS_CYGWIN
+#elif defined GLOG_OS_WINDOWS && !defined GLOG_OS_CYGWIN
   return GetCurrentThreadId();
 #elif defined(HAVE_PTHREAD)
   // If none of the techniques above worked, we use pthread_self().
@@ -295,7 +295,7 @@ pid_t GetTID() {
 
 const char* const_basename(const char* filepath) {
   const char* base = strrchr(filepath, '/');
-#ifdef OS_WINDOWS  // Look for either path separator in Windows
+#ifdef GLOG_OS_WINDOWS  // Look for either path separator in Windows
   if (!base)
     base = strrchr(filepath, '\\');
 #endif
@@ -308,7 +308,7 @@ const string& MyUserName() {
 }
 static void MyUserNameInitializer() {
   // TODO(hamaji): Probably this is not portable.
-#if defined(OS_WINDOWS)
+#if defined(GLOG_OS_WINDOWS)
   const char* user = getenv("USERNAME");
 #else
   const char* user = getenv("USER");
@@ -363,7 +363,7 @@ void InitGoogleLoggingUtilities(const char* argv0) {
     return;
 #endif
   const char* slash = strrchr(argv0, '/');
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
   if (!slash)  slash = strrchr(argv0, '\\');
 #endif
   g_program_invocation_short_name = slash ? slash + 1 : argv0;

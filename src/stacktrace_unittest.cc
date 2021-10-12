@@ -33,7 +33,7 @@
 #include <cstdlib>
 #include "config.h"
 #include "base/commandlineflags.h"
-#include "glog/logging.h"
+#include <glog/logging.h>
 #include "stacktrace.h"
 
 #include "testing.h"
