@@ -34,9 +34,9 @@
 #include <cstdio>
 #include <string>
 #include <iosfwd>
+#include "config.h"
 #include <glog/logging.h>
 #include "base/commandlineflags.h"
-#include "config.h"
 
 #include "testing.h"
 
