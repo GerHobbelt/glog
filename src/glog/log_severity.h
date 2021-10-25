@@ -71,9 +71,9 @@ const int INFO = GLOG_INFO, WARNING = GLOG_WARNING,
 
 // DFATAL is FATAL in debug mode, ERROR in normal mode
 #ifdef NDEBUG
-#define DFATAL_LEVEL ERROR
+#define DFATAL_LEVEL GLOG_ERROR
 #else
-#define DFATAL_LEVEL FATAL
+#define DFATAL_LEVEL GLOG_FATAL
 #endif
 
 extern GOOGLE_GLOG_DLL_DECL const char* const LogSeverityNames[NUM_SEVERITIES];
