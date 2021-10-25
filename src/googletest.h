@@ -580,7 +580,7 @@ class Thread {
   virtual ~Thread() {}
 
   void SetJoinable(bool) {}
-#if defined(GLOG_OS_WINDOWS) && !defined(GLOG_OS_CYGWIN)
+#if defined(GLOG_OS_WINDOWS) && !defined(GLOG_OS_CYGWIN) && !defined(HAVE_PTHREAD)
   void Start() {
     handle_ = CreateThread(NULL,
                            0,
@@ -595,10 +595,10 @@ class Thread {
   }
 #elif defined(HAVE_PTHREAD)
   void Start() {
-    pthread_create(&th_, NULL, &Thread::InvokeThread, this);
+    pthread_create(&th_, nullptr, &Thread::InvokeThread, this);
   }
   void Join() {
-    pthread_join(th_, NULL);
+    pthread_join(th_, nullptr);
   }
 #else
 # error No thread implementation.
@@ -613,7 +613,7 @@ class Thread {
     return NULL;
   }
 
-#if defined(GLOG_OS_WINDOWS) && !defined(GLOG_OS_CYGWIN)
+#if defined(GLOG_OS_WINDOWS) && !defined(GLOG_OS_CYGWIN) && !defined(HAVE_PTHREAD)
   static DWORD WINAPI InvokeThreadW(void* self) {
     InvokeThread(self);
     return 0;

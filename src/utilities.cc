@@ -54,6 +54,9 @@
 #ifdef HAVE_PWD_H
 # include <pwd.h>
 #endif
+#ifdef HAVE_PTHREAD
+# include <pthread.h>
+#endif
 #ifdef __ANDROID__
 #include <android/log.h>
 #endif
@@ -257,7 +260,7 @@ bool PidHasChanged() {
   return true;
 }
 
-pid_t GetTID() {
+int GetTID() {
   // On Linux and MacOSX, we try to use gettid().
 #if defined GLOG_OS_LINUX || defined GLOG_OS_MACOSX
 #ifndef __NR_gettid
@@ -279,7 +282,7 @@ pid_t GetTID() {
     pid_t tid = static_cast<pid_t>(syscall(__NR_gettid));
 #endif
     if (tid != -1) {
-      return tid;
+      return static_cast<int>(tid);
     }
     // Technically, this variable has to be volatile, but there is a small
     // performance penalty in accessing volatile variables and there should
@@ -291,12 +294,15 @@ pid_t GetTID() {
 
   // If gettid() could not be used, we use one of the following.
 #if defined GLOG_OS_LINUX
-  return getpid();  // Linux:  getpid returns thread ID when gettid is absent
-#elif defined GLOG_OS_WINDOWS && !defined GLOG_OS_CYGWIN
-  return GetCurrentThreadId();
+  return static_cast<int>(getpid());  // Linux:  getpid returns thread ID when gettid is absent
+#elif defined GLOG_OS_WINDOWS && !defined GLOG_OS_CYGWIN && !defined(HAVE_PTHREAD)
+  return static_cast<int>(GetCurrentThreadId());
+#elif defined GLOG_OS_WINDOWS && defined(HAVE_PTHREAD) && defined(PTW32_VERSION_MAJOR)
+  // If none of the techniques above worked, we use pthread_self().
+  return static_cast<int>((pid_t)(uintptr_t)pthread_self().p);
 #elif defined(HAVE_PTHREAD)
   // If none of the techniques above worked, we use pthread_self().
-  return (pid_t)(uintptr_t)pthread_self();
+  return static_cast<int>((pid_t)(uintptr_t)pthread_self());
 #else
   return -1;
 #endif
