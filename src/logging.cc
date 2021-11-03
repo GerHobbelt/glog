@@ -1393,11 +1393,8 @@ void LogFileObject::GetSuitableFileName(const char* originName, char* outputFile
     }
 }
 
-LogCleaner::LogCleaner() : enabled_(false), overdue_days_(7), dir_delim_('/') {
-#ifdef OS_WINDOWS
-  dir_delim_ = '\\';
-#endif
-}
+LogCleaner::LogCleaner() : enabled_(false), overdue_days_(7) {}
+
 
 void LogCleaner::Enable(int overdue_days) {
   // Setting overdue_days to 0 days will delete all logs.
