@@ -9,30 +9,6 @@ if (POLICY CMP0063)
 endif (POLICY CMP0063)
 
 project(glog VERSION 0.6.0 LANGUAGES CXX)
-set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-include(_check_os)
-_check_os()
-if (TARGET_WINDOWS)
-	if( NOT VERSION_MAJOR )
-	    SET( VERSION_MAJOR 0 )
-	endif()
-
-	if( NOT VERSION_MINOR )
-	    SET( VERSION_MINOR 6 )
-	endif()
-	string(TIMESTAMP CURRENT_TIME "%Y%m%d%H%M" UTC)
-	string(SUBSTRING "${CURRENT_TIME}" 2 4 VERSION_PATCH)
-	string(SUBSTRING "${CURRENT_TIME}" 6 4 VERSION_REVISION)
-	include(_generate_product_version_win)
-	generate_product_version(
-	    ProductVersionFiles
-	    NAME "glog"
-	    VERSION_MAJOR ${VERSION_MAJOR}
-	    VERSION_MINOR ${VERSION_MINOR}
-	    VERSION_PATCH ${VERSION_PATCH}
-	    VERSION_REVISION ${VERSION_REVISION}
-	)
-endif()
 
 set (CPACK_PACKAGE_NAME glog)
 set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Google logging library")
@@ -41,17 +17,40 @@ set (CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set (CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 set (CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 
+list (APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+include (CheckCXXCompilerFlag)
+include (CheckCXXSourceCompiles)
+include (CheckCXXSourceRuns)
+include (CheckCXXSymbolExists)
+include (CheckFunctionExists)
+include (CheckIncludeFileCXX)
+include (CheckLibraryExists)
+include (CheckStructHasMember)
+include (CheckTypeSize)
+include (CMakeDependentOption)
+include (CMakePackageConfigHelpers)
+include (CMakePushCheckState)
+include (CPack)
+include (CTest)
+include (DetermineGflagsNamespace)
+include (GenerateExportHeader)
+include (GetCacheVariables)
+include (GNUInstallDirs)
+
 option (BUILD_SHARED_LIBS "Build shared libraries" ON)
 option (PRINT_UNSYMBOLIZED_STACK_TRACES
   "Print file offsets in traces instead of symbolizing" OFF)
 option (WITH_CUSTOM_PREFIX "Enable support for user-generated message prefixes" OFF)
 option (WITH_GFLAGS "Use gflags" ON)
-option (WITH_GTEST "Use googletest" ON)
+option (WITH_GTEST "Use Google Test" ON)
 option (WITH_PKGCONFIG "Enable pkg-config support" ON)
 option (WITH_SYMBOLIZE "Enable symbolize module" ON)
 option (WITH_THREADS "Enable multithreading support" ON)
 option (WITH_TLS "Enable Thread Local Storage (TLS) support" ON)
 option (WITH_UNWIND "Enable libunwind support" ON)
+
+cmake_dependent_option (WITH_GMOCK "Use Google Mock" ON WITH_GTEST OFF)
 
 if (NOT WITH_UNWIND)
   set (CMAKE_DISABLE_FIND_PACKAGE_Unwind ON)
@@ -70,34 +69,18 @@ set (CMAKE_CXX_VISIBILITY_PRESET hidden)
 set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 set (CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
-list (APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-include (CheckCXXCompilerFlag)
-include (CheckCXXSourceCompiles)
-include (CheckCXXSourceRuns)
-include (CheckCXXSymbolExists)
-include (CheckFunctionExists)
-include (CheckIncludeFileCXX)
-include (CheckLibraryExists)
-include (CheckStructHasMember)
-include (CheckTypeSize)
-include (CMakePackageConfigHelpers)
-include (CMakePushCheckState)
-include (CPack)
-include (CTest)
-include (DetermineGflagsNamespace)
-include (GenerateExportHeader)
-include (GetCacheVariables)
-include (GNUInstallDirs)
-
 set (CMAKE_DEBUG_POSTFIX d)
 set (CMAKE_THREAD_PREFER_PTHREAD 1)
 
-find_package (GTest)
+find_package (GTest NO_MODULE)
 
 if (GTest_FOUND)
   set (HAVE_LIB_GTEST 1)
 endif (GTest_FOUND)
+
+if (WITH_GMOCK AND TARGET GTest::gmock)
+  set (HAVE_LIB_GMOCK 1)
+endif (WITH_GMOCK AND TARGET GTest::gmock)
 
 if (WITH_GFLAGS)
   find_package (gflags 2.2.0)
@@ -113,7 +96,8 @@ find_package (Unwind)
 
 if (Unwind_FOUND)
   set (HAVE_LIB_UNWIND 1)
-  set (HAVE_UNWIND_H 1)
+else (Unwind_FOUND)
+  check_include_file_cxx (unwind.h HAVE_UNWIND_H)
 endif (Unwind_FOUND)
 
 check_include_file_cxx (dlfcn.h HAVE_DLFCN_H)
@@ -204,6 +188,8 @@ int main(void)
 }
 " HAVE___SYNC_VAL_COMPARE_AND_SWAP)
 
+cmake_push_check_state (RESET)
+set (CMAKE_REQUIRED_LIBRARIES Threads::Threads)
 check_cxx_source_compiles ("
 #define _XOPEN_SOURCE 500
 #include <pthread.h>
@@ -215,6 +201,7 @@ int main(void)
   return 0;
 }
 " HAVE_RWLOCK)
+cmake_pop_check_state ()
 
 check_cxx_source_compiles ("
 __declspec(selectany) int a;
@@ -562,43 +549,6 @@ if (WITH_PKGCONFIG)
   unset (includedir)
 endif (WITH_PKGCONFIG)
 
-set (GLOG_PUBLIC_H
-  ${CMAKE_CURRENT_BINARY_DIR}/glog/export.h
-  ${CMAKE_CURRENT_BINARY_DIR}/glog/logging.h
-  ${CMAKE_CURRENT_BINARY_DIR}/glog/raw_logging.h
-  ${CMAKE_CURRENT_BINARY_DIR}/glog/stl_logging.h
-  ${CMAKE_CURRENT_BINARY_DIR}/glog/vlog_is_on.h
-  src/glog/log_severity.h
-)
-
-set (GLOG_SRCS
-  ${GLOG_PUBLIC_H}
-  src/base/commandlineflags.h
-  src/base/googleinit.h
-  src/base/mutex.h
-  src/demangle.cc
-  src/demangle.h
-  src/logging.cc
-  src/raw_logging.cc
-  src/symbolize.cc
-  src/symbolize.h
-  src/utilities.cc
-  src/utilities.h
-  src/vlog_is_on.cc
-)
-
-if (HAVE_PTHREAD OR WIN32 OR CYGWIN)
-  list (APPEND GLOG_SRCS src/signalhandler.cc)
-endif (HAVE_PTHREAD OR WIN32 OR CYGWIN)
-
-if (CYGWIN OR WIN32)
-  list (APPEND GLOG_SRCS
-    src/windows/port.cc
-    src/windows/port.h
-    ${ProductVersionFiles}
-  )
-endif (CYGWIN OR WIN32)
-
 add_compile_options ($<$<AND:$<BOOL:${HAVE_NO_UNNAMED_TYPE_TEMPLATE_ARGS}>,$<NOT:$<CXX_COMPILER_ID:GNU>>>:-Wno-unnamed-type-template-args>)
 
 set (_glog_CMake_BINDIR ${CMAKE_INSTALL_BINDIR})
@@ -639,9 +589,50 @@ if (_glog_CMake_MODULES)
   )
 endif (_glog_CMake_MODULES)
 
-add_library (glog
-  ${GLOG_SRCS}
+set (GLOG_PUBLIC_H
+  ${CMAKE_CURRENT_BINARY_DIR}/glog/export.h
+  ${CMAKE_CURRENT_BINARY_DIR}/glog/logging.h
+  ${CMAKE_CURRENT_BINARY_DIR}/glog/raw_logging.h
+  ${CMAKE_CURRENT_BINARY_DIR}/glog/stl_logging.h
+  ${CMAKE_CURRENT_BINARY_DIR}/glog/vlog_is_on.h
+  src/glog/log_severity.h
+  src/glog/platform.h
+)
+
+set (GLOG_SRCS
+  ${GLOG_PUBLIC_H}
+  src/base/commandlineflags.h
+  src/base/googleinit.h
+  src/base/mutex.h
+  src/demangle.cc
+  src/demangle.h
+  src/logging.cc
+  src/raw_logging.cc
+  src/symbolize.cc
+  src/symbolize.h
+  src/utilities.cc
+  src/utilities.h
+  src/vlog_is_on.cc
+)
+
+if (HAVE_PTHREAD OR WIN32 OR CYGWIN)
+  list (APPEND GLOG_SRCS src/signalhandler.cc)
+endif (HAVE_PTHREAD OR WIN32 OR CYGWIN)
+
+if (CYGWIN OR WIN32)
+  list (APPEND GLOG_SRCS
+    src/windows/port.cc
+    src/windows/port.h
+  )
+endif (CYGWIN OR WIN32)
+
+add_library (glogbase OBJECT
   ${_glog_BINARY_CMake_MODULES}
+  ${GLOG_SRCS}
+)
+
+add_library (glog
+  $<TARGET_OBJECTS:glogbase>
 )
 
 add_library (glog::glog ALIAS glog)
@@ -685,7 +676,7 @@ if (CYGWIN OR WIN32)
 endif (CYGWIN OR WIN32)
 
 if (WITH_CUSTOM_PREFIX)
-  target_compile_definitions(glog PUBLIC GLOG_CUSTOM_PREFIX_SUPPORT)
+  target_compile_definitions (glog PUBLIC GLOG_CUSTOM_PREFIX_SUPPORT)
 endif (WITH_CUSTOM_PREFIX)
 
 set_target_properties (glog PROPERTIES PUBLIC_HEADER "${GLOG_PUBLIC_H}")
@@ -698,12 +689,22 @@ target_include_directories (glog BEFORE PUBLIC
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 if (CYGWIN OR WIN32)
+  target_include_directories (glogbase PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/windows>"
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/windows)
+
   target_include_directories (glog PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/windows>"
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/windows)
 endif (CYGWIN OR WIN32)
 
 set_target_properties (glog PROPERTIES DEFINE_SYMBOL GOOGLE_GLOG_IS_A_DLL)
+
+target_include_directories (glogbase PUBLIC
+  $<TARGET_PROPERTY:glog,INCLUDE_DIRECTORIES>)
+target_compile_definitions (glogbase PUBLIC
+  $<TARGET_PROPERTY:glog,COMPILE_DEFINITIONS>
+  PRIVATE GOOGLE_GLOG_IS_A_DLL)
 
 generate_export_header (glog
   EXPORT_MACRO_NAME GOOGLE_GLOG_DLL_DECL
@@ -712,11 +713,26 @@ generate_export_header (glog
 # Unit testing
 
 if (BUILD_TESTING)
-  set (_GLOG_TEST_LIBS glog::glog)
+  add_library (glogtest STATIC
+    $<TARGET_OBJECTS:glogbase>
+  )
+
+  target_include_directories (glogtest PUBLIC
+    $<TARGET_PROPERTY:glog,INCLUDE_DIRECTORIES>)
+  target_compile_definitions (glogtest PUBLIC
+    $<TARGET_PROPERTY:glog,COMPILE_DEFINITIONS> GLOG_STATIC_DEFINE)
+  target_link_libraries (glogtest PUBLIC
+    $<TARGET_PROPERTY:glog,LINK_LIBRARIES>)
+
+  set (_GLOG_TEST_LIBS glogtest)
 
   if (HAVE_LIB_GTEST)
-    list (APPEND _GLOG_TEST_LIBS GTest::GTest)
+    list (APPEND _GLOG_TEST_LIBS GTest::gtest)
   endif (HAVE_LIB_GTEST)
+
+  if (HAVE_LIB_GMOCK)
+    list (APPEND _GLOG_TEST_LIBS GTest::gmock)
+  endif (HAVE_LIB_GMOCK)
 
   add_executable (logging_unittest
     src/logging_unittest.cc
@@ -733,6 +749,16 @@ if (BUILD_TESTING)
 
     add_test (NAME logging_custom_prefix
               COMMAND logging_custom_prefix_unittest)
+
+    # FIXME: Skip flaky test
+    set_tests_properties (logging_custom_prefix PROPERTIES SKIP_REGULAR_EXPRESSION
+      "Check failed: time_ns within LogTimes::LOG_PERIOD_TOL_NS of LogTimes::LOG_PERIOD_NS")
+
+    if (APPLE)
+      # FIXME: Skip flaky test
+      set_property (TEST logging_custom_prefix APPEND PROPERTY SKIP_REGULAR_EXPRESSION
+        "unexpected new.*PASS\nTest with golden file failed. We'll try to show the diff:")
+    endif (APPLE)
   endif (WITH_CUSTOM_PREFIX)
 
   add_executable (stl_logging_unittest
@@ -807,7 +833,7 @@ if (BUILD_TESTING)
 
   set_tests_properties (logging PROPERTIES TIMEOUT 30)
 
-# FIXME: Skip flaky test
+  # FIXME: Skip flaky test
   set_tests_properties (logging PROPERTIES SKIP_REGULAR_EXPRESSION
     "Check failed: time_ns within LogTimes::LOG_PERIOD_TOL_NS of LogTimes::LOG_PERIOD_NS")
 
@@ -831,6 +857,17 @@ if (BUILD_TESTING)
   if (TARGET symbolize_unittest)
     add_test (NAME symbolize COMMAND symbolize_unittest)
   endif (TARGET symbolize_unittest)
+
+  if (HAVE_LIB_GMOCK)
+    add_executable (mock-log_unittest
+      src/mock-log_unittest.cc
+      src/mock-log.h
+    )
+
+    target_link_libraries (mock-log_unittest PRIVATE ${_GLOG_TEST_LIBS})
+
+    add_test (NAME mock-log COMMAND mock-log_unittest)
+  endif (HAVE_LIB_GMOCK)
 
   # Generate an initial cache
 
@@ -884,6 +921,44 @@ if (BUILD_TESTING)
     FIXTURES_REQUIRED cmake_package_config)
   set_tests_properties (cmake_package_config_build PROPERTIES
     FIXTURES_REQUIRED "cmake_package_config;cmake_package_config_working")
+
+  add_executable (cleanup_immediately_unittest
+    src/cleanup_immediately_unittest.cc)
+
+  target_link_libraries (cleanup_immediately_unittest PRIVATE ${_GLOG_TEST_LIBS})
+
+  add_executable (cleanup_with_prefix_unittest
+    src/cleanup_with_prefix_unittest.cc)
+
+  target_link_libraries (cleanup_with_prefix_unittest PRIVATE ${_GLOG_TEST_LIBS})
+
+  set (CLEANUP_LOG_DIR ${CMAKE_CURRENT_BINARY_DIR}/cleanup_tests)
+
+  add_test (NAME cleanup_init COMMAND
+    ${CMAKE_COMMAND} -E make_directory ${CLEANUP_LOG_DIR})
+  add_test (NAME cleanup_logdir COMMAND
+    ${CMAKE_COMMAND} -E remove_directory ${CLEANUP_LOG_DIR})
+  add_test (NAME cleanup_immediately COMMAND
+    ${CMAKE_COMMAND}
+    -DLOGCLEANUP=$<TARGET_FILE:cleanup_immediately_unittest>
+    # NOTE The trailing slash is important
+    -DTEST_DIR=${CLEANUP_LOG_DIR}/
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunCleanerTest1.cmake
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  add_test (NAME cleanup_with_prefix COMMAND
+    ${CMAKE_COMMAND}
+    -DLOGCLEANUP=$<TARGET_FILE:cleanup_with_prefix_unittest>
+    -DTEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunCleanerTest2.cmake
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+  # Fixtures setup
+  set_tests_properties (cleanup_init PROPERTIES FIXTURES_SETUP logcleanuptest)
+  ## Fixtures cleanup
+  set_tests_properties (cleanup_logdir PROPERTIES FIXTURES_CLEANUP logcleanuptest)
+  # Fixture requirements
+  set_tests_properties (cleanup_immediately PROPERTIES FIXTURES_REQUIRED logcleanuptest)
+  set_tests_properties (cleanup_with_prefix PROPERTIES FIXTURES_REQUIRED logcleanuptest)
 endif (BUILD_TESTING)
 
 install (TARGETS glog

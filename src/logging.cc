@@ -59,14 +59,14 @@
 #include <vector>
 #include <cerrno>                   // for errno
 #include <sstream>
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
 #include "windows/dirent.h"
 #else
 #include <dirent.h> // for automatic removal of old logs
 #endif
 #include "base/commandlineflags.h"        // to get the program name
-#include "glog/logging.h"
-#include "glog/raw_logging.h"
+#include <glog/logging.h>
+#include <glog/raw_logging.h>
 #include "base/googleinit.h"
 
 #ifdef HAVE_STACKTRACE
@@ -124,7 +124,7 @@ GLOG_DEFINE_bool(alsologtostderr, BoolFromEnv("GOOGLE_ALSOLOGTOSTDERR", false),
                  "log messages go to stderr in addition to logfiles");
 GLOG_DEFINE_bool(colorlogtostderr, false,
                  "color messages logged to stderr (if supported by terminal)");
-#ifdef OS_LINUX
+#ifdef GLOG_OS_LINUX
 GLOG_DEFINE_bool(drop_log_memory, true, "Drop in-memory buffers of log contents. "
                  "Logs can grow very quickly and they are rarely read before they "
                  "need to be evicted from memory. Instead, drop them from memory "
@@ -207,7 +207,7 @@ GLOG_DEFINE_int32(rolling_file_number, 10,
 #define PATH_SEPARATOR '/'
 
 #ifndef HAVE_PREAD
-#if defined(OS_WINDOWS)
+#if defined(GLOG_OS_WINDOWS)
 #include <basetsd.h>
 #define ssize_t SSIZE_T
 #endif
@@ -250,7 +250,7 @@ static void GetHostName(string* hostname) {
     *buf.nodename = '\0';
   }
   *hostname = buf.nodename;
-#elif defined(OS_WINDOWS)
+#elif defined(GLOG_OS_WINDOWS)
   char buf[MAX_COMPUTERNAME_LENGTH + 1];
   DWORD len = MAX_COMPUTERNAME_LENGTH + 1;
   if (GetComputerNameA(buf, &len)) {
@@ -267,7 +267,7 @@ static void GetHostName(string* hostname) {
 // Returns true iff terminal supports using colors in output.
 static bool TerminalSupportsColor() {
   bool term_supports_color = false;
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
   // on Windows TERM variable is usually not set, but the console does
   // support colors.
   term_supports_color = true;
@@ -321,7 +321,7 @@ static GLogColor SeverityToColor(LogSeverity severity) {
   return color;
 }
 
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
 
 // Returns the character attribute for the given color.
 static WORD GetColorAttribute(GLogColor color) {
@@ -346,7 +346,7 @@ static const char* GetAnsiColorCode(GLogColor color) {
   return NULL; // stop warning about return type.
 }
 
-#endif  // OS_WINDOWS
+#endif  // GLOG_OS_WINDOWS
 
 // Safely get max_log_size, overriding to 1 if it somehow gets defined as 0
 static int32 MaxLogSize() {
@@ -493,7 +493,6 @@ class LogFileObject : public base::Logger {
 class LogCleaner {
  public:
   LogCleaner();
-  virtual ~LogCleaner() {}
 
   void Enable(int overdue_days);
   void Disable();
@@ -501,7 +500,7 @@ class LogCleaner {
            const string& base_filename,
            const string& filename_extension) const;
 
-  inline bool enabled() const { return enabled_; }
+  bool enabled() const { return enabled_; }
 
  private:
   vector<string> GetOverdueLogNames(string log_directory,
@@ -517,7 +516,6 @@ class LogCleaner {
 
   bool enabled_;
   int overdue_days_;
-  char dir_delim_;  // filepath delimiter ('/' or '\\')
 };
 
 LogCleaner log_cleaner;
@@ -762,7 +760,7 @@ static void ColoredWriteToStderr(LogSeverity severity,
     fwrite(message, len, 1, stderr);
     return;
   }
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
   const HANDLE stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
 
   // Gets the current text color.
@@ -784,7 +782,7 @@ static void ColoredWriteToStderr(LogSeverity severity,
   fprintf(stderr, "\033[0;3%sm", GetAnsiColorCode(color));
   fwrite(message, len, 1, stderr);
   fprintf(stderr, "\033[m");  // Resets the terminal to default.
-#endif  // OS_WINDOWS
+#endif  // GLOG_OS_WINDOWS
 }
 
 static void WriteToStderr(const char* message, size_t len) {
@@ -794,10 +792,11 @@ static void WriteToStderr(const char* message, size_t len) {
 }
 
 inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
-					     const char* message, size_t message_len, size_t /*prefix_len*/) {
+					     const char* message, size_t message_len, size_t prefix_len) {
   if ((severity >= FLAGS_stderrthreshold) || FLAGS_alsologtostderr) {
     ColoredWriteToStderr(severity, message, message_len);
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
+    (void) prefix_len;
     // On Windows, also output to the debugger
     ::OutputDebugStringA(message);
 #elif defined(__ANDROID__)
@@ -811,6 +810,8 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
     __android_log_write(android_log_levels[severity],
                         glog_internal_namespace_::ProgramInvocationShortName(),
                         message + prefix_len);
+#else
+    (void) prefix_len;
 #endif
   }
 }
@@ -927,6 +928,13 @@ void SetApplicationFingerprint(const std::string& fingerprint) {
 }
 
 namespace {
+
+// Directory delimiter; Windows supports both forward slashes and backslashes
+#ifdef GLOG_OS_WINDOWS
+const char possible_dir_delim[] = {'\\', '/'};
+#else
+const char possible_dir_delim[] = {'/'};
+#endif
 
 string PrettyDuration(int secs) {
   std::stringstream result;
@@ -1065,7 +1073,7 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
     }
     return false;
   }
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
   // https://github.com/golang/go/issues/27638 - make sure we seek to the end to append
   // empirically replicated with wine over mingw build
   if (!FLAGS_timestamp_in_logfile_name) {
@@ -1074,6 +1082,7 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
     }
   }
 #endif
+  // We try to create a symlink called <program_name>.<severity>,
 
   return true;  // Everything worked
 }
@@ -1248,7 +1257,7 @@ void LogFileObject::Write(bool force_flush,
        (bytes_since_flush_ >= 1000000) ||
        (CycleClock_Now() >= next_flush_time_) ) {
     FlushUnlocked();
-#ifdef OS_LINUX
+#ifdef GLOG_OS_LINUX
     // Only consider files >= 3MiB
     if (FLAGS_drop_log_memory && file_length_ >= (3 << 20)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
@@ -1269,11 +1278,8 @@ void LogFileObject::Write(bool force_flush,
     }
 #endif
 
-    // Perform clean up for old logs
+    // Remove old logs
     if (log_cleaner.enabled()) {
-      if (base_filename_selected_ && base_filename_.empty()) {
-        return;
-      }
       log_cleaner.Run(base_filename_selected_,
                       base_filename_,
                       filename_extension_);
@@ -1284,6 +1290,7 @@ void LogFileObject::Write(bool force_flush,
 vector<std::string> split(const std::string& str, const std::string& delimeter)
 {
     vector<string> result;
+
 
     if (str.empty())
         return result;
@@ -1393,9 +1400,8 @@ LogCleaner::LogCleaner() : enabled_(false), overdue_days_(7), dir_delim_('/') {
 }
 
 void LogCleaner::Enable(int overdue_days) {
-  // Setting overdue_days to 0 day should not be allowed!
-  // Since all logs will be deleted immediately, which will cause troubles.
-  assert(overdue_days > 0);
+  // Setting overdue_days to 0 days will delete all logs.
+  assert(overdue_days >= 0);
 
   enabled_ = true;
   overdue_days_ = overdue_days;
@@ -1408,15 +1414,22 @@ void LogCleaner::Disable() {
 void LogCleaner::Run(bool base_filename_selected,
                      const string& base_filename,
                      const string& filename_extension) const {
-  assert(enabled_ && overdue_days_ > 0);
+  assert(enabled_ && overdue_days_ >= 0);
+  assert(!base_filename_selected || !base_filename.empty());
 
   vector<string> dirs;
 
-  if (base_filename_selected) {
-    string dir = base_filename.substr(0, base_filename.find_last_of(dir_delim_) + 1);
-    dirs.push_back(dir);
-  } else {
+  if (!base_filename_selected) {
     dirs = GetLoggingDirectories();
+  } else {
+    size_t pos = base_filename.find_last_of(possible_dir_delim, 0,
+                                            sizeof(possible_dir_delim));
+    if (pos != string::npos) {
+      string dir = base_filename.substr(0, pos + 1);
+      dirs.push_back(dir);
+    } else {
+      dirs.push_back(".");
+    }
   }
 
   for (size_t i = 0; i < dirs.size(); i++) {
@@ -1441,17 +1454,22 @@ vector<string> LogCleaner::GetOverdueLogNames(string log_directory,
   DIR *dir;
   struct dirent *ent;
 
-  // If log_directory doesn't end with a slash, append a slash to it.
-  if (log_directory.at(log_directory.size() - 1) != dir_delim_) {
-    log_directory += dir_delim_;
-  }
-
-  if ((dir=opendir(log_directory.c_str()))) {
-    while ((ent=readdir(dir))) {
-      if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
+  if ((dir = opendir(log_directory.c_str()))) {
+    while ((ent = readdir(dir))) {
+      if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
         continue;
       }
-      string filepath = log_directory + ent->d_name;
+
+      string filepath = ent->d_name;
+      const char* const dir_delim_end =
+          possible_dir_delim + sizeof(possible_dir_delim);
+
+      if (!log_directory.empty() &&
+          std::find(possible_dir_delim, dir_delim_end,
+                    log_directory[log_directory.size() - 1]) != dir_delim_end) {
+        filepath = log_directory + filepath;
+      }
+
       if (IsLogFromCurrentProject(filepath, base_filename, filename_extension) &&
           IsLogLastModifiedOver(filepath, days)) {
         overdue_log_names.push_back(filepath);
@@ -1471,14 +1489,19 @@ bool LogCleaner::IsLogFromCurrentProject(const string& filepath,
   // after:  "/tmp/<base_filename>.<create_time>.<pid>"
   string cleaned_base_filename;
 
+  const char* const dir_delim_end =
+      possible_dir_delim + sizeof(possible_dir_delim);
+
   size_t real_filepath_size = filepath.size();
   for (size_t i = 0; i < base_filename.size(); ++i) {
     const char& c = base_filename[i];
 
     if (cleaned_base_filename.empty()) {
       cleaned_base_filename += c;
-    } else if (c != dir_delim_ ||
-        c != cleaned_base_filename.at(cleaned_base_filename.size() - 1)) {
+    } else if (std::find(possible_dir_delim, dir_delim_end, c) ==
+                   dir_delim_end ||
+               (!cleaned_base_filename.empty() &&
+                c != cleaned_base_filename[cleaned_base_filename.size() - 1])) {
       cleaned_base_filename += c;
     }
   }
@@ -1542,10 +1565,10 @@ bool LogCleaner::IsLogLastModifiedOver(const string& filepath, int days) const {
   struct stat file_stat;
 
   if (stat(filepath.c_str(), &file_stat) == 0) {
-    // A day is 86400 seconds, so 7 days is 86400 * 7 = 604800 seconds.
+    const time_t seconds_in_a_day = 60 * 60 * 24;
     time_t last_modified_time = file_stat.st_mtime;
     time_t current_time = time(NULL);
-    return difftime(current_time, last_modified_time) > days * 86400;
+    return difftime(current_time, last_modified_time) > days * seconds_in_a_day;
   }
 
   // If failed to get file stat, don't return true!
@@ -1769,23 +1792,6 @@ ostream& LogMessage::stream() {
   return data_->stream_;
 }
 
-namespace {
-#if defined(__ANDROID__)
-int AndroidLogLevel(const int severity) {
-  switch (severity) {
-    case 3:
-      return ANDROID_LOG_FATAL;
-    case 2:
-      return ANDROID_LOG_ERROR;
-    case 1:
-      return ANDROID_LOG_WARN;
-    default:
-      return ANDROID_LOG_INFO;
-  }
-}
-#endif  // defined(__ANDROID__)
-}  // namespace
-
 // Flush buffered message, called by the destructor, or any other function
 // that needs to synchronize the log.
 void LogMessage::Flush() {
@@ -1820,12 +1826,6 @@ void LogMessage::Flush() {
     ++num_messages_[static_cast<int>(data_->severity_)];
   }
   LogDestination::WaitForSinks(data_);
-
-#if defined(__ANDROID__)
-  const int level = AndroidLogLevel((int)data_->severity_);
-  const std::string text = std::string(data_->message_text_);
-  __android_log_write(level, "native", text.substr(0,data_->num_chars_to_log_).c_str());
-#endif  // defined(__ANDROID__)
 
   if (append_newline) {
     // Fix the ostrstream back how it was before we screwed with it.
@@ -1956,6 +1956,12 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     if (write(STDERR_FILENO, message, strlen(message)) < 0) {
       // Ignore errors.
     }
+#if defined(__ANDROID__)
+    // ANDROID_LOG_FATAL as this message is of FATAL severity.
+    __android_log_write(ANDROID_LOG_FATAL,
+                        glog_internal_namespace_::ProgramInvocationShortName(),
+                        message);
+#endif
     Fail();
   }
 }
@@ -2289,7 +2295,7 @@ bool SendEmail(const char*dest, const char *subject, const char*body){
 
 static void GetTempDirectories(vector<string>* list) {
   list->clear();
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
   // On windows we'll try to find a directory in this order:
   //   C:/Documents & Settings/whomever/TEMP (or whatever GetTempPath() is)
   //   C:/TMP/
@@ -2348,7 +2354,7 @@ const vector<string>& GetLoggingDirectories() {
       logging_directories_list->push_back(FLAGS_log_dir.c_str());
     } else {
       GetTempDirectories(logging_directories_list);
-#ifdef OS_WINDOWS
+#ifdef GLOG_OS_WINDOWS
       char tmp[MAX_PATH];
       if (GetWindowsDirectoryA(tmp, MAX_PATH))
         logging_directories_list->push_back(tmp);
@@ -2391,7 +2397,7 @@ void TruncateLogFile(const char *path, int64 limit, int64 keep) {
   // Don't follow symlinks unless they're our own fd symlinks in /proc
   int flags = O_RDWR;
   // TODO(hamaji): Support other environments.
-#ifdef OS_LINUX
+#ifdef GLOG_OS_LINUX
   const char *procfd_prefix = "/proc/self/fd/";
   if (strncmp(procfd_prefix, path, strlen(procfd_prefix))) flags |= O_NOFOLLOW;
 #endif
@@ -2530,7 +2536,7 @@ int posix_strerror_r(int err, char *buf, size_t len) {
       return 0;
     } else {
       buf[0] = '\000';
-#if defined(OS_MACOSX) || defined(OS_FREEBSD) || defined(OS_OPENBSD)
+#if defined(GLOG_OS_MACOSX) || defined(GLOG_OS_FREEBSD) || defined(GLOG_OS_OPENBSD)
       if (reinterpret_cast<intptr_t>(rc) < sys_nerr) {
         // This means an error on MacOSX or FreeBSD.
         return -1;

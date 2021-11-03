@@ -1,4 +1,4 @@
-// Copyright (c) 2007, Google Inc.
+// Copyright (c) 2021, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,48 +26,72 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-// Author: Sergey Ioffe
 
-// The common part of the striplog tests.
-
-#include <cstdio>
-#include <string>
-#include <iosfwd>
 #include <glog/logging.h>
+#include <glog/raw_logging.h>
+
 #include "base/commandlineflags.h"
-#include "config.h"
+#include "googletest.h"
 
-DECLARE_bool(logtostderr);
-GLOG_DEFINE_bool(check_mode, false, "Prints 'opt' or 'dbg'");
+#ifdef HAVE_LIB_GFLAGS
+#include <gflags/gflags.h>
+using namespace GFLAGS_NAMESPACE;
+#endif
 
-using std::string;
+#ifdef HAVE_LIB_GMOCK
+#include <gmock/gmock.h>
+
+#include "mock-log.h"
+// Introduce several symbols from gmock.
+using GOOGLE_NAMESPACE::glog_testing::ScopedMockLog;
+using testing::_;
+using testing::AllOf;
+using testing::AnyNumber;
+using testing::HasSubstr;
+using testing::InitGoogleMock;
+using testing::StrictMock;
+using testing::StrNe;
+#endif
+
 using namespace GOOGLE_NAMESPACE;
 
-int CheckNoReturn(bool b) {
-  string s;
-  if (b) {
-    LOG(FATAL) << "Fatal";
-  } else {
-    return 0;
+TEST(CleanImmediatelyWithPrefix, logging) {
+  google::EnableLogCleaner(0);
+  google::SetLogFilenameExtension(".barfoo");
+  google::SetLogDestination(GLOG_INFO, "test_cleanup_");
+
+  for (unsigned i = 0; i < 1000; ++i) {
+    LOG(INFO) << "cleanup test";
   }
+
+  google::DisableLogCleaner();
 }
 
-struct A { };
-std::ostream &operator<<(std::ostream &str, const A&) {return str;}
+int main(int argc, char **argv) {
+  FLAGS_colorlogtostderr = false;
+  FLAGS_timestamp_in_logfile_name = true;
+#ifdef HAVE_LIB_GFLAGS
+  ParseCommandLineFlags(&argc, &argv, true);
+#endif
+  // Make sure stderr is not buffered as stderr seems to be buffered
+  // on recent windows.
+  setbuf(stderr, NULL);
 
-int main(int, char* argv[]) {
-  FLAGS_logtostderr = true;
+  // Test some basics before InitGoogleLogging:
+  CaptureTestStderr();
+  const string early_stderr = GetCapturedTestStderr();
+
+  EXPECT_FALSE(IsGoogleLoggingInitialized());
+
   InitGoogleLogging(argv[0]);
-  if (FLAGS_check_mode) {
-    printf("%s\n", DEBUG_MODE ? "dbg" : "opt");
-    return 0;
-  }
-  LOG(INFO) << "TESTMESSAGE INFO";
-  LOG(WARNING) << 2 << "something" << "TESTMESSAGE WARNING"
-               << 1 << 'c' << A() << std::endl;
-  LOG(ERROR) << "TESTMESSAGE ERROR";
-  bool flag = true;
-  (flag ? LOG(INFO) : LOG(ERROR)) << "TESTMESSAGE COND";
-  LOG(FATAL) << "TESTMESSAGE FATAL";
+
+  EXPECT_TRUE(IsGoogleLoggingInitialized());
+
+  InitGoogleTest(&argc, argv);
+#ifdef HAVE_LIB_GMOCK
+  InitGoogleMock(&argc, argv);
+#endif
+
+  // so that death tests run before we use threads
+  CHECK_EQ(RUN_ALL_TESTS(), 0);
 }
