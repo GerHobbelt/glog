@@ -18,3 +18,5 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
+        env:
+          COVERALLS_SERVICE_JOB_ID: glog-${{steps.date.outputs.date}}-${{github.run_number}}
