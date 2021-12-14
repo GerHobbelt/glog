@@ -1310,9 +1310,9 @@ TEST(TestExitOnDFatal, ToBeOrNotToBe) {
     // downgraded to ERROR if not debugging.
     const LogSeverity severity =
 #ifdef NDEBUG
-		GLOG_ERROR;
+        GLOG_ERROR;
 #else
-		GLOG_FATAL;
+        GLOG_FATAL;
 #endif
     EXPECT_CALL(log, Log(severity, __FILE__, "This should not be fatal"));
     LOG(DFATAL) << "This should not be fatal";
