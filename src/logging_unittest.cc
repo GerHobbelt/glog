@@ -915,7 +915,7 @@ static void TestOneTruncate(const char *path, uint64 limit, uint64 keep,
   memset(buf, 0, buf_size);
   CHECK_ERR(read(fd, buf, buf_size));
 
-  const char *p = buf;
+  const char* p = buf;
   size_t checked = 0;
   while (checked < expect) {
     size_t bytes = min(expect - checked, keep_size);
@@ -935,7 +935,8 @@ static void TestTruncate() {
   TestOneTruncate(path.c_str(), 10, 10, 10, 10, 10);
 
   // And a big file (multiple blocks to copy)
-  TestOneTruncate(path.c_str(), 2U<<20U, 4U<<10U, 3U<<20U, 4U<<10U, 4U<<10U);
+  TestOneTruncate(path.c_str(), 2U << 20U, 4U << 10U, 3U << 20U, 4U << 10U,
+                  4U << 10U);
 
   // Check edge-case limits
   TestOneTruncate(path.c_str(), 10, 20, 0, 20, 20);
@@ -1015,7 +1016,7 @@ GLOG_CONSTEXPR int64_t LOG_PERIOD_TOL_NS = 500000;    // 500us
 // called, since it is also the array size and will be indexed by the stream
 // operator.
 GLOG_CONSTEXPR size_t MAX_CALLS = 10;
-}  // namespace LogStreamTimes
+}  // namespace LogTimes
 
 #if defined(HAVE_CXX11_CHRONO) && __cplusplus >= 201103L
 struct LogTimeRecorder {

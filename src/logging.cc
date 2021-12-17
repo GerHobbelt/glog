@@ -182,8 +182,8 @@ GLOG_DEFINE_string(log_link, "", "Put additional links to the log "
                    "files in this directory");
 
 GLOG_DEFINE_uint32(max_log_size, 1800,
-                  "approx. maximum log file size (in MB). A value of 0 will "
-                  "be silently overridden to 1.");
+                   "approx. maximum log file size (in MB). A value of 0 will "
+                   "be silently overridden to 1.");
 
 GLOG_DEFINE_bool(stop_logging_if_full_disk, false,
                  "Stop attempting to log to disk if the disk is full.");
@@ -341,7 +341,9 @@ static const char* GetAnsiColorCode(GLogColor color) {
 
 // Safely get max_log_size, overriding to 1 if it somehow gets defined as 0
 static uint32 MaxLogSize() {
-  return (FLAGS_max_log_size > 0 && FLAGS_max_log_size < 4096 ? FLAGS_max_log_size : 1);
+  return (FLAGS_max_log_size > 0 && FLAGS_max_log_size < 4096
+              ? FLAGS_max_log_size
+              : 1);
 }
 
 // An arbitrary limit on the length of a single log message.  This
@@ -839,8 +841,9 @@ inline void LogDestination::LogToAllLogfiles(LogSeverity severity,
   if ( FLAGS_logtostderr ) {           // global flag: never log to file
     ColoredWriteToStderr(severity, message, len);
   } else {
-    for (int i = severity; i >= 0; --i)
+    for (int i = severity; i >= 0; --i) {
       LogDestination::MaybeLogToLogfile(i, timestamp, message, len);
+    }
   }
 }
 
@@ -1111,12 +1114,11 @@ void LogFileObject::Write(bool force_flush,
     return;
   }
 
-  if (file_length_ >> 20U >= MaxLogSize() ||
-      PidHasChanged()) {
+  if (file_length_ >> 20U >= MaxLogSize() || PidHasChanged()) {
     if (file_ != NULL) fclose(file_);
     file_ = NULL;
     file_length_ = bytes_since_flush_ = dropped_mem_length_ = 0;
-    rollover_attempt_ = kRolloverAttemptFrequency-1;
+    rollover_attempt_ = kRolloverAttemptFrequency - 1;
   }
 
   // If there's no destination file, make one before outputting
@@ -1254,8 +1256,9 @@ void LogFileObject::Write(bool force_flush,
       bytes_since_flush_ += message_len;
     }
   } else {
-    if ( CycleClock_Now() >= next_flush_time_ )
+    if (CycleClock_Now() >= next_flush_time_) {
       stop_writing = false;  // check to see if disk has free space.
+    }
     return;  // no need to flush
   }
 
@@ -1270,7 +1273,8 @@ void LogFileObject::Write(bool force_flush,
     if (FLAGS_drop_log_memory && file_length_ >= (3U << 20U)) {
       // Don't evict the most recent 1-2MiB so as not to impact a tailer
       // of the log file and to avoid page rounding issue on linux < 4.7
-      uint32 total_drop_length = (file_length_ & ~((1U << 20U) - 1U)) - (1U << 20U);
+      uint32 total_drop_length =
+          (file_length_ & ~((1U << 20U) - 1U)) - (1U << 20U);
       uint32 this_drop_length = total_drop_length - dropped_mem_length_;
       if (this_drop_length >= (2U << 20U)) {
         // Only advise when >= 2MiB to drop
@@ -1701,8 +1705,9 @@ ostream& LogMessage::stream() {
 // Flush buffered message, called by the destructor, or any other function
 // that needs to synchronize the log.
 void LogMessage::Flush() {
-  if (data_->has_been_flushed_ || data_->severity_ < FLAGS_minloglevel)
+  if (data_->has_been_flushed_ || data_->severity_ < FLAGS_minloglevel) {
     return;
+  }
 
   data_->num_chars_to_log_ = data_->stream_.pcount();
   data_->num_chars_to_syslog_ =
@@ -1852,8 +1857,9 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
 
     if (!FLAGS_logtostderr) {
       for (int i = 0; i < NUM_SEVERITIES; ++i) {
-        if ( LogDestination::log_destinations_[i] )
+        if (LogDestination::log_destinations_[i]) {
           LogDestination::log_destinations_[i]->logger_->Write(true, 0, "", 0);
+        }
       }
     }
 
@@ -2233,8 +2239,9 @@ static bool SendEmailInternal(const char*dest, const char *subject,
     FILE* pipe = popen(cmd.c_str(), "w");
     if (pipe != NULL) {
       // Add the body if we have one
-      if (body)
+      if (body) {
         fwrite(body, sizeof(char), strlen(body), pipe);
+      }
       bool ok = pclose(pipe) != -1;
       if ( !ok ) {
         if ( use_logging ) {
@@ -2433,7 +2440,7 @@ void TruncateLogFile(const char *path, uint64 limit, uint64 keep) {
 #else
   LOG(ERROR) << "No log truncation support.";
 #endif
-}
+ }
 
 void TruncateStdoutStderr() {
 #ifdef HAVE_UNISTD_H
@@ -2578,7 +2585,7 @@ void MakeCheckOpValueString(std::ostream* os, const char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "char value " << (short)v;
+    (*os) << "char value " << static_cast<short>(v);
   }
 }
 
@@ -2587,7 +2594,7 @@ void MakeCheckOpValueString(std::ostream* os, const signed char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "signed char value " << (short)v;
+    (*os) << "signed char value " << static_cast<short>(v);
   }
 }
 
@@ -2596,7 +2603,7 @@ void MakeCheckOpValueString(std::ostream* os, const unsigned char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "unsigned char value " << (unsigned short)v;
+    (*os) << "unsigned char value " << static_cast<unsigned short>(v);
   }
 }
 

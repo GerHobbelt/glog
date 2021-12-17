@@ -59,9 +59,10 @@ static void* DieInThread(void*) {
   // returns a pointer.  Hence we use C-style cast here, rather than
   // reinterpret/static_cast, to support both types of environments.
 #if defined(PTW32_VERSION_MAJOR)
-  fprintf(stderr, "0x%p is dying\n", (void*)pthread_self().p);
+  fprintf(stderr, "0x%p is dying\n", (const void*)pthread_self().p);
 #else
-  fprintf(stderr, "0x%lx is dying\n", (long)pthread_self());
+  fprintf(stderr, "0x%p is dying\n", 
+      static_cast<const void*>(reinterpret_cast<const char*>(pthread_self())));
 #endif
   // Use volatile to prevent from these to be optimized away.
   volatile int a = 0;
