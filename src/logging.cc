@@ -1628,7 +1628,7 @@ void LogMessage::Init(const char* file,
                    << setw(2) << logmsgtime_.day()
                    << ' '
                    << setw(2) << logmsgtime_.hour() << ':'
-                   << setw(2) << logmsgtime_.min() << ':'
+                   << setw(2) << logmsgtime_.minute() << ':'
                    << setw(2) << logmsgtime_.sec() << "."
                    << setw(6) << logmsgtime_.usec()
                    << ' '
@@ -2063,33 +2063,14 @@ LogSink::~LogSink() {
 }
 
 void LogSink::send(LogSeverity severity, const char* full_filename,
-                   const char* base_filename, int line,
-                   const LogMessageTime& time, const char* message,
-                   size_t message_len) {
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable : 4996)
-#endif  // __GNUC__
-  send(severity, full_filename, base_filename, line, &time.tm(), message,
-       message_len);
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#pragma warning(pop)
-#endif  // __GNUC__
-}
-
-void LogSink::send(LogSeverity severity, const char* full_filename,
-                   const char* base_filename, int line, const std::tm* t,
-                   const char* message, size_t message_len) {
+		const char* base_filename, int line,
+		const LogMessageTime& logmsgtime, const char* message,
+		size_t message_len) {
   (void)severity;
   (void)full_filename;
   (void)base_filename;
   (void)line;
-  (void)t;
+  (void)logmsgtime;
   (void)message;
   (void)message_len;
 }
@@ -2110,7 +2091,7 @@ string LogSink::ToString(LogSeverity severity, const char* file, int line,
          << setw(2) << logmsgtime.day()
          << ' '
          << setw(2) << logmsgtime.hour() << ':'
-         << setw(2) << logmsgtime.min() << ':'
+         << setw(2) << logmsgtime.minute() << ':'
          << setw(2) << logmsgtime.sec() << '.'
          << setw(6) << logmsgtime.usec()
          << ' '

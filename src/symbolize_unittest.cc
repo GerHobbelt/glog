@@ -419,6 +419,7 @@ __declspec(noinline) void TestWithReturnAddress() {
 #else
   CHECK_STREQ(symbol, "main");
 #endif
+#endif
   cout << "Test case TestWithReturnAddress passed." << endl;
 }
 # endif  // __ELF__
