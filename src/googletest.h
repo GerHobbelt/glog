@@ -353,7 +353,7 @@ class CapturedStream {
   // Remove output redirection
   void StopCapture() {
     // Restore original stream
-    if (this && this->uncaptured_fd_ != -1) {
+    if (this && uncaptured_fd_ != -1) {
       fflush(NULL);
       CHECK(dup2(uncaptured_fd_, fd_) != -1);
     }
