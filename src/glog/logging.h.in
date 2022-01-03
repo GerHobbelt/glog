@@ -476,7 +476,7 @@ DECLARE_bool(log_utc_time);
 #undef DECLARE_VARIABLE
 #undef DECLARE_bool
 #undef DECLARE_int32
-#undef DECLARE_unt32
+#undef DECLARE_uint32
 #undef DECLARE_string
 #endif
 
