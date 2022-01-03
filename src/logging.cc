@@ -1004,20 +1004,40 @@ void LogFileObject::FlushUnlocked(){
   next_flush_time_ = CycleClock_Now() + UsecToCycles(next);
 }
 
+#if defined(OS_WINDOWS)
+std::wstring toNativeFilename(const std::string& str)
+{
+	std::wstring ret;
+	int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), NULL, 0);
+	if (len > 0) {
+		ret.resize(len);
+		MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), &ret[0], len);
+	}
+	return ret;
+}
+#endif
+
 bool LogFileObject::CreateLogfile(const string& time_pid_string) {
   string string_filename = base_filename_;
   if (FLAGS_timestamp_in_logfile_name) {
     string_filename += time_pid_string;
   }
   string_filename += filename_extension_;
+#if defined(OS_WINDOWS)
+  const wchar_t* filename = toNativeFilename(string_filename).c_str();
+#else
   const char* filename = string_filename.c_str();
+#endif  
   //only write to files, create if non-existant.
   int flags = O_WRONLY | O_CREAT;
   if (FLAGS_timestamp_in_logfile_name) {
     //demand that the file is unique for our timestamp (fail if it exists).
     flags = flags | O_EXCL;
-  }
+#if defined(OS_WINDOWS)
+  int fd = _wopen(filename, flags, FLAGS_logfile_mode);
+#else
   int fd = open(filename, flags, FLAGS_logfile_mode);
+#endif
   if (fd == -1) return false;
 #ifdef HAVE_FCNTL
   // Mark the file close-on-exec. We don't really care if this fails
