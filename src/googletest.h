@@ -492,7 +492,7 @@ static inline void StringReplace(string* str,
                           const string& newsub) {
   size_t pos = str->find(oldsub);
   if (pos != string::npos) {
-    str->replace(pos, oldsub.size(), newsub.c_str());
+    str->replace(pos, oldsub.size(), newsub);
   }
 }
 
