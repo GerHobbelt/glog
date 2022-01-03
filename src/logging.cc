@@ -1026,8 +1026,8 @@ void LogFileObject::FlushUnlocked(){
 }
 
 #if defined(OS_WINDOWS)
-std::wstring toNativeFilename(const std::string& str)
-{
+
+std::wstring toNativeFilename(const std::string& str) {
 	std::wstring ret;
 	int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), NULL, 0);
 	if (len > 0) {
@@ -1036,6 +1036,7 @@ std::wstring toNativeFilename(const std::string& str)
 	}
 	return ret;
 }
+
 #endif
 
 bool LogFileObject::CreateLogfile(const string& time_pid_string) {
@@ -1054,6 +1055,7 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
   if (FLAGS_timestamp_in_logfile_name) {
     //demand that the file is unique for our timestamp (fail if it exists).
     flags = flags | O_EXCL;
+  }
 #if defined(OS_WINDOWS)
   int fd = _wopen(filename, flags, FLAGS_logfile_mode);
 #else
@@ -1554,7 +1556,7 @@ LogMessage::LogMessageData::LogMessageData()
 }
 
 LogMessage::LogMessage(const char* file, int line, LogSeverity severity,
-                       int64 ctr, void (LogMessage::*send_method)())
+                       uint64 ctr, void (LogMessage::*send_method)())
     : allocated_(NULL) {
   Init(file, line, severity, send_method);
   data_->stream_.set_ctr(ctr);
@@ -2078,9 +2080,10 @@ ostream& operator<<(ostream &os, const PRIVATE_Counter&) {
 }
 
 ErrnoLogMessage::ErrnoLogMessage(const char* file, int line,
-                                 LogSeverity severity, int64 ctr,
+                                 LogSeverity severity, uint64 ctr,
                                  void (LogMessage::*send_method)())
-    : LogMessage(file, line, severity, ctr, send_method) {}
+    : LogMessage(file, line, severity, ctr, send_method) {
+}
 
 ErrnoLogMessage::~ErrnoLogMessage() {
   // Don't access errno directly because it may have been altered
