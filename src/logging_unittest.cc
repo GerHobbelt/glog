@@ -359,7 +359,7 @@ void TestRawLogging() {
   RAW_LOG(ERROR, "%s%d%c%010d%s%1x", foo->c_str(), j, ' ', j, " ", j);
   RAW_VLOG(0, "foo %d", j);
 
-#ifdef NDEBUG
+#if defined(NDEBUG)
   RAW_LOG(INFO, "foo %d", j);  // so that have same stderr to compare
 #else
   RAW_DLOG(INFO, "foo %d", j);  // test RAW_DLOG in debug mode
@@ -381,7 +381,7 @@ void TestRawLogging() {
   RAW_VLOG(2, "vlog 2 on");
   RAW_VLOG(3, "vlog 3 off");
 
-#ifdef NDEBUG
+#if defined(NDEBUG)
   RAW_DCHECK(1 == 2, " RAW_DCHECK's shouldn't be compiled in normal mode");
 #endif
 
@@ -605,7 +605,7 @@ void TestCHECK() {
 }
 
 void TestDCHECK() {
-#ifdef NDEBUG
+#if defined(NDEBUG)
   DCHECK( 1 == 2 ) << " DCHECK's shouldn't be compiled in normal mode";
 #endif
   DCHECK( 1 == 1 );
@@ -1332,7 +1332,7 @@ static void MyCheck(bool a, bool b) {
 TEST(DVLog, Basic) {
   ScopedMockLog log;
 
-#if NDEBUG
+#if defined(NDEBUG)
   // We are expecting that nothing is logged.
   EXPECT_CALL(log, Log(_, _, _)).Times(0);
 #else
@@ -1383,7 +1383,7 @@ TEST(TestExitOnDFatal, ToBeOrNotToBe) {
     // LOG(DFATAL) has severity FATAL if debugging, but is
     // downgraded to ERROR if not debugging.
     const LogSeverity severity =
-#ifdef NDEBUG
+#if defined(NDEBUG)
         GLOG_ERROR;
 #else
         GLOG_FATAL;
