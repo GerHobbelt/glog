@@ -133,32 +133,38 @@ typedef unsigned __int64 uint64;
 #error Do not know how to define a 32-bit integer quantity on your system
 #endif
 
-@ac_google_end_namespace@
+typedef double WallTime;
 
-#ifdef GLOG_CUSTOM_PREFIX_SUPPORT
-struct LogMessageTime {
-  explicit LogMessageTime (const struct::tm& time_struct_,
-                           const time_t& timestamp_, const int32_t& usecs_):
-      time_struct(time_struct_), ts(timestamp_), usecs(usecs_) {}
+struct GOOGLE_GLOG_DLL_DECL LogMessageTime {
+  LogMessageTime();
+  LogMessageTime(std::tm t);
+  LogMessageTime(std::time_t timestamp, WallTime now);
 
-  const time_t& timestamp() const { return ts; }
-  const int& sec() const { return time_struct.tm_sec; }
-  const int32_t& usec() const { return usecs; }
-  const int& min() const { return time_struct.tm_min; }
-  const int& hour() const { return time_struct.tm_hour; }
-  const int& day() const { return time_struct.tm_mday; }
-  const int& month() const { return time_struct.tm_mon; }
-  const int& year() const { return time_struct.tm_year; }
-  const int& dayOfWeek() const { return time_struct.tm_wday; }
-  const int& dayInYear() const { return time_struct.tm_yday; }
-  const int& dst() const { return time_struct.tm_isdst; }
+  const time_t& timestamp() const { return timestamp_; }
+  const int& sec() const { return time_struct_.tm_sec; }
+  const int32_t& usec() const { return usecs_; }
+  const int&(min)() const { return time_struct_.tm_min; }
+  const int& hour() const { return time_struct_.tm_hour; }
+  const int& day() const { return time_struct_.tm_mday; }
+  const int& month() const { return time_struct_.tm_mon; }
+  const int& year() const { return time_struct_.tm_year; }
+  const int& dayOfWeek() const { return time_struct_.tm_wday; }
+  const int& dayInYear() const { return time_struct_.tm_yday; }
+  const int& dst() const { return time_struct_.tm_isdst; }
+  const long int& gmtoff() const { return gmtoffset_; }
+  const std::tm& tm() const { return time_struct_; }
 
-  private:
-    const struct::tm& time_struct;
-    const time_t& ts;
-    const int32_t& usecs;
+ private:
+  void init(const std::tm& t, std::time_t timestamp, WallTime now);
+  std::tm time_struct_;  // Time of creation of LogMessage
+  time_t timestamp_;     // Time of creation of LogMessage in seconds
+  int32_t usecs_;        // Time of creation of LogMessage - microseconds part
+  long int gmtoffset_;
+
+  void CalcGmtOffset();
 };
 
+#ifdef GLOG_CUSTOM_PREFIX_SUPPORT
 struct LogMessageInfo {
   explicit LogMessageInfo(const char* const severity_,
                           const char* const filename_,
@@ -177,7 +183,11 @@ struct LogMessageInfo {
 };
 
 typedef void(*CustomPrefixCallback)(std::ostream& s, const LogMessageInfo& l, void* data);
+
 #endif
+
+@ac_google_end_namespace@
+
 
 // The global value of GOOGLE_STRIP_LOG. All the messages logged to
 // LOG(XXX) with severity less than GOOGLE_STRIP_LOG will not be displayed.
@@ -392,6 +402,12 @@ typedef void(*CustomPrefixCallback)(std::ostream& s, const LogMessageInfo& l, vo
 #define DECLARE_int32(name) \
   DECLARE_VARIABLE(@ac_google_namespace@::int32, I, name, int32)
 
+#if !defined(DECLARE_uint32) && !(@ac_cv_have_libgflags@)
+// uint32 specialization
+#define DECLARE_uint32(name) \
+  DECLARE_VARIABLE(@ac_google_namespace@::uint32, U, name, uint32)
+#endif // !defined(DECLARE_uint32) && !(@ac_cv_have_libgflags@)
+
 // Special case for string, because we have to specify the namespace
 // std::string, which doesn't play nicely with our FLAG__namespace hackery.
 #define DECLARE_string(name)                                            \
@@ -420,6 +436,9 @@ DECLARE_int32(stderrthreshold);
 // Set whether the log prefix should be prepended to each line of output.
 DECLARE_bool(log_prefix);
 
+// Set whether the year should be included in the log prefix.
+DECLARE_bool(log_year_in_prefix);
+
 // Log messages at a level <= this flag are buffered.
 // Log messages at a higher level are flushed immediately.
 DECLARE_int32(logbuflevel);
@@ -447,7 +466,7 @@ DECLARE_int32(v);  // in vlog_is_on.cc
 DECLARE_string(vmodule); // also in vlog_is_on.cc
 
 // Sets the maximum log file size (in MB).
-DECLARE_int32(max_log_size);
+DECLARE_uint32(max_log_size);
 
 // Sets whether to avoid logging to the disk if the disk is full.
 DECLARE_bool(stop_logging_if_full_disk);
@@ -463,6 +482,7 @@ DECLARE_int32(rolling_file_number);
 #undef DECLARE_VARIABLE
 #undef DECLARE_bool
 #undef DECLARE_int32
+#undef DECLARE_uint32
 #undef DECLARE_string
 #endif
 
@@ -620,7 +640,7 @@ typedef void (*logging_fail_func_t)();
 GOOGLE_GLOG_DLL_DECL void InstallFailureFunction(logging_fail_func_t fail_func);
 
 // Enable/Disable old log cleaner.
-GOOGLE_GLOG_DLL_DECL void EnableLogCleaner(int overdue_days);
+GOOGLE_GLOG_DLL_DECL void EnableLogCleaner(unsigned int overdue_days);
 GOOGLE_GLOG_DLL_DECL void DisableLogCleaner();
 GOOGLE_GLOG_DLL_DECL void SetApplicationFingerprint(const std::string& fingerprint);
 
@@ -1094,7 +1114,7 @@ namespace google {
 
 #if @ac_cv_cxx11_atomic@ && __cplusplus >= 201103L
 #define SOME_KIND_OF_LOG_EVERY_N(severity, n, what_to_do) \
-  static std::atomic<unsigned> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
+  static std::atomic<int> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES, sizeof(int), "")); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES_MOD_N, sizeof(int), "")); \
   ++LOG_OCCURRENCES; \
@@ -1105,7 +1125,7 @@ namespace google {
         &what_to_do).stream()
 
 #define SOME_KIND_OF_LOG_IF_EVERY_N(severity, condition, n, what_to_do) \
-  static std::atomic<unsigned> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
+  static std::atomic<int> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES, sizeof(int), "")); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES_MOD_N, sizeof(int), "")); \
   ++LOG_OCCURRENCES; \
@@ -1116,7 +1136,7 @@ namespace google {
                  &what_to_do).stream()
 
 #define SOME_KIND_OF_PLOG_EVERY_N(severity, n, what_to_do) \
-  static std::atomic<unsigned> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
+  static std::atomic<int> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES, sizeof(int), "")); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES_MOD_N, sizeof(int), "")); \
   ++LOG_OCCURRENCES; \
@@ -1127,7 +1147,7 @@ namespace google {
         &what_to_do).stream()
 
 #define SOME_KIND_OF_LOG_FIRST_N(severity, n, what_to_do) \
-  static std::atomic<unsigned> LOG_OCCURRENCES(0); \
+  static std::atomic<int> LOG_OCCURRENCES(0); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES, sizeof(int), "")); \
   if (LOG_OCCURRENCES <= n) \
     ++LOG_OCCURRENCES; \
@@ -1184,7 +1204,7 @@ namespace google {
 #else
 
 #define SOME_KIND_OF_LOG_EVERY_N(severity, n, what_to_do) \
-  static unsigned LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
+  static int LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
   __sync_add_and_fetch(&LOG_OCCURRENCES, 1); \
   if (__sync_add_and_fetch(&LOG_OCCURRENCES_MOD_N, 1) > n) \
     __sync_sub_and_fetch(&LOG_OCCURRENCES_MOD_N, n); \
@@ -1194,7 +1214,7 @@ namespace google {
         &what_to_do).stream()
 
 #define SOME_KIND_OF_LOG_IF_EVERY_N(severity, condition, n, what_to_do) \
-  static unsigned LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
+  static int LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
   __sync_add_and_fetch(&LOG_OCCURRENCES, 1); \
   if ((condition) && \
       (__sync_add_and_fetch(&LOG_OCCURRENCES_MOD_N, 1) || true) && \
@@ -1205,7 +1225,7 @@ namespace google {
                  &what_to_do).stream()
 
 #define SOME_KIND_OF_PLOG_EVERY_N(severity, n, what_to_do) \
-  static unsigned LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
+  static int LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
   __sync_add_and_fetch(&LOG_OCCURRENCES, 1); \
   if (__sync_add_and_fetch(&LOG_OCCURRENCES_MOD_N, 1) > n) \
     __sync_sub_and_fetch(&LOG_OCCURRENCES_MOD_N, n); \
@@ -1215,7 +1235,7 @@ namespace google {
         &what_to_do).stream()
 
 #define SOME_KIND_OF_LOG_FIRST_N(severity, n, what_to_do) \
-  static unsigned LOG_OCCURRENCES = 0; \
+  static int LOG_OCCURRENCES = 0; \
   if (LOG_OCCURRENCES <= n) \
     __sync_add_and_fetch(&LOG_OCCURRENCES, 1); \
   if (LOG_OCCURRENCES <= n) \
@@ -1459,7 +1479,7 @@ GLOG_MSVC_PUSH_DISABLE_WARNING(4275)
   class GOOGLE_GLOG_DLL_DECL LogStream : public std::ostream {
 GLOG_MSVC_POP_WARNING()
   public:
-    LogStream(char *buf, int len, uint64 ctr)
+    LogStream(char *buf, int len, int64 ctr)
         : std::ostream(NULL),
           streambuf_(buf, len),
           ctr_(ctr),
@@ -1467,8 +1487,8 @@ GLOG_MSVC_POP_WARNING()
       rdbuf(&streambuf_);
     }
 
-    uint64 ctr() const { return ctr_; }
-    void set_ctr(uint64 ctr) { ctr_ = ctr; }
+    int64 ctr() const { return ctr_; }
+    void set_ctr(int64 ctr) { ctr_ = ctr; }
     LogStream* self() const { return self_; }
 
     // Legacy std::streambuf methods.
@@ -1480,7 +1500,7 @@ GLOG_MSVC_POP_WARNING()
     LogStream(const LogStream&);
     LogStream& operator=(const LogStream&);
     base_logging::LogStreamBuf streambuf_;
-    uint64 ctr_;  // Counter hack (for the LOG_EVERY_X() macro)
+    int64 ctr_;  // Counter hack (for the LOG_EVERY_X() macro)
     LogStream *self_;  // Consistency check hack
   };
 
@@ -1488,7 +1508,7 @@ public:
   // icc 8 requires this typedef to avoid an internal compiler error.
   typedef void (LogMessage::*SendMethod)();
 
-  LogMessage(const char* file, int line, LogSeverity severity, uint64 ctr,
+  LogMessage(const char* file, int line, LogSeverity severity, int64 ctr,
              SendMethod send_method);
 
   // Two special constructors that generate reduced amounts of code at
@@ -1555,6 +1575,8 @@ public:
   // Must be called without the log_mutex held.  (L < log_mutex)
   static int64 num_messages(int severity);
 
+  const LogMessageTime& getLogMessageTime() const;
+
   struct LogMessageData;
 
 private:
@@ -1580,6 +1602,7 @@ private:
   // LogMessage uses less stack space.
   LogMessageData* allocated_;
   LogMessageData* data_;
+  LogMessageTime logmsgtime_;
 
   friend class LogDestination;
 
@@ -1658,8 +1681,7 @@ GOOGLE_GLOG_DLL_DECL std::ostream& operator<<(std::ostream &os,
 // Derived class for PLOG*() above.
 class GOOGLE_GLOG_DLL_DECL ErrnoLogMessage : public LogMessage {
  public:
-
-  ErrnoLogMessage(const char* file, int line, LogSeverity severity, uint64 ctr,
+  ErrnoLogMessage(const char* file, int line, LogSeverity severity, int64 ctr,
                   void (LogMessage::*send_method)());
 
   // Postpends ": strerror(errno) [errno]".
@@ -1724,18 +1746,13 @@ class GOOGLE_GLOG_DLL_DECL LogSink {
   // during this call.
   virtual void send(LogSeverity severity, const char* full_filename,
                     const char* base_filename, int line,
-                    const struct ::tm* tm_time,
-                    const char* message, size_t message_len, int32 /*usecs*/) {
-    send(severity, full_filename, base_filename, line,
-         tm_time, message, message_len);
-  }
-  // This send() signature is obsolete.
-  // New implementations should define this in terms of
-  // the above send() method.
+                    const LogMessageTime& logmsgtime, const char* message,
+                    size_t message_len);
+  // Provide an overload for compatibility purposes
+  GLOG_DEPRECATED
   virtual void send(LogSeverity severity, const char* full_filename,
-                    const char* base_filename, int line,
-                    const struct ::tm* tm_time,
-                    const char* message, size_t message_len) = 0;
+                    const char* base_filename, int line, const std::tm* t,
+                    const char* message, size_t message_len);
 
   // Redefine this to implement waiting for
   // the sink's logging logic to complete.
@@ -1755,16 +1772,8 @@ class GOOGLE_GLOG_DLL_DECL LogSink {
   // Returns the normal text output of the log message.
   // Can be useful to implement send().
   static std::string ToString(LogSeverity severity, const char* file, int line,
-                              const struct ::tm* tm_time,
-                              const char* message, size_t message_len,
-                              int32 usecs);
-
-  // Obsolete
-  static std::string ToString(LogSeverity severity, const char* file, int line,
-                              const struct ::tm* tm_time,
-                              const char* message, size_t message_len) {
-    return ToString(severity, file, line, tm_time, message, message_len, 0);
-  }
+                              const LogMessageTime &logmsgtime,
+                              const char* message, size_t message_len);
 };
 
 // Add or remove a LogSink as a consumer of logging data.  Thread-safe.
@@ -1832,7 +1841,7 @@ GOOGLE_GLOG_DLL_DECL void ReprintFatalMessage();
 // lose very small amounts of data. For security, only follow symlinks
 // if the path is /proc/self/fd/*
 GOOGLE_GLOG_DLL_DECL void TruncateLogFile(const char *path,
-                                          int64 limit, int64 keep);
+                                          uint64 limit, uint64 keep);
 
 // Truncate stdout and stderr if they are over the value specified by
 // --max_log_size; keep the final 1MB.  This function has the same
@@ -1946,7 +1955,14 @@ class GOOGLE_GLOG_DLL_DECL NullStreamFatal : public NullStream {
   NullStreamFatal() { }
   NullStreamFatal(const char* file, int line, const CheckOpString& result) :
       NullStream(file, line, result) { }
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4722)
+#endif // _MSC_VER
   @ac_cv___attribute___noreturn@ ~NullStreamFatal() throw () { _exit(1); }
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif // _MSC_VER
 };
 
 // Install a signal handler that will dump signal information and a stack

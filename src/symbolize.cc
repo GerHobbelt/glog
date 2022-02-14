@@ -99,7 +99,7 @@ static ATTRIBUTE_NOINLINE void DemangleInplace(char *out, int out_size) {
   if (Demangle(out, demangled, sizeof(demangled))) {
     // Demangling succeeded. Copy to out if the space allows.
     size_t len = strlen(demangled);
-    if (len + 1 <= (size_t)out_size) {  // +1 for '\0'.
+    if (len + 1 <= static_cast<size_t>(out_size)) {  // +1 for '\0'.
       SAFE_ASSERT(len < sizeof(demangled));
       memmove(out, demangled, len + 1);
     }
@@ -382,7 +382,7 @@ struct FileDescriptor {
   int get() { return fd_; }
 
  private:
-  explicit FileDescriptor(const FileDescriptor&);
+  FileDescriptor(const FileDescriptor &);
   void operator=(const FileDescriptor&);
 };
 
@@ -458,7 +458,7 @@ class LineReader {
   }
 
  private:
-  explicit LineReader(const LineReader&);
+  LineReader(const LineReader &);
   void operator=(const LineReader&);
 
   char *FindLineFeed() {
@@ -666,16 +666,17 @@ OpenObjectFileContainingPcAndGetStartAddress(uint64_t pc,
 
 // POSIX doesn't define any async-signal safe function for converting
 // an integer to ASCII. We'll have to define our own version.
-// itoa_r() converts a (signed) integer to ASCII. It returns "buf", if the
+// itoa_r() converts an (unsigned) integer to ASCII. It returns "buf", if the
 // conversion was successful or NULL otherwise. It never writes more than "sz"
 // bytes. Output will be truncated as needed, and a NUL character is always
 // appended.
 // NOTE: code from sandbox/linux/seccomp-bpf/demo.cc.
-static char *itoa_r(intptr_t i, char *buf, size_t sz, unsigned base, size_t padding) {
+static char *itoa_r(uintptr_t i, char *buf, size_t sz, unsigned base, size_t padding) {
   // Make sure we can write at least one NUL byte.
   size_t n = 1;
-  if (n > sz)
+  if (n > sz) {
     return NULL;
+  }
 
   if (base < 2 || base > 16) {
     buf[0] = '\000';
@@ -683,21 +684,6 @@ static char *itoa_r(intptr_t i, char *buf, size_t sz, unsigned base, size_t padd
   }
 
   char *start = buf;
-
-  uintptr_t j = static_cast<uintptr_t>(i);
-
-  // Handle negative numbers (only for base 10).
-  if (i < 0 && base == 10) {
-    // This does "j = -i" while avoiding integer overflow.
-    j = static_cast<uintptr_t>(-(i + 1)) + 1;
-
-    // Make sure we can write the '-' character.
-    if (++n > sz) {
-      buf[0] = '\000';
-      return NULL;
-    }
-    *start++ = '-';
-  }
 
   // Loop until we have converted the entire number. Output at least one
   // character (i.e. '0').
@@ -710,12 +696,13 @@ static char *itoa_r(intptr_t i, char *buf, size_t sz, unsigned base, size_t padd
     }
 
     // Output the next digit.
-    *ptr++ = "0123456789abcdef"[j % base];
-    j /= base;
+    *ptr++ = "0123456789abcdef"[i % base];
+    i /= base;
 
-    if (padding > 0)
+    if (padding > 0) {
       padding--;
-  } while (j > 0 || padding > 0);
+    }
+  } while (i > 0 || padding > 0);
 
   // Terminate the output with a NUL character.
   *ptr = '\000';

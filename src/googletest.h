@@ -203,7 +203,8 @@ static inline int RUN_ALL_TESTS() {
   for (it = g_testlist.begin(); it != g_testlist.end(); ++it) {
     (*it)();
   }
-  fprintf(stderr, "Passed %d tests\n\nPASS\n", (int)g_testlist.size());
+  fprintf(stderr, "Passed %d tests\n\nPASS\n",
+          static_cast<int>(g_testlist.size()));
   return 0;
 }
 
@@ -271,8 +272,8 @@ static inline void RunSpecifiedBenchmarks() {
        ++iter) {
     clock_t start = clock();
     iter->second(iter_cnt);
-    double elapsed_ns =
-        ((double)clock() - start) / CLOCKS_PER_SEC * 1000*1000*1000;
+    double elapsed_ns = (static_cast<double>(clock()) - start) /
+                        CLOCKS_PER_SEC * 1000 * 1000 * 1000;
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat="
@@ -409,8 +410,9 @@ static const std::size_t kLoggingPrefixLength = 9;
 
 // Check if the string is [IWEF](\d{8}|YEARDATE)
 static inline bool IsLoggingPrefix(const string& s) {
-  if (s.size() != kLoggingPrefixLength)
+  if (s.size() != kLoggingPrefixLength) {
     return false;
+  }
   if (!strchr("IWEF", s[0])) return false;
   for (size_t i = 1; i <= 8; ++i) {
     if (!isdigit(s[i]) && s[i] != "YEARDATE"[i-1]) return false;
@@ -465,7 +467,7 @@ static inline void StringReplace(string* str,
                           const string& newsub) {
   size_t pos = str->find(oldsub);
   if (pos != string::npos) {
-    str->replace(pos, oldsub.size(), newsub.c_str());
+    str->replace(pos, oldsub.size(), newsub);
   }
 }
 
@@ -565,7 +567,7 @@ class Thread {
     handle_ = CreateThread(NULL,
                            0,
                            &Thread::InvokeThreadW,
-                           (LPVOID)this,
+                           this,
                            0,
                            &th_);
     CHECK(handle_) << "CreateThread";
@@ -589,12 +591,12 @@ class Thread {
 
  private:
   static void* InvokeThread(void* self) {
-    ((Thread*)self)->Run();
+    (static_cast<Thread*>(self))->Run();
     return NULL;
   }
 
 #if defined(GLOG_OS_WINDOWS) && !defined(GLOG_OS_CYGWIN)
-  static DWORD InvokeThreadW(void* self) {
+  static DWORD __stdcall InvokeThreadW(LPVOID self) {
     InvokeThread(self);
     return 0;
   }

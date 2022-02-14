@@ -348,7 +348,7 @@ void TestRawLogging() {
   RAW_LOG(ERROR, "%s%d%c%010d%s%1x", foo->c_str(), j, ' ', j, " ", j);
   RAW_VLOG(0, "foo %d", j);
 
-#ifdef NDEBUG
+#if defined(NDEBUG)
   RAW_LOG(INFO, "foo %d", j);  // so that have same stderr to compare
 #else
   RAW_DLOG(INFO, "foo %d", j);  // test RAW_DLOG in debug mode
@@ -370,7 +370,7 @@ void TestRawLogging() {
   RAW_VLOG(2, "vlog 2 on");
   RAW_VLOG(3, "vlog 3 off");
 
-#ifdef NDEBUG
+#if defined(NDEBUG)
   RAW_DCHECK(1 == 2, " RAW_DCHECK's shouldn't be compiled in normal mode");
 #endif
 
@@ -521,17 +521,10 @@ class TestLogSinkImpl : public LogSink {
   vector<string> errors;
   virtual void send(LogSeverity severity, const char* /* full_filename */,
                     const char* base_filename, int line,
-                    const struct tm* tm_time,
-                    const char* message, size_t message_len, int usecs) {
-    errors.push_back(
-      ToString(severity, base_filename, line, tm_time, message, message_len, usecs));
-  }
-  virtual void send(LogSeverity severity, const char* full_filename,
-                    const char* base_filename, int line,
-                    const struct tm* tm_time,
+                    const LogMessageTime &logmsgtime,
                     const char* message, size_t message_len) {
-    send(severity, full_filename, base_filename, line,
-         tm_time, message, message_len, 0);
+    errors.push_back(
+      ToString(severity, base_filename, line, logmsgtime, message, message_len));
   }
 };
 
@@ -601,7 +594,7 @@ void TestCHECK() {
 }
 
 void TestDCHECK() {
-#ifdef NDEBUG
+#if defined(NDEBUG)
   DCHECK( 1 == 2 ) << " DCHECK's shouldn't be compiled in normal mode";
 #endif
   DCHECK( 1 == 1 );
@@ -875,7 +868,7 @@ static void TestErrno() {
   CHECK_EQ(errno, ENOENT);
 }
 
-static void TestOneTruncate(const char *path, int64 limit, int64 keep,
+static void TestOneTruncate(const char *path, uint64 limit, uint64 keep,
                             size_t dsize, size_t ksize, size_t expect) {
   int fd;
   CHECK_ERR(fd = open(path, O_RDWR | O_CREAT | O_TRUNC, 0600));
@@ -911,7 +904,7 @@ static void TestOneTruncate(const char *path, int64 limit, int64 keep,
   memset(buf, 0, buf_size);
   CHECK_ERR(read(fd, buf, buf_size));
 
-  const char *p = buf;
+  const char* p = buf;
   size_t checked = 0;
   while (checked < expect) {
     size_t bytes = min(expect - checked, keep_size);
@@ -931,7 +924,8 @@ static void TestTruncate() {
   TestOneTruncate(path.c_str(), 10, 10, 10, 10, 10);
 
   // And a big file (multiple blocks to copy)
-  TestOneTruncate(path.c_str(), 2<<20, 4<<10, 3<<20, 4<<10, 4<<10);
+  TestOneTruncate(path.c_str(), 2U << 20U, 4U << 10U, 3U << 20U, 4U << 10U,
+                  4U << 10U);
 
   // Check edge-case limits
   TestOneTruncate(path.c_str(), 10, 20, 0, 20, 20);
@@ -1011,7 +1005,7 @@ GLOG_CONSTEXPR int64_t LOG_PERIOD_TOL_NS = 500000;    // 500us
 // called, since it is also the array size and will be indexed by the stream
 // operator.
 GLOG_CONSTEXPR size_t MAX_CALLS = 10;
-}  // namespace LogStreamTimes
+}  // namespace LogTimes
 
 #if defined(HAVE_CXX11_CHRONO) && __cplusplus >= 201103L
 struct LogTimeRecorder {
@@ -1242,22 +1236,15 @@ class TestWaitingLogSink : public LogSink {
 
   virtual void send(LogSeverity severity, const char* /* full_filename */,
                     const char* base_filename, int line,
-                    const struct tm* tm_time,
-                    const char* message, size_t message_len, int usecs) {
+                    const LogMessageTime &logmsgtime,
+                    const char* message, size_t message_len) {
     // Push it to Writer thread if we are the original logging thread.
     // Note: Something like ThreadLocalLogSink is a better choice
     //       to do thread-specific LogSink logic for real.
     if (pthread_equal(tid_, pthread_self())) {
       writer_.Buffer(ToString(severity, base_filename, line,
-                              tm_time, message, message_len, usecs));
+                              logmsgtime, message, message_len));
     }
-  }
-
-  virtual void send(LogSeverity severity, const char* full_filename,
-                    const char* base_filename, int line,
-                    const struct tm* tm_time,
-                    const char* message, size_t message_len) {
-    send(severity, full_filename, base_filename, line, tm_time, message, message_len, 0);
   }
 
   virtual void WaitTillSent() {
@@ -1330,11 +1317,11 @@ static void MyCheck(bool a, bool b) {
 TEST(DVLog, Basic) {
   ScopedMockLog log;
 
-#if NDEBUG
+#if defined(NDEBUG)
   // We are expecting that nothing is logged.
   EXPECT_CALL(log, Log(_, _, _)).Times(0);
 #else
-  EXPECT_CALL(log, Log(INFO, __FILE__, "debug log"));
+  EXPECT_CALL(log, Log(GLOG_INFO, __FILE__, "debug log"));
 #endif
 
   FLAGS_v = 1;
@@ -1355,13 +1342,13 @@ TEST(LogAtLevel, Basic) {
   ScopedMockLog log;
 
   // The function version outputs "logging.h" as a file name.
-  EXPECT_CALL(log, Log(WARNING, StrNe(__FILE__), "function version"));
-  EXPECT_CALL(log, Log(INFO, __FILE__, "macro version"));
+  EXPECT_CALL(log, Log(GLOG_WARNING, StrNe(__FILE__), "function version"));
+  EXPECT_CALL(log, Log(GLOG_INFO, __FILE__, "macro version"));
 
-  int severity = WARNING;
+  int severity = GLOG_WARNING;
   LogAtLevel(severity, "function version");
 
-  severity = INFO;
+  severity = GLOG_INFO;
   // We can use the macro version as a C++ stream.
   LOG_AT_LEVEL(severity) << "macro" << ' ' << "version";
 }
@@ -1381,10 +1368,10 @@ TEST(TestExitOnDFatal, ToBeOrNotToBe) {
     // LOG(DFATAL) has severity FATAL if debugging, but is
     // downgraded to ERROR if not debugging.
     const LogSeverity severity =
-#ifdef NDEBUG
-        ERROR;
+#if defined(NDEBUG)
+        GLOG_ERROR;
 #else
-        FATAL;
+        GLOG_FATAL;
 #endif
     EXPECT_CALL(log, Log(severity, __FILE__, "This should not be fatal"));
     LOG(DFATAL) << "This should not be fatal";

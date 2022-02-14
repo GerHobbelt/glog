@@ -128,9 +128,9 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
             "src/stacktrace_generic-inl.h",
             "src/stacktrace_libunwind-inl.h",
             "src/stacktrace_powerpc-inl.h",
+            "src/stacktrace_unwind-inl.h",
             "src/stacktrace_windows-inl.h",
             "src/stacktrace_x86-inl.h",
-            "src/stacktrace_x86_64-inl.h",
             "src/symbolize.cc",
             "src/symbolize.h",
             "src/utilities.cc",
@@ -154,9 +154,12 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
             # generated for Bazel.
             "@bazel_tools//src/conditions:windows": [
                 "GOOGLE_GLOG_DLL_DECL=__declspec(dllexport)",
+                "GLOG_DEPRECATED=__declspec(deprecated)",
                 "GLOG_NO_ABBREVIATED_SEVERITIES",
             ],
-            "//conditions:default": [],
+            "//conditions:default": [
+                "GLOG_DEPRECATED=__attribute__((deprecated))",
+            ],
         }),
         copts =
             select({

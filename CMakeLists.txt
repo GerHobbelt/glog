@@ -1,14 +1,10 @@
-cmake_minimum_required (VERSION 3.0)
-
-if (POLICY CMP0042)
-  cmake_policy (SET CMP0042 NEW)
-endif (POLICY CMP0042)
-
-if (POLICY CMP0063)
-  cmake_policy (SET CMP0063 NEW)
-endif (POLICY CMP0063)
-
-project(glog VERSION 0.6.0 LANGUAGES CXX)
+cmake_minimum_required (VERSION 3.16)
+project (glog
+  VERSION 0.6.0
+  DESCRIPTION "C++ implementation of the Google logging module"
+  HOMEPAGE_URL https://github.com/google/glog
+  LANGUAGES CXX
+)
 
 set (CPACK_PACKAGE_NAME glog)
 set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Google logging library")
@@ -83,7 +79,7 @@ if (WITH_GMOCK AND TARGET GTest::gmock)
 endif (WITH_GMOCK AND TARGET GTest::gmock)
 
 if (WITH_GFLAGS)
-  find_package (gflags 2.2.0)
+  find_package (gflags 2.2.2)
 
   if (gflags_FOUND)
     set (HAVE_LIB_GFLAGS 1)
@@ -98,6 +94,10 @@ if (Unwind_FOUND)
   set (HAVE_LIB_UNWIND 1)
 else (Unwind_FOUND)
   check_include_file_cxx (unwind.h HAVE_UNWIND_H)
+  # Check whether linking actually succeeds. ARM toolchains of LLVM unwind
+  # implementation do not necessarily provide the _Unwind_Backtrace function
+  # which causes the previous check to succeed but the linking to fail.
+  check_cxx_symbol_exists (_Unwind_Backtrace unwind.h HAVE__UNWIND_BACKTRACE)
 endif (Unwind_FOUND)
 
 check_include_file_cxx (dlfcn.h HAVE_DLFCN_H)
@@ -149,7 +149,11 @@ check_cxx_compiler_flag (-Wunnamed-type-template-args
     HAVE_NO_UNNAMED_TYPE_TEMPLATE_ARGS)
 
 cmake_push_check_state (RESET)
-set (CMAKE_REQUIRED_LIBRARIES Threads::Threads)
+
+if (Threads_FOUND)
+  set (CMAKE_REQUIRED_LIBRARIES Threads::Threads)
+endif (Threads_FOUND)
+
 check_cxx_symbol_exists (pthread_threadid_np "pthread.h" HAVE_PTHREAD_THREADID_NP)
 cmake_pop_check_state ()
 
@@ -638,16 +642,16 @@ add_library (glog
 add_library (glog::glog ALIAS glog)
 
 if (Unwind_FOUND)
-  target_link_libraries (glog PUBLIC unwind::unwind)
+  target_link_libraries (glog PRIVATE unwind::unwind)
   set (Unwind_DEPENDENCY "find_dependency (Unwind ${Unwind_VERSION})")
 endif (Unwind_FOUND)
 
 if (HAVE_DBGHELP)
-   target_link_libraries (glog PUBLIC dbghelp)
+  target_link_libraries (glog PRIVATE dbghelp)
 endif (HAVE_DBGHELP)
 
 if (HAVE_PTHREAD)
-  target_link_libraries (glog PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries (glog PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 endif (HAVE_PTHREAD)
 
 if (gflags_FOUND)
@@ -665,8 +669,8 @@ if (gflags_FOUND)
 endif (gflags_FOUND)
 
 if (ANDROID)
-  target_link_libraries (glog PUBLIC log)
-endif()
+  target_link_libraries (glog PRIVATE log)
+endif (ANDROID)
 
 set_target_properties (glog PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties (glog PROPERTIES SOVERSION 1)
@@ -899,6 +903,7 @@ if (BUILD_TESTING)
 
   add_test (NAME cmake_package_config_build COMMAND
     ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/test_package_config/working_config
+                     --config $<CONFIG>
   )
 
   add_test (NAME cmake_package_config_cleanup COMMAND ${CMAKE_COMMAND} -E
@@ -927,10 +932,15 @@ if (BUILD_TESTING)
 
   target_link_libraries (cleanup_immediately_unittest PRIVATE ${_GLOG_TEST_LIBS})
 
-  add_executable (cleanup_with_prefix_unittest
-    src/cleanup_with_prefix_unittest.cc)
+  add_executable (cleanup_with_absolute_prefix_unittest
+    src/cleanup_with_absolute_prefix_unittest.cc)
 
-  target_link_libraries (cleanup_with_prefix_unittest PRIVATE ${_GLOG_TEST_LIBS})
+  target_link_libraries (cleanup_with_absolute_prefix_unittest PRIVATE ${_GLOG_TEST_LIBS})
+
+  add_executable (cleanup_with_relative_prefix_unittest
+    src/cleanup_with_relative_prefix_unittest.cc)
+
+  target_link_libraries (cleanup_with_relative_prefix_unittest PRIVATE ${_GLOG_TEST_LIBS})
 
   set (CLEANUP_LOG_DIR ${CMAKE_CURRENT_BINARY_DIR}/cleanup_tests)
 
@@ -945,11 +955,18 @@ if (BUILD_TESTING)
     -DTEST_DIR=${CLEANUP_LOG_DIR}/
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunCleanerTest1.cmake
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-  add_test (NAME cleanup_with_prefix COMMAND
+  add_test (NAME cleanup_with_absolute_prefix COMMAND
     ${CMAKE_COMMAND}
-    -DLOGCLEANUP=$<TARGET_FILE:cleanup_with_prefix_unittest>
+    -DLOGCLEANUP=$<TARGET_FILE:cleanup_with_absolute_prefix_unittest>
     -DTEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/
     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunCleanerTest2.cmake
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  add_test (NAME cleanup_with_relative_prefix COMMAND
+    ${CMAKE_COMMAND}
+    -DLOGCLEANUP=$<TARGET_FILE:cleanup_with_relative_prefix_unittest>
+    -DTEST_DIR=${CMAKE_CURRENT_BINARY_DIR}/
+    -DTEST_SUBDIR=test_subdir/
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RunCleanerTest3.cmake
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   # Fixtures setup
@@ -958,7 +975,8 @@ if (BUILD_TESTING)
   set_tests_properties (cleanup_logdir PROPERTIES FIXTURES_CLEANUP logcleanuptest)
   # Fixture requirements
   set_tests_properties (cleanup_immediately PROPERTIES FIXTURES_REQUIRED logcleanuptest)
-  set_tests_properties (cleanup_with_prefix PROPERTIES FIXTURES_REQUIRED logcleanuptest)
+  set_tests_properties (cleanup_with_absolute_prefix PROPERTIES FIXTURES_REQUIRED logcleanuptest)
+  set_tests_properties (cleanup_with_relative_prefix PROPERTIES FIXTURES_REQUIRED logcleanuptest)
 endif (BUILD_TESTING)
 
 install (TARGETS glog
