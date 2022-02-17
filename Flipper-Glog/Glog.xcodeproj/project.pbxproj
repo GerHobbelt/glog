@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2663507227BE9690003CE218 /* platform.h in Headers */ = {isa = PBXBuildFile; fileRef = 2663507127BE9690003CE218 /* platform.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		267E1D4B27BE770400826C6B /* demangle.cc in Sources */ = {isa = PBXBuildFile; fileRef = 267E1D4A27BE770400826C6B /* demangle.cc */; };
 		267E1D4D27BE770A00826C6B /* demangle.h in Headers */ = {isa = PBXBuildFile; fileRef = 267E1D4C27BE770A00826C6B /* demangle.h */; };
 		267E1D4F27BE771A00826C6B /* logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 267E1D4E27BE771A00826C6B /* logging.cc */; };
@@ -27,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		2663507127BE9690003CE218 /* platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = platform.h; sourceTree = "<group>"; };
 		267E1D4A27BE770400826C6B /* demangle.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = demangle.cc; path = ../../../src/demangle.cc; sourceTree = "<group>"; };
 		267E1D4C27BE770A00826C6B /* demangle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = demangle.h; path = ../../../src/demangle.h; sourceTree = "<group>"; };
 		267E1D4E27BE771A00826C6B /* logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = logging.cc; path = ../../../src/logging.cc; sourceTree = "<group>"; };
@@ -84,6 +86,7 @@
 				267E1D6627BE7A5600826C6B /* stl_logging.h */,
 				267E1D6727BE7A5600826C6B /* export.h */,
 				267E1D6827BE7A5600826C6B /* logging.h */,
+				2663507127BE9690003CE218 /* platform.h */,
 				267E1D6927BE7A5600826C6B /* raw_logging.h */,
 				267E1D6A27BE7A5600826C6B /* vlog_is_on.h */,
 			);
@@ -138,6 +141,7 @@
 				53113AF926190FE700D1C5DC /* Glog.h in Headers */,
 				267E1D5627BE773500826C6B /* utilities.h in Headers */,
 				267E1D6F27BE7A5600826C6B /* vlog_is_on.h in Headers */,
+				2663507227BE9690003CE218 /* platform.h in Headers */,
 				267E1D4D27BE770A00826C6B /* demangle.h in Headers */,
 				267E1D5227BE772600826C6B /* symbolize.h in Headers */,
 				267E1D6427BE79EC00826C6B /* config.h in Headers */,

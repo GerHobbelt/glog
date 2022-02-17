@@ -12,6 +12,10 @@
 		<data>
 		z7UrNCOJE3m5QkQe0b1xYsW5DRA=
 		</data>
+		<key>Headers/platform.h</key>
+		<data>
+		m1S87h+teAASCW1ppRY3ZtNSoMc=
+		</data>
 		<key>Headers/raw_logging.h</key>
 		<data>
 		4zaz0bszOVBxU53WfM1jdKsLd38=
@@ -55,6 +59,17 @@
 			<key>hash2</key>
 			<data>
 			2tkmOXIvQpt2djilGKOaXOmmdF285YR2oLFm1SIJ9L8=
+			</data>
+		</dict>
+		<key>Headers/platform.h</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			m1S87h+teAASCW1ppRY3ZtNSoMc=
+			</data>
+			<key>hash2</key>
+			<data>
+			JJ0hAE7+sU9VkAYXceFP4jHSe23HVTa2c9xT+YRvrKw=
 			</data>
 		</dict>
 		<key>Headers/raw_logging.h</key>
