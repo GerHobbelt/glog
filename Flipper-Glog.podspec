@@ -1,8 +1,8 @@
 Pod::Spec.new do |s|
     s.name         = "Flipper-Glog"
-    s.version      = "0.5.0"
+    s.version      = "0.5.0.1"
     s.homepage     = "https://github.com/lblasa/glog/"
-    s.source       = { :git => 'https://github.com/priteshrnandgaonkar/glog.git', :tag => "flipper-v0.5.0" }
+    s.source       = { :git => 'https://github.com/priteshrnandgaonkar/glog.git', :tag => "flipper-glog-v0.5.0.1" }
     s.license      = { :type => 'Google', :file => 'COPYING' }
     s.summary      = 'Google logging module'
     s.authors      = {'Lorenzo Blasa' => 'lblasa@fb.com'}
