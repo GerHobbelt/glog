@@ -24,6 +24,7 @@
 		267E1D6D27BE7A5600826C6B /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 267E1D6827BE7A5600826C6B /* logging.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		267E1D6E27BE7A5600826C6B /* raw_logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 267E1D6927BE7A5600826C6B /* raw_logging.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		267E1D6F27BE7A5600826C6B /* vlog_is_on.h in Headers */ = {isa = PBXBuildFile; fileRef = 267E1D6A27BE7A5600826C6B /* vlog_is_on.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		26EA4D0C27BEA2F2006A9D37 /* log_severity.h in Headers */ = {isa = PBXBuildFile; fileRef = 26EA4D0B27BEA2F1006A9D37 /* log_severity.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53113AF926190FE700D1C5DC /* Glog.h in Headers */ = {isa = PBXBuildFile; fileRef = 53113AF726190FE700D1C5DC /* Glog.h */; settings = {ATTRIBUTES = (Public, ); }; };
 /* End PBXBuildFile section */
 
@@ -46,6 +47,7 @@
 		267E1D6927BE7A5600826C6B /* raw_logging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = raw_logging.h; sourceTree = "<group>"; };
 		267E1D6A27BE7A5600826C6B /* vlog_is_on.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vlog_is_on.h; sourceTree = "<group>"; };
 		267E1D7127BE7E8E00826C6B /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.1.sdk/usr/lib/libc++.tbd"; sourceTree = DEVELOPER_DIR; };
+		26EA4D0B27BEA2F1006A9D37 /* log_severity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_severity.h; sourceTree = "<group>"; };
 		53113AF426190FE700D1C5DC /* glog.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = glog.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		53113AF726190FE700D1C5DC /* Glog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Glog.h; sourceTree = "<group>"; };
 		53113AF826190FE700D1C5DC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -83,6 +85,7 @@
 		267E1D6527BE7A5600826C6B /* glog */ = {
 			isa = PBXGroup;
 			children = (
+				26EA4D0B27BEA2F1006A9D37 /* log_severity.h */,
 				267E1D6627BE7A5600826C6B /* stl_logging.h */,
 				267E1D6727BE7A5600826C6B /* export.h */,
 				267E1D6827BE7A5600826C6B /* logging.h */,
@@ -145,6 +148,7 @@
 				267E1D4D27BE770A00826C6B /* demangle.h in Headers */,
 				267E1D5227BE772600826C6B /* symbolize.h in Headers */,
 				267E1D6427BE79EC00826C6B /* config.h in Headers */,
+				26EA4D0C27BEA2F2006A9D37 /* log_severity.h in Headers */,
 				267E1D6D27BE7A5600826C6B /* logging.h in Headers */,
 				267E1D6C27BE7A5600826C6B /* export.h in Headers */,
 				267E1D6E27BE7A5600826C6B /* raw_logging.h in Headers */,

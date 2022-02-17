@@ -12,6 +12,10 @@
 		<data>
 		SmlsP4lMkjtKtUD6F0OL4y6lJbs=
 		</data>
+		<key>Headers/log_severity.h</key>
+		<data>
+		JD/dxODX4leS2xjyN+CgY4PBebk=
+		</data>
 		<key>Headers/logging.h</key>
 		<data>
 		z7UrNCOJE3m5QkQe0b1xYsW5DRA=
@@ -63,6 +67,17 @@
 			<key>hash2</key>
 			<data>
 			zm31YCVXWgdscl36XblfcUyR9XhjRWopWpwHD/siwkU=
+			</data>
+		</dict>
+		<key>Headers/log_severity.h</key>
+		<dict>
+			<key>hash</key>
+			<data>
+			JD/dxODX4leS2xjyN+CgY4PBebk=
+			</data>
+			<key>hash2</key>
+			<data>
+			bbtsfglntbhrE88hHJ1MurvxLHsWV0XMqzk9bHV4zu0=
 			</data>
 		</dict>
 		<key>Headers/logging.h</key>
