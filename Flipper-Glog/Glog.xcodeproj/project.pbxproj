@@ -20,7 +20,7 @@
 		267E1D5D27BE778600826C6B /* vlog_is_on.cc in Sources */ = {isa = PBXBuildFile; fileRef = 267E1D5C27BE778600826C6B /* vlog_is_on.cc */; };
 		267E1D6427BE79EC00826C6B /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 267E1D6327BE79EC00826C6B /* config.h */; };
 		267E1D6B27BE7A5600826C6B /* stl_logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 267E1D6627BE7A5600826C6B /* stl_logging.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		267E1D6C27BE7A5600826C6B /* export.h in Headers */ = {isa = PBXBuildFile; fileRef = 267E1D6727BE7A5600826C6B /* export.h */; };
+		267E1D6C27BE7A5600826C6B /* export.h in Headers */ = {isa = PBXBuildFile; fileRef = 267E1D6727BE7A5600826C6B /* export.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		267E1D6D27BE7A5600826C6B /* logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 267E1D6827BE7A5600826C6B /* logging.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		267E1D6E27BE7A5600826C6B /* raw_logging.h in Headers */ = {isa = PBXBuildFile; fileRef = 267E1D6927BE7A5600826C6B /* raw_logging.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		267E1D6F27BE7A5600826C6B /* vlog_is_on.h in Headers */ = {isa = PBXBuildFile; fileRef = 267E1D6A27BE7A5600826C6B /* vlog_is_on.h */; settings = {ATTRIBUTES = (Public, ); }; };
