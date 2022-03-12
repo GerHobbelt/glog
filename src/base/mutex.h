@@ -119,13 +119,13 @@
 #   endif
 # endif
 // To avoid macro definition of ERROR.
-# ifndef NOGDI
-#  define NOGDI
-# endif
+//# ifndef NOGDI
+//#  define NOGDI
+//# endif
 // To avoid macro definition of min/max.
-# ifndef NOMINMAX
-#  define NOMINMAX
-# endif
+//# ifndef NOMINMAX
+//#  define NOMINMAX
+//# endif
 # include <windows.h>
   typedef CRITICAL_SECTION MutexType;
 #elif defined(HAVE_PTHREAD) && defined(HAVE_RWLOCK)
