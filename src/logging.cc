@@ -124,6 +124,10 @@ GLOG_DEFINE_bool(alsologtostderr, BoolFromEnv("GOOGLE_ALSOLOGTOSTDERR", false),
                  "log messages go to stderr in addition to logfiles");
 GLOG_DEFINE_bool(colorlogtostderr, false,
                  "color messages logged to stderr (if supported by terminal)");
+GLOG_DEFINE_bool(colorlogtostdout, false,
+                 "color messages logged to stdout (if supported by terminal)");
+GLOG_DEFINE_bool(logtostdout, BoolFromEnv("GOOGLE_LOGTOSTDOUT", false),
+                 "log messages go to stdout instead of logfiles");
 #ifdef GLOG_OS_LINUX
 GLOG_DEFINE_bool(drop_log_memory, true, "Drop in-memory buffers of log contents. "
                  "Logs can grow very quickly and they are rarely read before they "
@@ -156,6 +160,10 @@ GLOG_DEFINE_int32(logbuflevel, 0,
                   " ...)");
 GLOG_DEFINE_int32(logbufsecs, 30,
                   "Buffer log messages for at most this many seconds");
+
+GLOG_DEFINE_int32(logcleansecs, 60 * 5, // every 5 minutes
+                  "Clean overdue logs every this many seconds");
+
 GLOG_DEFINE_int32(logemaillevel, 999,
                   "Email log messages logged at this level or higher"
                   " (0 means email all; 3 means email FATAL only;"
@@ -247,7 +255,7 @@ static ssize_t pwrite(int fd, void* buf, size_t count, off_t offset) {
 static void GetHostName(string* hostname) {
 #if defined(HAVE_SYS_UTSNAME_H)
   struct utsname buf;
-  if (0 != uname(&buf)) {
+  if (uname(&buf) < 0) {
     // ensure null termination on failure
     *buf.nodename = '\0';
   }
@@ -499,9 +507,12 @@ class LogCleaner {
   void Enable(unsigned int overdue_days);
   void Disable();
 
+  // update next_cleanup_time_
+  void UpdateCleanUpTime();
+
   void Run(bool base_filename_selected,
            const string& base_filename,
-           const string& filename_extension) const;
+           const string& filename_extension);
 
   bool enabled() const { return enabled_; }
 
@@ -518,6 +529,7 @@ class LogCleaner {
 
   bool enabled_;
   unsigned int overdue_days_;
+  int64 next_cleanup_time_;         // cycle count at which to clean overdue log
 };
 
 LogCleaner log_cleaner;
@@ -746,41 +758,61 @@ inline void LogDestination::SetEmailLogging(LogSeverity min_severity,
   LogDestination::addresses_ = addresses;
 }
 
-static void ColoredWriteToStderr(LogSeverity severity,
-                                 const char* message, size_t len) {
-  const GLogColor color =
-      (LogDestination::terminal_supports_color() && FLAGS_colorlogtostderr) ?
-      SeverityToColor(severity) : COLOR_DEFAULT;
+static void ColoredWriteToStderrOrStdout(FILE* output, LogSeverity severity,
+                                         const char* message, size_t len) {
+  bool is_stdout = (output == stdout);
+  const GLogColor color = (LogDestination::terminal_supports_color() &&
+                           ((!is_stdout && FLAGS_colorlogtostderr) ||
+                            (is_stdout && FLAGS_colorlogtostdout)))
+                              ? SeverityToColor(severity)
+                              : COLOR_DEFAULT;
 
   // Avoid using cerr from this module since we may get called during
   // exit code, and cerr may be partially or fully destroyed by then.
   if (COLOR_DEFAULT == color) {
-    fwrite(message, len, 1, stderr);
+    fwrite(message, len, 1, output);
     return;
   }
 #ifdef GLOG_OS_WINDOWS
-  const HANDLE stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
+  const HANDLE output_handle =
+      GetStdHandle(is_stdout ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE);
 
   // Gets the current text color.
   CONSOLE_SCREEN_BUFFER_INFO buffer_info;
-  GetConsoleScreenBufferInfo(stderr_handle, &buffer_info);
+  GetConsoleScreenBufferInfo(output_handle, &buffer_info);
   const WORD old_color_attrs = buffer_info.wAttributes;
 
   // We need to flush the stream buffers into the console before each
   // SetConsoleTextAttribute call lest it affect the text that is already
   // printed but has not yet reached the console.
-  fflush(stderr);
-  SetConsoleTextAttribute(stderr_handle,
+  fflush(output);
+  SetConsoleTextAttribute(output_handle,
                           GetColorAttribute(color) | FOREGROUND_INTENSITY);
-  fwrite(message, len, 1, stderr);
-  fflush(stderr);
+  fwrite(message, len, 1, output);
+  fflush(output);
   // Restores the text color.
-  SetConsoleTextAttribute(stderr_handle, old_color_attrs);
+  SetConsoleTextAttribute(output_handle, old_color_attrs);
 #else
-  fprintf(stderr, "\033[0;3%sm", GetAnsiColorCode(color));
-  fwrite(message, len, 1, stderr);
-  fprintf(stderr, "\033[m");  // Resets the terminal to default.
+  fprintf(output, "\033[0;3%sm", GetAnsiColorCode(color));
+  fwrite(message, len, 1, output);
+  fprintf(output, "\033[m");  // Resets the terminal to default.
 #endif  // GLOG_OS_WINDOWS
+}
+
+static void ColoredWriteToStdout(LogSeverity severity, const char* message,
+                                 size_t len) {
+  FILE* output = stdout;
+  // We also need to send logs to the stderr when the severity is
+  // higher or equal to the stderr threshold.
+  if (severity >= FLAGS_stderrthreshold) {
+    output = stderr;
+  }
+  ColoredWriteToStderrOrStdout(output, severity, message, len);
+}
+
+static void ColoredWriteToStderr(LogSeverity severity, const char* message,
+                                 size_t len) {
+  ColoredWriteToStderrOrStdout(stderr, severity, message, len);
 }
 
 static void WriteToStderr(const char* message, size_t len) {
@@ -854,8 +886,9 @@ inline void LogDestination::LogToAllLogfiles(LogSeverity severity,
                                              time_t timestamp,
                                              const char* message,
                                              size_t len) {
-
-  if ( FLAGS_logtostderr ) {           // global flag: never log to file
+  if (FLAGS_logtostdout) {  // global flag: never log to file
+    ColoredWriteToStdout(severity, message, len);
+  } else if (FLAGS_logtostderr) {  // global flag: never log to file
     ColoredWriteToStderr(severity, message, len);
   } else {
     for (int i = severity; i >= 0; --i) {
@@ -1288,113 +1321,7 @@ void LogFileObject::Write(bool force_flush,
   }
 }
 
-vector<std::string> split(const std::string& str, const std::string& delimeter)
-{
-    vector<string> result;
-
-
-    if (str.empty())
-        return result;
-
-    size_t from = 0;
-    size_t to = string::npos;
-
-    for (char i : delimeter)
-    {
-        auto idx = str.find(i, from);
-        if (idx != string::npos)
-        {
-            to = idx;
-            break;
-        }
-    }
-
-    while (to != string::npos)
-    {
-        auto part = str.substr(from, to - from);
-
-        from = to + 1;
-
-        to = string::npos;
-        for (char i : delimeter)
-        {
-            auto idx = str.find(i, from);
-            if (idx != string::npos)
-            {
-                to = idx;
-                break;
-            }
-        }
-
-        result.emplace_back(part);
-    };
-
-    auto part = str.substr(from);
-    result.push_back(part);
-
-    return result;
-}
-void LogFileObject::GetSuitableFileName(const char* originName, char* outputFileName)
-{
-    std::string dir_delim_("/");
-#ifdef OS_WINDOWS
-    dir_delim_ = "\\";
-#endif
-    std::map< time_t, string> fileMap;
-
-    std::string tmpPath(originName);
-    struct stat file_stat;
-    int error = stat(originName, &file_stat);
-    if (error != 0) {
-        strncpy(outputFileName, originName, strlen(originName));
-        return;
-    }
-
-    fileMap.insert({ file_stat.st_mtime,tmpPath });
-
-    if ((file_stat.st_size >> 20) > MaxLogSize())
-    {
-        vector<string> pathList = split(tmpPath, std::string(dir_delim_));
-        auto fileNameWithExt = pathList.at(pathList.size() - 1);
-        std::string log_directory;
-        std::for_each(pathList.begin(), pathList.end() - 1, [&](const std::string& piece) { log_directory += (piece + dir_delim_); });
-
-        if (FLAGS_rolling_file_number <= 0 || FLAGS_rolling_file_number > 10) FLAGS_rolling_file_number = 10;
-        for (int i = 0; i < FLAGS_rolling_file_number; i++)
-        {
-            string tmpFileName = log_directory + fileNameWithExt + std::to_string(i);
-            struct stat file_stat;
-            int error = stat(tmpFileName.c_str(), &file_stat);
-            if (error == 0) {
-                if ((file_stat.st_size >> 20) < MaxLogSize()) {
-                    strncpy(outputFileName, tmpFileName.c_str(), tmpFileName.size());
-                    return;
-                }
-                fileMap.insert({ file_stat.st_mtime,tmpFileName });
-                // A day is 86400 seconds, so 7 days is 86400 * 7 = 604800 seconds.
-                continue;
-            }
-            else
-            {
-                strncpy(outputFileName, tmpFileName.c_str(), tmpFileName.size());
-                return;
-            }
-        }
-
-        // all full, remove the oldest file
-        auto name = std::min_element(fileMap.begin(), fileMap.end(), [](const auto& l, const auto& r) { return l.first < r.first; });
-        int ret = remove(name->second.c_str());
-        strncpy(outputFileName, name->second.c_str(), name->second.size());
-
-    }
-    else
-    {
-        strncpy(outputFileName, originName, strlen(originName));
-        return;
-    }
-}
-
-LogCleaner::LogCleaner() : enabled_(false), overdue_days_(7) {}
+LogCleaner::LogCleaner() : enabled_(false), overdue_days_(7), next_cleanup_time_(0) {}
 
 void LogCleaner::Enable(unsigned int overdue_days) {
   enabled_ = true;
@@ -1405,11 +1332,23 @@ void LogCleaner::Disable() {
   enabled_ = false;
 }
 
+void LogCleaner::UpdateCleanUpTime() {
+  const int64 next = (FLAGS_logcleansecs
+                      * 1000000);  // in usec
+  next_cleanup_time_ = CycleClock_Now() + UsecToCycles(next);
+}
+
 void LogCleaner::Run(bool base_filename_selected,
                      const string& base_filename,
-                     const string& filename_extension) const {
+                     const string& filename_extension) {
   assert(enabled_);
   assert(!base_filename_selected || !base_filename.empty());
+
+  // avoid scanning logs too frequently
+  if (CycleClock_Now() < next_cleanup_time_) {
+    return;
+  }
+  UpdateCleanUpTime();
 
   vector<string> dirs;
 
@@ -1883,9 +1822,14 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   // global flag: never log to file if set.  Also -- don't log to a
   // file if we haven't parsed the command line flags to get the
   // program name.
-  if (FLAGS_logtostderr || !IsGoogleLoggingInitialized()) {
-    ColoredWriteToStderr(data_->severity_,
-                         data_->message_text_, data_->num_chars_to_log_);
+  if (FLAGS_logtostderr || FLAGS_logtostdout || !IsGoogleLoggingInitialized()) {
+    if (FLAGS_logtostdout) {
+      ColoredWriteToStdout(data_->severity_, data_->message_text_,
+                           data_->num_chars_to_log_);
+    } else {
+      ColoredWriteToStderr(data_->severity_, data_->message_text_,
+                           data_->num_chars_to_log_);
+    }
 
     // this could be protected by a flag if necessary.
     LogDestination::LogToSinks(data_->severity_,
@@ -1895,7 +1839,6 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
                                (data_->num_chars_to_log_ -
                                 data_->num_prefix_chars_ - 1) );
   } else {
-
     // log this message to all log files of severity <= severity_
     LogDestination::LogToAllLogfiles(data_->severity_, logmsgtime_.timestamp(),
                                      data_->message_text_,
@@ -1933,7 +1876,7 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
       fatal_time = logmsgtime_.timestamp();
     }
 
-    if (!FLAGS_logtostderr) {
+    if (!FLAGS_logtostderr && !FLAGS_logtostdout) {
       for (int i = 0; i < NUM_SEVERITIES; ++i) {
         if (LogDestination::log_destinations_[i]) {
           LogDestination::log_destinations_[i]->logger_->Write(true, 0, "", 0);
@@ -1977,7 +1920,8 @@ void LogMessage::RecordCrashReason(
 #endif
 }
 
-GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = reinterpret_cast<logging_fail_func_t>(&abort);
+GLOG_EXPORT logging_fail_func_t g_logging_fail_func =
+    reinterpret_cast<logging_fail_func_t>(&abort);
 
 void InstallFailureFunction(logging_fail_func_t fail_func) {
   g_logging_fail_func = fail_func;
@@ -2727,6 +2671,114 @@ void LogMessageTime::CalcGmtOffset() {
   const long hour_secs = 3600;
   // If the Daylight Saving Time(isDst) is active subtract an hour from the current timestamp.
   gmtoffset_ = static_cast<long int>(timestamp_ - gmt_sec + (isDst ? hour_secs : 0) ) ;
+}
+
+
+vector<std::string> split(const std::string& str, const std::string& delimeter)
+{
+    vector<string> result;
+
+
+    if (str.empty())
+        return result;
+
+    size_t from = 0;
+    size_t to = string::npos;
+
+    for (char i : delimeter)
+    {
+        auto idx = str.find(i, from);
+        if (idx != string::npos)
+        {
+            to = idx;
+            break;
+        }
+    }
+
+    while (to != string::npos)
+    {
+        auto part = str.substr(from, to - from);
+
+        from = to + 1;
+
+        to = string::npos;
+        for (char i : delimeter)
+        {
+            auto idx = str.find(i, from);
+            if (idx != string::npos)
+            {
+                to = idx;
+                break;
+            }
+        }
+
+        result.emplace_back(part);
+    };
+
+    auto part = str.substr(from);
+    result.push_back(part);
+
+    return result;
+}
+
+void LogFileObject::GetSuitableFileName(const char* originName, char* outputFileName)
+{
+    std::string dir_delim_("/");
+#ifdef OS_WINDOWS
+    dir_delim_ = "\\";
+#endif
+    std::map< time_t, string> fileMap;
+
+    std::string tmpPath(originName);
+    struct stat file_stat;
+    int error = stat(originName, &file_stat);
+    if (error != 0) {
+        strncpy(outputFileName, originName, strlen(originName));
+        return;
+    }
+
+    fileMap.insert({ file_stat.st_mtime,tmpPath });
+
+    if ((file_stat.st_size >> 20) > MaxLogSize())
+    {
+        vector<string> pathList = split(tmpPath, std::string(dir_delim_));
+        auto fileNameWithExt = pathList.at(pathList.size() - 1);
+        std::string log_directory;
+        std::for_each(pathList.begin(), pathList.end() - 1, [&](const std::string& piece) { log_directory += (piece + dir_delim_); });
+
+        if (FLAGS_rolling_file_number <= 0 || FLAGS_rolling_file_number > 10) FLAGS_rolling_file_number = 10;
+        for (int i = 0; i < FLAGS_rolling_file_number; i++)
+        {
+            string tmpFileName = log_directory + fileNameWithExt + std::to_string(i);
+            struct stat file_stat;
+            int error = stat(tmpFileName.c_str(), &file_stat);
+            if (error == 0) {
+                if ((file_stat.st_size >> 20) < MaxLogSize()) {
+                    strncpy(outputFileName, tmpFileName.c_str(), tmpFileName.size());
+                    return;
+                }
+                fileMap.insert({ file_stat.st_mtime,tmpFileName });
+                // A day is 86400 seconds, so 7 days is 86400 * 7 = 604800 seconds.
+                continue;
+            }
+            else
+            {
+                strncpy(outputFileName, tmpFileName.c_str(), tmpFileName.size());
+                return;
+            }
+        }
+
+        // all full, remove the oldest file
+        auto name = std::min_element(fileMap.begin(), fileMap.end(), [](const auto& l, const auto& r) { return l.first < r.first; });
+        int ret = remove(name->second.c_str());
+        strncpy(outputFileName, name->second.c_str(), name->second.size());
+
+    }
+    else
+    {
+        strncpy(outputFileName, originName, strlen(originName));
+        return;
+    }
 }
 
 _END_GOOGLE_NAMESPACE_
