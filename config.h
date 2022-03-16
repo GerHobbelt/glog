@@ -50,7 +50,7 @@
 #define HAVE_MEMORY_H
 
 /* define to disable multithreading support. */
-/* #undef NO_THREADS */
+#undef NO_THREADS
 
 /* define if the compiler implements namespaces */
 #define HAVE_NAMESPACES

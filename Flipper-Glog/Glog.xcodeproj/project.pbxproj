@@ -373,7 +373,6 @@
 				OTHER_CFLAGS = "";
 				"OTHER_CFLAGS[arch=*]" = (
 					"-Wno-shorten-64-to-32",
-					"-DNO_THREADS",
 					"-fdeclspec",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = FB.Flipper.Glog;
@@ -404,7 +403,6 @@
 				OTHER_CFLAGS = "";
 				"OTHER_CFLAGS[arch=*]" = (
 					"-Wno-shorten-64-to-32",
-					"-DNO_THREADS",
 					"-fdeclspec",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = FB.Flipper.Glog;
