@@ -1,0 +1,740 @@
+BCSymbolMap Version: 2.0
+Apple clang version 13.1.6 (clang-1316.0.21.2.3)
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk
+iPhoneOS15.4.sdk
+/Users/lblasa/Library/Developer/Xcode/DerivedData/Glog-arvtlwqffifoulelsykltkyuhbab/Build/Intermediates.noindex/ArchiveIntermediates/Glog/IntermediateBuildFilesPath/Glog.build/Release-iphoneos/Glog.build/DerivedSources/glog_vers.c
+/Users/lblasa/Desktop/glog/Flipper-Glog
+__ZN6googleL14DumpStackTraceEiPFvPKcPvES2_
+__ZN6googleL18DebugWriteToStringEPKcPv
+__ZN6googleL21DumpStackTraceAndExitEv
+__ZN6googleL18DebugWriteToStderrEPKcPv
+___clang_call_terminate
+__ZNSt3__116__pad_and_outputIcNS_11char_traitsIcEEEENS_19ostreambuf_iteratorIT_T0_EES6_PKS4_S8_S8_RNS_8ios_baseES4_
+__GLOBAL__sub_I_utilities.cc
+__ZN6googleL31g_program_invocation_short_nameE
+__ZN6google24glog_internal_namespace_L17g_main_thread_pidE
+__ZZN6google24glog_internal_namespace_6GetTIDEvE12lacks_gettid
+__ZN6google24glog_internal_namespace_L14g_my_user_nameE
+__ZN6google24glog_internal_namespace_L8g_reasonE
+../src/utilities.cc
+_GLOBAL__sub_I_utilities.cc
+__cxx_global_var_init.5
+GoogleInitializer
+../src/base/googleinit.h
+google_init_module_utilities
+src/utilities.cc
+/Users/lblasa/Desktop/glog
+MyUserNameInitializer
+operator=
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/string
+empty
+size
+__is_long
+__cxx_global_var_init.4
+basic_string
+__zero
+__cxx_global_var_init.3
+__cxx_global_var_init
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/string.h
+__libcpp_memchr
+__pad_and_output<char, std::__1::char_traits<char> >
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/locale
+width
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/ios
+sputn
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/streambuf
+~basic_string
+deallocate
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__memory/allocator_traits.h
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__memory/allocator.h
+__libcpp_deallocate
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/new
+__do_deallocate_handle_size<>
+__libcpp_operator_delete<void *>
+__get_long_pointer
+data
+__get_pointer
+__init
+assign
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__string
+__set_short_size
+__set_long_size
+__set_long_cap
+__set_long_pointer
+allocate
+__libcpp_allocate
+__libcpp_operator_new<unsigned long>
+__recommend
+__align_it<16UL>
+__put_character_sequence<char, std::__1::char_traits<char> >
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/ostream
+setstate
+failed
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__iterator/ostreambuf_iterator.h
+fill
+widen
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__locale
+use_facet<std::__1::ctype<char> >
+eq_int_type
+flags
+ostreambuf_iterator
+rdbuf
+operator bool
+DebugWriteToStderr
+llvm.loop.mustprogress
+GetStackTrace
+../src/stacktrace_generic-inl.h
+ShutdownGoogleLoggingUtilities
+operator<<<std::__1::char_traits<char> >
+IsGoogleLoggingInitialized
+DumpStackTraceAndExit
+InitGoogleLoggingUtilities
+__libcpp_strrchr
+SetCrashReason
+sync_val_compare_and_swap<const google::glog_internal_namespace_::CrashReason *>
+../src/utilities.h
+DebugWriteToString
+DumpStackTrace
+DumpPC
+DumpPCAndSymbol
+DumpStackTraceToString
+MyUserName
+const_basename
+GetTID
+PidHasChanged
+GetMainThreadPid
+WallTime_Now
+CycleClock_Now
+UsecToCycles
+ProgramInvocationShortName
+__ZN6googleL11MaybeAppendEPNS_5StateEPKc
+__ZN6googleL13ParseEncodingEPNS_5StateE
+__ZN6googleL9ParseNameEPNS_5StateE
+__ZN6googleL21ParseBareFunctionTypeEPNS_5StateE
+__ZN6googleL17ParseTemplateArgsEPNS_5StateE
+__ZN6googleL17ParseUnscopedNameEPNS_5StateE
+__ZN6googleL17ParseCVQualifiersEPNS_5StateE
+__ZN6googleL11ParsePrefixEPNS_5StateE
+__ZN6googleL18ParseTemplateParamEPNS_5StateE
+__ZN6googleL17ParseSubstitutionEPNS_5StateE
+__ZN6googleL11ParseNumberEPNS_5StateEPi
+__ZN6googleL18ParseDiscriminatorEPNS_5StateE
+__ZN6googleL16ParseTemplateArgEPNS_5StateE
+__ZN6googleL9ParseTypeEPNS_5StateE
+__ZN6googleL16ParseExprPrimaryEPNS_5StateE
+__ZN6googleL15ParseExpressionEPNS_5StateE
+__ZN6googleL15ParseSourceNameEPNS_5StateE
+__ZN6googleL21MaybeAppendWithLengthEPNS_5StateEPKci
+__ZN6googleL17ParseOperatorNameEPNS_5StateE
+__ZN6googleL20ParseUnqualifiedNameEPNS_5StateE
+__ZN6googleL12ParseAbiTagsEPNS_5StateE
+__ZN6googleL15ParseCallOffsetEPNS_5StateE
+__ZN6googleL17kSubstitutionListE
+__ZZN6googleL30IdentifierIsAnonymousNamespaceEPNS_5StateEiE11anon_prefix
+__ZN6googleL16kBuiltinTypeListE
+__ZN6googleL13kOperatorListE
+../src/demangle.cc
+ParseCallOffset
+src/demangle.cc
+ParseOneCharToken
+ParseVOffset
+ParseNVOffset
+ParseAbiTags
+RestoreAppend
+OneOrMore
+ParseAbiTag
+DisableAppend
+ParseUnqualifiedName
+ParseLocalSourceName
+ParseCtorDtorName
+ParseCharClass
+ParseOperatorName
+IsLower
+IsAlpha
+LeaveNestedName
+EnterNestedName
+ParseTwoCharToken
+AtLeastNumCharsRemaining
+MaybeAppendWithLength
+Append
+ParseSourceName
+ParseIdentifier
+IdentifierIsAnonymousNamespace
+StrPrefix
+ParseExpression
+ParseExprPrimary
+ParseMangledName
+ParseFloatNumber
+IsDigit
+ParseType
+ParseTemplateTemplateParam
+ParsePointerToMemberType
+ParseArrayType
+ParseClassEnumType
+ParseFunctionType
+ParseBuiltinType
+ParseTemplateArg
+ZeroOrMore
+ParseDiscriminator
+ParseNumber
+ParseSubstitution
+ParseSeqId
+ParseTemplateParam
+ParsePrefix
+MaybeCancelLastSeparator
+MaybeIncreaseNestLevel
+MaybeAppendSeparator
+ParseCVQualifiers
+ParseUnscopedName
+ParseTemplateArgs
+ParseBareFunctionType
+ParseName
+ParseUnscopedTemplateName
+ParseLocalName
+ParseNestedName
+ParseEncoding
+ParseSpecialName
+MaybeAppend
+StrLen
+Demangle
+ParseTopLevelMangledName
+IsFunctionCloneSuffix
+InitState
+__ZN6googleL8DoRawLogEPPcPmPKcz
+__ZN6googleL12crash_reasonE
+__ZN6googleL7crashedE
+__ZN6googleL9crash_bufE
+../src/raw_logging.cc
+DoRawLog
+src/raw_logging.cc
+RawLog__
+sync_val_compare_and_swap<bool>
+VADoRawLog
+__ZN6googleL20SymbolizeAndDemangleEPvPcm
+__ZN6googleL15DemangleInplaceEPci
+__ZN6googleL10AssertFailEv
+../src/symbolize.cc
+AssertFail
+src/symbolize.cc
+DemangleInplace
+SymbolizeAndDemangle
+Symbolize
+InstallSymbolizeOpenObjectFileCallback
+InstallSymbolizeCallback
+__ZL11BoolFromEnvPKcb
+__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1IDnEEPKc
+__ZN24glog_internal_namespace_5MutexD1Ev
+__ZL11GetHostNamePNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEE
+__ZN6google12_GLOBAL__N_113LogFileObjectD1Ev
+__ZN24glog_internal_namespace_9MutexLockD1Ev
+__ZN6google10LogMessage14LogMessageDataD1Ev
+__ZN6google10LogMessage9LogStreamC1EPcix
+__ZN6google14LogDestination12WaitForSinksEPNS_10LogMessage14LogMessageDataE
+__ZN6googleL20ColoredWriteToStderrEiPKcm
+__ZN6google14LogDestination15MaybeLogToEmailEiPKcm
+__ZN24glog_internal_namespace_5Mutex6UnlockEv
+__ZNSt3__16vectorINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEENS4_IS6_EEE9push_backEOS6_
+__ZN6google14LogDestination13FlushLogFilesEi
+__ZN6google14LogDestination17SetLogDestinationEiPKc
+__ZN6google14LogDestination13SetLogSymlinkEiPKc
+__ZNSt3__119basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev
+__ZN6google14LogDestination10AddLogSinkEPNS_7LogSinkE
+__ZN6google14LogDestination23SetLogFilenameExtensionEPKc
+__ZN6googleL17SendEmailInternalEPKcS1_S1_b
+__ZNSt3__16vectorINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEENS4_IS6_EEE9push_backERKS6_
+__ZN6googleL18GetTempDirectoriesEPNSt3__16vectorINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEENS5_IS7_EEEE
+__ZNSt3__119basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEC1Ev
+__ZN24glog_internal_namespace_9MutexLockC2EPNS_5MutexE
+__ZN6google12_GLOBAL__N_113LogFileObjectD0Ev
+__ZN6google12_GLOBAL__N_113LogFileObject5WriteEblPKcm
+__ZN6google12_GLOBAL__N_113LogFileObject5FlushEv
+__ZN6google12_GLOBAL__N_113LogFileObject7LogSizeEv
+__ZN6google12_GLOBAL__N_113LogFileObject13CreateLogfileERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE
+__ZN6google12_GLOBAL__N_113LogFileObject13FlushUnlockedEv
+__ZNKSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE20__throw_length_errorEv
+__ZNSt3__1L20__throw_length_errorEPKc
+__ZNSt12length_errorC1EPKc
+__ZNSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev
+__ZNSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev
+__ZThn16_NSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev
+__ZThn16_NSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev
+__ZTv0_n24_NSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev
+__ZTv0_n24_NSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev
+__ZNSt3__115basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev
+__ZNSt3__115basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev
+__ZNSt3__115basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEE7seekposENS_4fposI11__mbstate_tEEj
+__ZNSt3__113__vector_baseINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEENS4_IS6_EEE5clearEv
+__ZNKSt3__113__vector_baseINS_12basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEENS4_IS6_EEE20__throw_length_errorEv
+__ZN6google10LogMessage9LogStreamD1Ev
+__ZTv0_n24_N6google10LogMessage9LogStreamD1Ev
+__ZN6google10LogMessage9LogStreamD0Ev
+__ZTv0_n24_N6google10LogMessage9LogStreamD0Ev
+__ZN6google12base_logging12LogStreamBufD1Ev
+__ZN6google12base_logging12LogStreamBufD0Ev
+__ZN6google12base_logging12LogStreamBuf8overflowEi
+__ZN24glog_internal_namespace_15ReaderMutexLockD1Ev
+__ZN24glog_internal_namespace_15ReaderMutexLockC2EPNS_5MutexE
+__ZTv0_n24_NSt3__119basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev
+__ZNSt3__119basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev
+__ZTv0_n24_NSt3__119basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev
+__ZNKSt3__113__vector_baseIPN6google7LogSinkENS_9allocatorIS3_EEE20__throw_length_errorEv
+__ZN6googleL11ShellEscapeERKNSt3__112basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEE
+__GLOBAL__sub_I_logging.cc
+__ZN6google10LogMessage9SendToLogEv.cold.1
+__ZN6googleL20ColoredWriteToStderrEiPKcm.cold.1
+__ZN6googleL20ColoredWriteToStderrEiPKcm.cold.2
+__ZN6google14LogDestination17SetLogDestinationEiPKc.cold.1
+__ZN6google16SetStderrLoggingEi.cold.1
+__ZN6google15SetEmailLoggingEiPKc.cold.1
+__ZN6googleL9log_mutexE
+__ZN6google12_GLOBAL__N_125g_application_fingerprintE
+__ZN6googleL14fatal_msg_lockE
+__ZN6googleL24fatal_msg_data_exclusiveE
+__ZN6googleL21fatal_msg_data_sharedE
+__ZN6googleL14exit_on_dfatalE
+__ZN6googleL19fatal_msg_exclusiveE
+__ZN6googleL13fatal_messageE
+__ZN6googleL10fatal_timeE
+__ZZN6google10LogMessage9SendToLogEvE32already_warned_before_initgoogle
+__ZZN6google10LogMessage18SendToSyslogAndLogEvE22openlog_already_called
+__ZTSN6google10LogMessage9LogStreamE
+__ZTIN6google10LogMessage9LogStreamE
+__ZN6googleL24logging_directories_listE
+__ZTVN6google12_GLOBAL__N_113LogFileObjectE
+__ZTSN6google12_GLOBAL__N_113LogFileObjectE
+__ZTIN6google12_GLOBAL__N_113LogFileObjectE
+__ZN6googleL12stop_writingE
+__ZZN6google12_GLOBAL__N_113LogFileObject13CreateLogfileERKNSt3__112basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEEE6w_lock
+__ZTSNSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE
+__ZTINSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE
+__ZTSNSt3__115basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE
+__ZTINSt3__115basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEEE
+__ZN6google12_GLOBAL__N_118possible_dir_delimE
+__ZTSN6google12base_logging12LogStreamBufE
+__ZTIN6google12base_logging12LogStreamBufE
+__ZTSNSt3__119basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE
+__ZTINSt3__119basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE
+__ZZN6googleL17SendEmailInternalEPKcS1_S1_bE8vlocal__
+__ZZN6googleL17SendEmailInternalEPKcS1_S1_bE8vlocal___0
+__ZN6googleL25kDontNeedShellEscapeCharsE
+__ZN6google12_GLOBAL__N_111log_cleanerE.0
+__ZN6google12_GLOBAL__N_111log_cleanerE.1
+__ZN6google12_GLOBAL__N_111log_cleanerE.2
+../src/logging.cc
+_ZN6google15SetEmailLoggingEiPKc.cold.1
+src/logging.cc
+_ZN6google16SetStderrLoggingEi.cold.1
+_ZN6google14LogDestination17SetLogDestinationEiPKc.cold.1
+_ZN6googleL20ColoredWriteToStderrEiPKcm.cold.2
+_ZN6googleL20ColoredWriteToStderrEiPKcm.cold.1
+_ZN6google10LogMessage9SendToLogEv.cold.1
+_GLOBAL__sub_I_logging.cc
+__cxx_global_var_init.59
+LogMessageData
+__cxx_global_var_init.58
+__cxx_global_var_init.57
+CrashReason
+__cxx_global_var_init.56
+Mutex
+../src/base/mutex.h
+SetIsSafe
+__cxx_global_var_init.55
+__cxx_global_var_init.53
+TerminalSupportsColor
+__cxx_global_var_init.52
+__cxx_global_var_init.51
+__cxx_global_var_init.50
+__cxx_global_var_init.49
+LogCleaner
+__cxx_global_var_init.44
+__cxx_global_var_init.42
+__cxx_global_var_init.40
+__cxx_global_var_init.38
+__cxx_global_var_init.36
+__cxx_global_var_init.34
+__cxx_global_var_init.32
+DefaultLogDir
+__cxx_global_var_init.30
+__cxx_global_var_init.28
+__cxx_global_var_init.26
+__cxx_global_var_init.24
+__cxx_global_var_init.22
+__cxx_global_var_init.20
+__cxx_global_var_init.18
+__cxx_global_var_init.16
+__cxx_global_var_init.14
+__cxx_global_var_init.11
+__cxx_global_var_init.9
+__cxx_global_var_init.6
+str
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/sstream
+pbump
+setp
+__get_short_size
+__get_short_pointer
+__get_long_size
+resize
+capacity
+__get_long_cap
+setg
+~__split_buffer
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__split_buffer
+clear
+__destruct_at_end
+destroy<std::__1::string, void>
+destroy
+__split_buffer
+__compressed_pair<nullptr_t, std::__1::allocator<std::__1::string> &>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__memory/compressed_pair.h
+__compressed_pair_elem<std::__1::allocator<std::__1::string> &, void>
+__compressed_pair_elem<nullptr_t, void>
+~__vector_base
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/vector
+ShellEscape
+operator[]
+append
+find_first_of
+find_first_not_of
+__str_find_first_not_of<char, unsigned long, std::__1::char_traits<char>, 18446744073709551615UL>
+find
+to_int_type
+__throw_length_error
+_ZTv0_n24_NSt3__119basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/iosfwd
+~basic_ostringstream
+~basic_stringbuf
+_ZTv0_n24_NSt3__119basic_ostringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev
+MakeCheckOpString<int, int>
+glog/logging.h
+~CheckOpMessageBuilder
+MakeCheckOpValueString<int>
+ForVar2
+ForVar1
+CheckOpMessageBuilder
+ReaderMutexLock
+ReaderLock
+~ReaderMutexLock
+ReaderUnlock
+overflow
+~LogStreamBuf
+_ZTv0_n24_N6google10LogMessage9LogStreamD0Ev
+~LogStream
+_ZTv0_n24_N6google10LogMessage9LogStreamD1Ev
+operator+<char, std::__1::char_traits<char>, std::__1::allocator<char> >
+copy
+__vallocate
+__end_cap
+first
+__get
+__vdeallocate
+assign<std::__1::string *>
+__construct_at_end<std::__1::string *>
+~_ConstructTransaction
+__construct_range_forward<std::__1::allocator<std::__1::string>, std::__1::string *, std::__1::string *>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/memory
+construct<std::__1::string, std::__1::string &, void>
+construct<std::__1::string, std::__1::string &>
+_ConstructTransaction
+copy<std::__1::string *, std::__1::string *>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__algorithm/copy.h
+__copy<std::__1::string *, std::__1::string *>
+__copy_constexpr<std::__1::string *, std::__1::string *>
+distance<std::__1::string *>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__iterator/distance.h
+__distance<std::__1::string *>
+basic_string<char *, void>
+__init<char *>
+distance<char *>
+__distance<char *>
+egptr
+eback
+pbase
+pptr
+sputc
+to_char_type
+max<char *>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__algorithm/max.h
+max<char *, std::__1::__less<char *, char *> >
+operator()
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__algorithm/comp.h
+__pbump
+epptr
+gptr
+pbackfail
+eq
+underflow
+seekpos
+operator long long
+seekoff
+_ZTv0_n24_NSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev
+~basic_stringstream
+_ZTv0_n24_NSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev
+_ZThn16_NSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED0Ev
+_ZThn16_NSt3__118basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev
+length_error
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/stdexcept
+FlushUnlocked
+CreateLogfile
+c_str
+__move_assign
+operator+=
+LogSize
+MutexLock
+Flush
+Write
+Run
+~vector
+GetOverdueLogNames
+IsLogFromCurrentProject
+IsLogLastModifiedOver
+operator!=<char, std::__1::char_traits<char>, std::__1::allocator<char> >
+operator==<std::__1::allocator<char> >
+compare
+substr
+find<const char *, char>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__algorithm/find.h
+__str_find<char, unsigned long, std::__1::char_traits<char>, 18446744073709551615UL>
+__search_substring<char, std::__1::char_traits<char> >
+vector
+__vector_base
+__alloc
+second
+UpdateCleanUpTime
+enabled
+length
+operator<<<char, std::__1::char_traits<char>, std::__1::allocator<char> >
+PrettyDuration
+operator<<<char, std::__1::char_traits<char> >
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/iomanip
+basic_stringstream
+basic_stringbuf
+basic_iostream
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/istream
+basic_istream
+init
+basic_ios
+operator++
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__iterator/wrap_iter.h
+operator!=<const std::__1::string *>
+operator==<const std::__1::string *>
+end
+begin
+MaxLogSize
+~LogFileObject
+Lock
+CalcGmtOffset
+LogMessageTime
+DisableLogCleaner
+Disable
+EnableLogCleaner
+Enable
+ShutdownGoogleLogging
+InitGoogleLogging
+MakeCheckOpValueString<nullptr_t>
+MakeCheckOpValueString<unsigned char>
+MakeCheckOpValueString<signed char>
+MakeCheckOpValueString<char>
+NewString
+~LogMessageFatal
+Fail
+LogMessageFatal
+LogMessage
+posix_strerror_r
+CheckstrcasecmpfalseImpl
+CheckstrcasecmptrueImpl
+CheckstrcmpfalseImpl
+basic_ostringstream
+basic_ostream
+CheckstrcmptrueImpl
+TruncateStdoutStderr
+TruncateLogFile
+~ErrnoLogMessage
+stream
+ErrnoLogMessage
+set_ctr
+~LogMessage
+GetExistingTempDirectories
+operator!=<std::__1::string *>
+operator==<std::__1::string *>
+erase
+move<std::__1::string *, std::__1::string *>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__algorithm/move.h
+__move<std::__1::string *, std::__1::string *>
+__move_constexpr<std::__1::string *, std::__1::string *>
+operator-<const std::__1::string *, const std::__1::string *>
+cbegin
+__make_iter
+TestOnly_ClearLoggingDirectoriesList
+GetTempDirectories
+push_back
+__push_back_slow_path<const std::__1::string &>
+__swap_out_circular_buffer
+swap<std::__1::string *>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__utility/swap.h
+__construct_backward_with_exception_guarantees<std::__1::allocator<std::__1::string>, std::__1::string *>
+construct<std::__1::string, std::__1::string, void>
+construct<std::__1::string, std::__1::string>
+construct<std::__1::string, const std::__1::string &, void>
+construct<std::__1::string, const std::__1::string &>
+__construct_one_at_end<const std::__1::string &>
+GetLoggingDirectories
+SendEmailInternal
+SendEmail
+SetExitOnDFatal
+GetExitOnDFatal
+LogToStderr
+SetStderrLogging
+SetEmailLogging
+SetLogFilenameExtension
+SetExtension
+operator==<char, std::__1::char_traits<char>, std::__1::allocator<char> >
+log_destination
+LogDestination
+RemoveLogSink
+move<google::LogSink **, google::LogSink **>
+__move<google::LogSink *, google::LogSink *>
+operator-<google::LogSink *const *, google::LogSink *const *>
+operator!=<google::LogSink *const *>
+operator==<google::LogSink *const *>
+operator-<google::LogSink *const *, google::LogSink **>
+remove<std::__1::__wrap_iter<google::LogSink **>, google::LogSink *>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__algorithm/remove.h
+operator!=<google::LogSink **>
+operator==<google::LogSink **>
+find<std::__1::__wrap_iter<google::LogSink **>, google::LogSink *>
+AddLogSink
+__push_back_slow_path<google::LogSink *const &>
+swap<google::LogSink **>
+__construct_backward_with_exception_guarantees<std::__1::allocator<google::LogSink *>, google::LogSink *, void>
+construct<google::LogSink *, google::LogSink *const &, void>
+construct<google::LogSink *, google::LogSink *const &>
+__construct_one_at_end<google::LogSink *const &>
+ToString
+usec
+sec
+min
+hour
+day
+month
+year
+WaitTillSent
+send
+tm
+~LogSink
+SetLogSymlink
+SetSymlinkBasename
+CheckOpString
+Check_LTImpl
+Check_LTImpl<int, int>
+Check_GEImpl
+Check_GEImpl<int, int>
+SetLogDestination
+SetBasename
+FlushLogFilesUnsafe
+FlushLogFiles
+StrError
+preserved_errno
+operator<<
+ctr
+self
+num_messages
+SetLogger
+GetLogger
+SendToSyslogAndLog
+__push_back_slow_path<std::__1::string>
+__construct_one_at_end<std::__1::string>
+InstallFailureFunction
+Unlock
+RecordCrashReason
+MaybeLogToEmail
+ColoredWriteToStderr
+GetAnsiColorCode
+SeverityToColor
+ReprintFatalMessage
+LogToAllLogfiles
+MaybeLogToLogfile
+WriteToStderr
+WaitForSinks
+pcount
+~LogMessageData
+getLogMessageTime
+WriteToStringAndLog
+SaveOrSendToLog
+SendToSink
+SendToSinkAndLog
+SendToLog
+timestamp
+min<unsigned long>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__algorithm/min.h
+min<unsigned long, std::__1::__less<unsigned long, unsigned long> >
+LogToSinks
+MaybeLogToStderr
+Init
+LogStream
+LogStreamBuf
+SetApplicationFingerprint
+~MutexLock
+DeleteLogDestinations
+~LogDestination
+~Mutex
+LogFileObject
+GetHostName
+hostname
+~Logger
+GetLogSeverityName
+basic_string<nullptr_t>
+BoolFromEnv
+__ZN6google12_GLOBAL__N_120FailureSignalHandlerEiP9__siginfoPv
+__ZN6google12_GLOBAL__N_126InvokeDefaultSignalHandlerEi
+__ZN6google12_GLOBAL__N_118DumpStackFrameInfoEPKcPv
+__ZN6google12_GLOBAL__N_116MinimalFormatter12AppendUint64Eyj
+__ZN6google12_GLOBAL__N_113WriteToStderrEPKcm
+__ZN6google12_GLOBAL__N_115kFailureSignalsE
+__ZN6google12_GLOBAL__N_116g_failure_writerE
+__ZN6google12_GLOBAL__N_127g_entered_thread_id_pointerE
+../src/signalhandler.cc
+src/signalhandler.cc
+AppendUint64
+reverse<char *>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__algorithm/reverse.h
+__reverse<char *>
+iter_swap<char *, char *>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__algorithm/iter_swap.h
+swap<char>
+DumpStackFrameInfo
+AppendString
+AppendHexWithPadding
+num_bytes_written
+fill<char *, char>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__algorithm/fill.h
+__fill<char *, char>
+fill_n<char *, long, char>
+/Applications/Xcode_13.3.1_fb.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/include/c++/v1/__algorithm/fill_n.h
+__fill_n<char *, long, char>
+copy<char *, char *>
+__copy<char, char>
+MinimalFormatter
+InvokeDefaultSignalHandler
+InstallFailureWriter
+InstallFailureSignalHandler
+FailureSignalHandler
+DumpSignalInfo
+DumpTimeInfo
+sync_val_compare_and_swap<_opaque_pthread_t **>
+IsFailureSignalHandlerInstalled
+__GLOBAL__sub_I_vlog_is_on.cc
+__ZN6googleL12vmodule_lockE
+__ZN6googleL12vmodule_listE
+__ZN6googleL16cached_site_listE
+__ZZN6google12SetVLOGLevelEPKciE8vlocal__
+__ZN6googleL14inited_vmoduleE
+../src/vlog_is_on.cc
+_GLOBAL__sub_I_vlog_is_on.cc
+__cxx_global_var_init.1
+InitVLOG3__
+src/vlog_is_on.cc
+__libcpp_strchr
+VLOG2Initializer
+VModuleInfo
+SetVLOGLevel
+SafeFNMatch_
