@@ -76,13 +76,16 @@ _END_GOOGLE_NAMESPACE_
 #define GLOG_EXPORT
 
 static inline string GetTempDir() {
-#ifndef GLOG_OS_WINDOWS
-  return "/tmp";
-#else
-  char tmp[MAX_PATH];
-  GetTempPathA(MAX_PATH, tmp);
-  return tmp;
-#endif
+  vector<string> temp_directories_list;
+  google::GetExistingTempDirectories(&temp_directories_list);
+
+  if (temp_directories_list.empty()) {
+    fprintf(stderr, "No temporary directory found\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Use first directory from list of existing temporary directories.
+  return temp_directories_list.front();
 }
 
 #if defined(GLOG_OS_WINDOWS) && defined(_MSC_VER) && !defined(TEST_SRC_DIR)
@@ -144,7 +147,7 @@ void InitGoogleTest(int*, char**) {}
     if (abs(val1 - val2) > abs_error) {                                        \
       fprintf(stderr, "Check failed: %s within %s of %s\n", #val1, #abs_error, \
               #val2);                                                          \
-      exit(1);                                                                 \
+      exit(EXIT_FAILURE);                                                      \
     }                                                                          \
   } while (0)
 
@@ -152,7 +155,7 @@ void InitGoogleTest(int*, char**) {}
   do {                                                  \
     if (!(cond)) {                                      \
       fprintf(stderr, "Check failed: %s\n", #cond);     \
-      exit(1);                                          \
+      exit(EXIT_FAILURE);                               \
     }                                                   \
   } while (0)
 
@@ -162,7 +165,7 @@ void InitGoogleTest(int*, char**) {}
   do {                                                                  \
     if (!((val1) op (val2))) {                                          \
       fprintf(stderr, "Check failed: %s %s %s\n", #val1, #op, #val2);   \
-      exit(1);                                                          \
+      exit(EXIT_FAILURE);                                               \
     }                                                                   \
   } while (0)
 
@@ -175,7 +178,7 @@ void InitGoogleTest(int*, char**) {}
   do {                                                          \
     if (!isnan(arg)) {                                          \
       fprintf(stderr, "Check failed: isnan(%s)\n", #arg);       \
-      exit(1);                                                  \
+      exit(EXIT_FAILURE);                                       \
     }                                                           \
   } while (0)
 
@@ -183,7 +186,7 @@ void InitGoogleTest(int*, char**) {}
   do {                                                          \
     if (!isinf(arg)) {                                          \
       fprintf(stderr, "Check failed: isinf(%s)\n", #arg);       \
-      exit(1);                                                  \
+      exit(EXIT_FAILURE);                                       \
     }                                                           \
   } while (0)
 
@@ -191,7 +194,7 @@ void InitGoogleTest(int*, char**) {}
   do {                                                                  \
     if (((val1) < (val2) - 0.001 || (val1) > (val2) + 0.001)) {         \
       fprintf(stderr, "Check failed: %s == %s\n", #val1, #val2);        \
-      exit(1);                                                          \
+      exit(EXIT_FAILURE);                                               \
     }                                                                   \
   } while (0)
 
@@ -199,7 +202,7 @@ void InitGoogleTest(int*, char**) {}
   do {                                                                  \
     if (strcmp((val1), (val2)) != 0) {                                  \
       fprintf(stderr, "Check failed: streq(%s, %s)\n", #val1, #val2);   \
-      exit(1);                                                          \
+      exit(EXIT_FAILURE);                                               \
     }                                                                   \
   } while (0)
 
@@ -253,7 +256,7 @@ static inline void CalledAbort() {
     g_logging_fail_func = original_logging_fail_func;                   \
     if (!g_called_abort) {                                              \
       fprintf(stderr, "Function didn't die (%s): %s\n", msg, #fn);      \
-      exit(1);                                                          \
+      exit(EXIT_FAILURE);                                               \
     }                                                                   \
   } while (0)
 #endif
@@ -374,6 +377,9 @@ static inline void CaptureTestOutput(int fd, const string & filename) {
   CHECK((fd == STDOUT_FILENO) || (fd == STDERR_FILENO));
   CHECK(s_captured_streams[fd] == NULL);
   s_captured_streams[fd] = new CapturedStream(fd, filename);
+}
+static inline void CaptureTestStdout() {
+  CaptureTestOutput(STDOUT_FILENO, FLAGS_test_tmpdir + "/captured.out");
 }
 static inline void CaptureTestStderr() {
   CaptureTestOutput(STDERR_FILENO, FLAGS_test_tmpdir + "/captured.err");
@@ -529,10 +535,14 @@ static inline void WriteToFile(const string& body, const string& file) {
   fclose(fp);
 }
 
-static inline bool MungeAndDiffTestStderr(const string& golden_filename) {
-  CapturedStream* cap = s_captured_streams[STDERR_FILENO];
-  CHECK(cap) << ": did you forget CaptureTestStderr()?\n";
-
+static inline bool MungeAndDiffTest(const string& golden_filename,
+                                    CapturedStream* cap) {
+  if (cap == s_captured_streams[STDOUT_FILENO]) {
+    CHECK(cap) << ": did you forget CaptureTestStdout()?\n";
+  } else {
+    CHECK(cap) << ": did you forget CaptureTestStderr()?\n";
+  }
+  
   if (!cap)
 	  return false;
 
@@ -562,6 +572,14 @@ static inline bool MungeAndDiffTestStderr(const string& golden_filename) {
   }
   LOG(INFO) << "Diff was successful";
   return true;
+}
+
+static inline bool MungeAndDiffTestStderr(const string& golden_filename) {
+  return MungeAndDiffTest(golden_filename, s_captured_streams[STDERR_FILENO]);
+}
+
+static inline bool MungeAndDiffTestStdout(const string& golden_filename) {
+  return MungeAndDiffTest(golden_filename, s_captured_streams[STDOUT_FILENO]);
 }
 
 // Save flags used from logging_unittest.cc.

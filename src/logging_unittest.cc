@@ -253,6 +253,22 @@ int main(int argc, const char** argv) {
 
   FLAGS_logtostderr = false;
 
+  FLAGS_logtostdout = true;
+  FLAGS_stderrthreshold = NUM_SEVERITIES;
+  CaptureTestStdout();
+  TestRawLogging();
+  TestLoggingLevels();
+  TestLogString();
+  TestLogSink();
+  TestLogToString();
+  TestLogSinkWaitTillSent();
+  TestCHECK();
+  TestDCHECK();
+  TestSTREQ();
+  EXPECT_TRUE(
+      MungeAndDiffTestStdout(FLAGS_test_srcdir + "/src/logging_unittest.out"));
+  FLAGS_logtostdout = false;
+
   TestBasename();
   TestBasenameAppendWhenNoTimestamp();
   TestTwoProcessesWrite();
@@ -789,7 +805,7 @@ static void TestTwoProcessesWrite() {
   if (pid == 0) {
     LOG(INFO) << "message to new base, child - should only appear on STDERR not on the file";
     ShutdownGoogleLogging(); //for children proc
-    exit(0);
+    exit(EXIT_SUCCESS);
   } else if (pid > 0) {
     wait(NULL);
   }
@@ -1274,6 +1290,9 @@ class TestWaitingLogSink : public LogSink {
 // Check that LogSink::WaitTillSent can be used in the advertised way.
 // We also do golden-stderr comparison.
 static void TestLogSinkWaitTillSent() {
+  // Clear global_messages here to make sure that this test case can be
+  // reentered
+  global_messages.clear();
   { TestWaitingLogSink sink;
     // Sleeps give the sink threads time to do all their work,
     // so that we get a reliable log capture to compare to the golden file.

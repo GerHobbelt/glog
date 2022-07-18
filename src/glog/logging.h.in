@@ -428,6 +428,12 @@ typedef void(*CustomPrefixCallback)(std::ostream& s, const LogMessageInfo& l, vo
 // Set whether appending a timestamp to the log file name
 DECLARE_bool(timestamp_in_logfile_name);
 
+// Set whether log messages go to stdout instead of logfiles
+DECLARE_bool(logtostdout);
+
+// Set color messages logged to stdout (if supported by terminal).
+DECLARE_bool(colorlogtostdout);
+
 // Set whether log messages go to stderr instead of logfiles
 DECLARE_bool(logtostderr);
 
@@ -1819,7 +1825,7 @@ GLOG_EXPORT const std::vector<std::string>& GetLoggingDirectories();
 void TestOnly_ClearLoggingDirectoriesList();
 
 // Returns a set of existing temporary directories, which will be a
-// subset of the directories returned by GetLogginDirectories().
+// subset of the directories returned by GetLoggingDirectories().
 // Thread-safe.
 GLOG_EXPORT void GetExistingTempDirectories(
     std::vector<std::string>* list);
@@ -1954,7 +1960,7 @@ class GLOG_EXPORT NullStreamFatal : public NullStream {
 #pragma warning(push)
 #pragma warning(disable : 4722)
 #endif // _MSC_VER
-  @ac_cv___attribute___noreturn@ ~NullStreamFatal() throw () { _exit(1); }
+  @ac_cv___attribute___noreturn@ ~NullStreamFatal() throw () { _exit(EXIT_FAILURE); }
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif // _MSC_VER
