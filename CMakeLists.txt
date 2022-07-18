@@ -37,7 +37,7 @@ include (GNUInstallDirs)
 option (BUILD_SHARED_LIBS "Build shared libraries" ON)
 option (PRINT_UNSYMBOLIZED_STACK_TRACES
   "Print file offsets in traces instead of symbolizing" OFF)
-option (WITH_CUSTOM_PREFIX "Enable support for user-generated message prefixes" OFF)
+option (WITH_CUSTOM_PREFIX "Enable support for user-generated message prefixes" ON)
 option (WITH_GFLAGS "Use gflags" ON)
 option (WITH_GTEST "Use Google Test" ON)
 option (WITH_PKGCONFIG "Enable pkg-config support" ON)
@@ -651,11 +651,6 @@ if (gflags_FOUND)
   endif (TARGET gflags::gflags)
 
   set (glog_libraries_options_for_static_linking "${glog_libraries_options_for_static_linking} -lgflags")
-
-  target_compile_definitions (glog PRIVATE
-    GFLAGS_DLL_DECLARE_FLAG=GOOGLE_GLOG_DLL_DECL
-    GFLAGS_DLL_DEFINE_FLAG=GOOGLE_GLOG_DLL_DECL
-  )
 endif (gflags_FOUND)
 
 if (ANDROID)
@@ -702,7 +697,7 @@ target_compile_definitions (glogbase PUBLIC
   PRIVATE GOOGLE_GLOG_IS_A_DLL)
 
 generate_export_header (glog
-  EXPORT_MACRO_NAME GOOGLE_GLOG_DLL_DECL
+  EXPORT_MACRO_NAME GLOG_EXPORT
   EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/glog/export.h)
 
 string (STRIP "${glog_libraries_options_for_static_linking}" glog_libraries_options_for_static_linking)

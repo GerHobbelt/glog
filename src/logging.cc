@@ -1990,7 +1990,7 @@ void LogMessage::RecordCrashReason(
 #endif
 }
 
-GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = &logging_fail;
+GLOG_EXPORT logging_fail_func_t g_logging_fail_func = &logging_fail;
 
 void InstallFailureFunction(logging_fail_func_t fail_func) {
   g_logging_fail_func = fail_func;
