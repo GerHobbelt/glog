@@ -30,6 +30,10 @@
 #ifndef BASE_LOG_SEVERITY_H__
 #define BASE_LOG_SEVERITY_H__
 
+#ifndef GLOG_LOGGING_H
+#error "Include glog/logging.h instead of log_severity.h"
+#endif
+
 // The recommended semantics of the log levels are as follows:
 //
 // INFO:
@@ -67,7 +71,7 @@ const int INFO = GLOG_INFO, WARNING = GLOG_WARNING,
 #define DFATAL_LEVEL GLOG_FATAL
 #endif
 
-extern GLOG_EXPORT const char* const LogSeverityNames[NUM_SEVERITIES];
+extern GOOGLE_GLOG_DLL_DECL const char* const LogSeverityNames[NUM_SEVERITIES];
 
 // NDEBUG usage helpers related to (RAW_)DCHECK:
 //

@@ -70,16 +70,14 @@ int CheckNoReturn(bool b) {
 struct A { };
 static std::ostream &operator<<(std::ostream &str, const A&) {return str;}
 
+//-----------------------------------------------------------------------//
+
 #if defined(BUILD_MONOLITHIC)
-#define _STRI(x)	x
-#define STRI(x)	_STRI(x)
-#define CAT2(a,b,c)		a ## b ## c
-#define CAT(a,b,c)		CAT2(a,b,c)
-#define main      CAT(glog_logging_striptest, GOOGLE_STRIP_LOG, _main)
+#define main(cnt, arr)      glog_logging_striptest_main(cnt, arr)
 #endif
 
 int main(int argc, const char** argv) {
-	FLAGS_logtostderr = true;
+  FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
   if (FLAGS_check_mode) {
     printf("%s\n", DEBUG_MODE ? "dbg" : "opt");

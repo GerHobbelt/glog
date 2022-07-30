@@ -68,12 +68,12 @@ using std::vector;
 
 _START_GOOGLE_NAMESPACE_
 
-extern GLOG_EXPORT void (*g_logging_fail_func)();
+extern GOOGLE_GLOG_DLL_DECL void (*g_logging_fail_func)();
 
 _END_GOOGLE_NAMESPACE_
 
-#undef GLOG_EXPORT
-#define GLOG_EXPORT
+#undef GOOGLE_GLOG_DLL_DECL
+#define GOOGLE_GLOG_DLL_DECL
 
 static inline string GetTempDir() {
   vector<string> temp_directories_list;

@@ -84,7 +84,7 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
     ]
 
     linux_or_darwin_copts = wasm_copts + [
-        "-DGLOG_EXPORT=__attribute__((visibility(\\\"default\\\")))",
+        "-DGOOGLE_GLOG_DLL_DECL=__attribute__((visibility(\\\"default\\\")))",
         # For src/utilities.cc.
         "-DHAVE_SYS_SYSCALL_H",
         # For src/logging.cc to create symlinks.
@@ -106,15 +106,15 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
     ]
 
     windows_only_copts = [
-        # Override -DGLOG_EXPORT= from the cc_library's defines.
-        "-DGLOG_EXPORT=__declspec(dllexport)",
+        # Override -DGOOGLE_GLOG_DLL_DECL= from the cc_library's defines.
+        "-DGOOGLE_GLOG_DLL_DECL=__declspec(dllexport)",
         "-DGLOG_NO_ABBREVIATED_SEVERITIES",
         "-DHAVE_SNPRINTF",
         "-I" + src_windows,
     ]
 
     clang_cl_only_copts = [
-        # Allow the override of -DGLOG_EXPORT.
+        # Allow the override of -DGOOGLE_GLOG_DLL_DECL.
         "-Wno-macro-redefined",
     ]
 
@@ -166,16 +166,16 @@ def glog_library(namespace = "google", with_gflags = 1, **kwargs):
         ],
         strip_include_prefix = "src",
         defines = select({
-            # GLOG_EXPORT is normally set by export.h, but that's not
+            # GOOGLE_GLOG_DLL_DECL is normally set by export.h, but that's not
             # generated for Bazel.
             "@bazel_tools//src/conditions:windows": [
-                "GLOG_EXPORT=",
+                "GOOGLE_GLOG_DLL_DECL=",
                 "GLOG_DEPRECATED=__declspec(deprecated)",
                 "GLOG_NO_ABBREVIATED_SEVERITIES",
             ],
             "//conditions:default": [
                 "GLOG_DEPRECATED=__attribute__((deprecated))",
-                "GLOG_EXPORT=__attribute__((visibility(\\\"default\\\")))",
+                "GOOGLE_GLOG_DLL_DECL=__attribute__((visibility(\\\"default\\\")))",
             ],
         }),
         copts =

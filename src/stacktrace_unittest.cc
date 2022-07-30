@@ -60,7 +60,7 @@ struct AddressRange {
 // Expected function [start,end] range.
 AddressRange expected_range[BACKTRACE_STEPS];
 
-#if __GNUC__
+#if defined(__GNUC__)
 // Using GCC extension: address of a label can be taken with '&&label'.
 // Start should be a label somewhere before recursive call, end somewhere
 // after it.
@@ -237,7 +237,7 @@ void ATTRIBUTE_NOINLINE CheckStackTrace(int i) {
 #endif
 
 int main(int argc, const char** argv) {
-	FLAGS_logtostderr = true;
+  FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
 
   CheckStackTrace(0);
@@ -247,8 +247,16 @@ int main(int argc, const char** argv) {
 }
 
 #else
-int main() {
+
+//-----------------------------------------------------------------------//
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_stacktrace_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
   printf("PASS (no stacktrace support)\n");
   return 0;
 }
+
 #endif  // HAVE_STACKTRACE

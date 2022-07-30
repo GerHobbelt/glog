@@ -143,10 +143,12 @@ GLOG_DEFINE_bool(alsologtostderr, BoolFromEnv("GOOGLE_ALSOLOGTOSTDERR", false),
                  "log messages go to stderr in addition to logfiles");
 GLOG_DEFINE_bool(colorlogtostderr, false,
                  "color messages logged to stderr (if supported by terminal)");
+GLOG_DEFINE_bool(logtostdout, BoolFromEnv("GOOGLE_LOGTOstdout", false),
+				 "log messages go to stdout instead of logfiles");
+GLOG_DEFINE_bool(alsologtostdout, BoolFromEnv("GOOGLE_ALSOLOGTOstdout", false),
+				 "log messages go to stdout in addition to logfiles");
 GLOG_DEFINE_bool(colorlogtostdout, false,
-                 "color messages logged to stdout (if supported by terminal)");
-GLOG_DEFINE_bool(logtostdout, BoolFromEnv("GOOGLE_LOGTOSTDOUT", false),
-                 "log messages go to stdout instead of logfiles");
+				 "color messages logged to stdout (if supported by terminal)");
 #ifdef GLOG_OS_LINUX
 GLOG_DEFINE_bool(drop_log_memory, true, "Drop in-memory buffers of log contents. "
                  "Logs can grow very quickly and they are rarely read before they "
@@ -2019,7 +2021,7 @@ void LogMessage::RecordCrashReason(
 #endif
 }
 
-GLOG_EXPORT logging_fail_func_t g_logging_fail_func = &logging_fail;
+GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = &logging_fail;
 
 void InstallFailureFunction(logging_fail_func_t fail_func) {
   g_logging_fail_func = fail_func;

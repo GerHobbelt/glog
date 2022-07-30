@@ -231,7 +231,7 @@ static int gettimeofday(struct timeval *tv, void* /*tz*/) {
 #endif
 
 int64 CycleClock_Now() {
-  // TODO(hamaji): temporary impementation - it might be too slow.
+  // TODO(hamaji): temporary implementation - it might be too slow.
   struct timeval tv;
   gettimeofday(&tv, NULL);
   return static_cast<int64>(tv.tv_sec) * 1000000 + tv.tv_usec;
