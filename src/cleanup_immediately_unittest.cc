@@ -101,4 +101,6 @@ int main(int argc, const char **argv) {
 
   // so that death tests run before we use threads
   CHECK_EQ(RUN_ALL_TESTS(), 0);
+
+  return 0;
 }

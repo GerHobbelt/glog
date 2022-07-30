@@ -36,10 +36,6 @@
 # error You should only be including windows/port.cc in a windows environment!
 #endif
 
-#if defined(BUILD_MONOLITHIC)
-#include "pch.h"
-#endif
-
 #include "config.h"
 #include <cstdarg>    // for va_list, va_start, va_end
 #include "port.h"

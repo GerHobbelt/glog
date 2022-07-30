@@ -72,8 +72,14 @@ static std::ostream &operator<<(std::ostream &str, const A&) {return str;}
 
 //-----------------------------------------------------------------------//
 
+#if !defined(GOOGLE_STRIP_LOG)
+#define GOOGLE_STRIP_LOG        1
+#endif
+
 #if defined(BUILD_MONOLITHIC)
-#define main(cnt, arr)      glog_logging_striptest_main(cnt, arr)
+#define CAT2(a, b, c)       a ## b ## c
+#define CAT(a, b, c)        CAT2(a, b, c)
+#define main(cnt, arr)      CAT(glog_logging_striptest, GOOGLE_STRIP_LOG, _main)(cnt, arr)
 #endif
 
 int main(int argc, const char** argv) {
