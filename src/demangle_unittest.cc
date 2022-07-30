@@ -41,6 +41,8 @@
 #include "googletest.h"
 #include "config.h"
 
+#include "testing.h"
+
 #ifdef HAVE_LIB_GFLAGS
 #include <gflags/gflags.h>
 using namespace GFLAGS_NAMESPACE;
@@ -146,7 +148,12 @@ TEST(Demangle, FromFile) {
 
 #endif
 
-int main(int argc, char **argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_demangle_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
 #ifdef HAVE_LIB_GFLAGS
   ParseCommandLineFlags(&argc, &argv, true);
 #endif

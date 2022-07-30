@@ -370,10 +370,10 @@ bool IsFailureSignalHandlerInstalled() {
   if (sig_action.sa_sigaction == &FailureSignalHandler) {
     return true;
   }
+  return false;
 #elif defined(GLOG_OS_WINDOWS)
   return kFailureSignalHandlerInstalled;
 #endif  // HAVE_SIGACTION
-  return false;
 }
 
 }  // namespace glog_internal_namespace_

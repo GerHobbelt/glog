@@ -36,6 +36,8 @@
 #include <glog/logging.h>
 #include "stacktrace.h"
 
+#include "testing.h"
+
 #ifdef HAVE_EXECINFO_H
 # include <execinfo.h>
 #endif
@@ -58,7 +60,7 @@ struct AddressRange {
 // Expected function [start,end] range.
 AddressRange expected_range[BACKTRACE_STEPS];
 
-#if __GNUC__
+#if defined(__GNUC__)
 // Using GCC extension: address of a label can be taken with '&&label'.
 // Start should be a label somewhere before recursive call, end somewhere
 // after it.
@@ -116,6 +118,15 @@ static void CheckRetAddrIsInFunction(void *ret_addr, const AddressRange &range)
 #pragma clang diagnostic ignored "-Wgnu-label-as-value"
 #endif
 
+#ifndef __GNUC__
+// On non-GNU environment, we use the address of `CheckStackTrace` to
+// guess the address range of this function. This guess is wrong for
+// non-static function on Windows. This is probably because
+// `&CheckStackTrace` returns the address of a trampoline like PLT,
+// not the actual address of `CheckStackTrace`.
+// See https://github.com/google/glog/issues/421 for the detail.
+static
+#endif
 void ATTRIBUTE_NOINLINE CheckStackTrace(int);
 static void ATTRIBUTE_NOINLINE CheckStackTraceLeaf(void) {
   const int STACK_LEN = 10;
@@ -221,7 +232,11 @@ void ATTRIBUTE_NOINLINE CheckStackTrace(int i) {
 
 //-----------------------------------------------------------------------//
 
-int main(int, char ** argv) {
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_stacktrace_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
   FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
 
@@ -232,8 +247,16 @@ int main(int, char ** argv) {
 }
 
 #else
-int main() {
+
+//-----------------------------------------------------------------------//
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_stacktrace_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
   printf("PASS (no stacktrace support)\n");
   return 0;
 }
+
 #endif  // HAVE_STACKTRACE

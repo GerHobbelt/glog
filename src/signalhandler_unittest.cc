@@ -43,6 +43,8 @@
 #include <string>
 #include <glog/logging.h>
 
+#include "testing.h"
+
 #ifdef HAVE_LIB_GFLAGS
 #include <gflags/gflags.h>
 using namespace GFLAGS_NAMESPACE;
@@ -54,10 +56,14 @@ static void* DieInThread(void*) {
   // We assume pthread_t is an integral number or a pointer, rather
   // than a complex struct.  In some environments, pthread_self()
   // returns an uint64 but in some other environments pthread_self()
-  // returns a pointer.
-  fprintf(
-      stderr, "0x%px is dying\n",
+  // returns a pointer.  Hence we use C-style cast here, rather than
+  // reinterpret/static_cast, to support both types of environments.
+#if defined(PTW32_VERSION_MAJOR)
+  fprintf(stderr, "0x%p is dying\n", (const void*)pthread_self().p);
+#else
+  fprintf(stderr, "0x%p is dying\n", 
       static_cast<const void*>(reinterpret_cast<const char*>(pthread_self())));
+#endif
   // Use volatile to prevent from these to be optimized away.
   volatile int a = 0;
   volatile int b = 1 / a;
@@ -71,7 +77,11 @@ static void WriteToStdout(const char* data, size_t size) {
   }
 }
 
-int main(int argc, char **argv) {
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_signalhandler_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
 #if defined(HAVE_STACKTRACE) && defined(HAVE_SYMBOLIZE)
   InitGoogleLogging(argv[0]);
 #ifdef HAVE_LIB_GFLAGS

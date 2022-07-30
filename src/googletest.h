@@ -68,12 +68,12 @@ using std::vector;
 
 _START_GOOGLE_NAMESPACE_
 
-extern GLOG_EXPORT void (*g_logging_fail_func)();
+extern GOOGLE_GLOG_DLL_DECL void (*g_logging_fail_func)();
 
 _END_GOOGLE_NAMESPACE_
 
-#undef GLOG_EXPORT
-#define GLOG_EXPORT
+#undef GOOGLE_GLOG_DLL_DECL
+#define GOOGLE_GLOG_DLL_DECL
 
 static inline string GetTempDir() {
   vector<string> temp_directories_list;
@@ -99,6 +99,19 @@ static const char TEST_SRC_DIR[] = ".";
 
 static const uint32_t PTR_TEST_VALUE = 0x12345678;
 
+#if defined(BUILD_MONOLITHIC) && !defined(BUILD_MONOLITHIC_SINGLE_INSTANCE_NOW)
+
+DECLARE_string(test_tmpdir);
+DECLARE_string(test_srcdir);
+DECLARE_bool(run_benchmark);
+#ifdef NDEBUG
+DECLARE_int32(benchmark_iters);
+#else
+DECLARE_int32(benchmark_iters);
+#endif
+
+#else
+
 DEFINE_string(test_tmpdir, GetTempDir(), "Dir we use for temp files");
 DEFINE_string(test_srcdir, TEST_SRC_DIR,
               "Source-dir root, needed to find glog_unittest_flagfile");
@@ -109,12 +122,16 @@ DEFINE_int32(benchmark_iters, 100000000, "Number of iterations per benchmark");
 DEFINE_int32(benchmark_iters, 100000, "Number of iterations per benchmark");
 #endif
 
+#endif
+
 #ifdef HAVE_LIB_GTEST
+
 # include <gtest/gtest.h>
 // Use our ASSERT_DEATH implementation.
 # undef ASSERT_DEATH
 # undef ASSERT_DEBUG_DEATH
 using testing::InitGoogleTest;
+
 #else
 
 _START_GOOGLE_NAMESPACE_
@@ -254,12 +271,20 @@ static inline void CalledAbort() {
 
 #define BENCHMARK(n) static BenchmarkRegisterer __benchmark_ ## n (#n, &n);
 
+#if defined(BUILD_MONOLITHIC) && !defined(BUILD_MONOLITHIC_SINGLE_INSTANCE_NOW)
+
+extern map<string, void (*)(int)> g_benchlist;  // the benchmarks to run
+
+#else
+
 map<string, void (*)(int)> g_benchlist;  // the benchmarks to run
+
+#endif
 
 class BenchmarkRegisterer {
  public:
   BenchmarkRegisterer(const char* name, void (*function)(int iters)) {
-    EXPECT_TRUE(g_benchlist.insert(std::make_pair(name, function)).second);
+	  GTEST_EXPECT_TRUE_W_MSG(g_benchlist.insert(std::make_pair(name, function)).second, "did you define '" << name << "' in multiple places perhaps?");
   }
 };
 
@@ -331,7 +356,7 @@ class CapturedStream {
   // Remove output redirection
   void StopCapture() {
     // Restore original stream
-    if (uncaptured_fd_ != -1) {
+    if (this && uncaptured_fd_ != -1) {
       fflush(NULL);
       CHECK(dup2(uncaptured_fd_, fd_) != -1);
     }
@@ -513,10 +538,13 @@ static inline void WriteToFile(const string& body, const string& file) {
 static inline bool MungeAndDiffTest(const string& golden_filename,
                                     CapturedStream* cap) {
   if (cap == s_captured_streams[STDOUT_FILENO]) {
-    CHECK(cap) << ": did you forget CaptureTestStdout()?";
+    CHECK(cap) << ": did you forget CaptureTestStdout()?\n";
   } else {
-    CHECK(cap) << ": did you forget CaptureTestStderr()?";
+    CHECK(cap) << ": did you forget CaptureTestStderr()?\n";
   }
+  
+  if (!cap)
+	  return false;
 
   cap->StopCapture();
 
@@ -580,7 +608,7 @@ class Thread {
   virtual ~Thread() {}
 
   void SetJoinable(bool) {}
-#if defined(GLOG_OS_WINDOWS) && !defined(GLOG_OS_CYGWIN)
+#if defined(GLOG_OS_WINDOWS) && !defined(GLOG_OS_CYGWIN) && !defined(HAVE_PTHREAD)
   void Start() {
     handle_ = CreateThread(NULL,
                            0,
@@ -595,10 +623,10 @@ class Thread {
   }
 #elif defined(HAVE_PTHREAD)
   void Start() {
-    pthread_create(&th_, NULL, &Thread::InvokeThread, this);
+    pthread_create(&th_, nullptr, &Thread::InvokeThread, this);
   }
   void Join() {
-    pthread_join(th_, NULL);
+    pthread_join(th_, nullptr);
   }
 #else
 # error No thread implementation.
@@ -613,8 +641,8 @@ class Thread {
     return NULL;
   }
 
-#if defined(GLOG_OS_WINDOWS) && !defined(GLOG_OS_CYGWIN)
-  static DWORD __stdcall InvokeThreadW(LPVOID self) {
+#if defined(GLOG_OS_WINDOWS) && !defined(GLOG_OS_CYGWIN) && !defined(HAVE_PTHREAD)
+  static DWORD WINAPI InvokeThreadW(LPVOID self) {
     InvokeThread(self);
     return 0;
   }
@@ -640,9 +668,26 @@ static inline void SleepForMilliseconds(unsigned t) {
 
 // Add hook for operator new to ensure there are no memory allocation.
 
+#if defined(BUILD_MONOLITHIC) && !defined(BUILD_MONOLITHIC_SINGLE_INSTANCE_NOW)
+
+extern void (*g_new_hook)();
+
+#else
+
 void (*g_new_hook)() = NULL;
 
+#endif
+
 _END_GOOGLE_NAMESPACE_
+
+#if defined(BUILD_MONOLITHIC) && !defined(BUILD_MONOLITHIC_SINGLE_INSTANCE_NOW)
+
+void* operator new(size_t size) GOOGLE_GLOG_THROW_BAD_ALLOC;
+void* operator new[](size_t size) GOOGLE_GLOG_THROW_BAD_ALLOC;
+void operator delete(void* p);
+void operator delete[](void* p);
+
+#else
 
 void* operator new(size_t size) GOOGLE_GLOG_THROW_BAD_ALLOC {
   if (GOOGLE_NAMESPACE::g_new_hook) {
@@ -670,3 +715,5 @@ void operator delete[](void* p) throw() {
 void operator delete[](void* p, size_t) throw() {
   ::operator delete(p);
 }
+
+#endif

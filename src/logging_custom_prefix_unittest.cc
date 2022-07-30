@@ -29,6 +29,9 @@
 //
 // Author: Ray Sidney
 
+#define GTEST_DONT_DEFINE_TEST 1
+#define TEST(test_suite_name, test_name)	GTEST_TEST(CustomPrefix ## test_suite_name, test_name)
+
 #include "utilities.h"
 
 #include <fcntl.h>
@@ -59,6 +62,8 @@
 #include <glog/logging.h>
 #include <glog/raw_logging.h>
 #include "googletest.h"
+
+#include "testing.h"
 
 DECLARE_string(log_backtrace_at);  // logging.cc
 
@@ -116,7 +121,7 @@ static void TestTruncate();
 static void TestCustomLoggerDeletionOnShutdown();
 
 static int x = -1;
-static void BM_Check1(int n) {
+static void BM_Check1P(int n) {
   while (n-- > 0) {
     CHECK_GE(n, x);
     CHECK_GE(n, x);
@@ -128,10 +133,10 @@ static void BM_Check1(int n) {
     CHECK_GE(n, x);
   }
 }
-BENCHMARK(BM_Check1)
+BENCHMARK(BM_Check1P);
 
 static void CheckFailure(int a, int b, const char* file, int line, const char* msg);
-static void BM_Check3(int n) {
+static void BM_Check3P(int n) {
   while (n-- > 0) {
     if (n < x) CheckFailure(n, x, __FILE__, __LINE__, "n < x");
     if (n < x) CheckFailure(n, x, __FILE__, __LINE__, "n < x");
@@ -143,9 +148,9 @@ static void BM_Check3(int n) {
     if (n < x) CheckFailure(n, x, __FILE__, __LINE__, "n < x");
   }
 }
-BENCHMARK(BM_Check3)
+BENCHMARK(BM_Check3P);
 
-static void BM_Check2(int n) {
+static void BM_Check2P(int n) {
   if (n == 17) {
     x = 5;
   }
@@ -160,25 +165,33 @@ static void BM_Check2(int n) {
     CHECK(n >= x);
   }
 }
-BENCHMARK(BM_Check2)
+BENCHMARK(BM_Check2P);
 
 static void CheckFailure(int, int, const char* /* file */, int /* line */,
                          const char* /* msg */) {
 }
 
-static void BM_logspeed(int n) {
+static void BM_logspeed_P(int n) {
   while (n-- > 0) {
     LOG(INFO) << "test message";
   }
 }
-BENCHMARK(BM_logspeed)
+BENCHMARK(BM_logspeed_P);
 
-static void BM_vlog(int n) {
+static void BM_vlog_P(int n) {
   while (n-- > 0) {
     VLOG(1) << "test message";
   }
 }
-BENCHMARK(BM_vlog)
+BENCHMARK(BM_vlog_P);
+
+
+TEST(GoogleLog, Prefix_golden_test) {
+	// TODO: The golden test portion of this test is very flakey.
+	EXPECT_TRUE(
+		MungeAndDiffTestStderr(FLAGS_test_srcdir + "/src/logging_custom_prefix_unittest.err"));
+}
+
 
 // Dynamically generate a prefix using the default format and write it to the stream.
 void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data) {
@@ -194,7 +207,7 @@ void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data) {
     << setw(2) << l.time.day()
     << ' '
     << setw(2) << l.time.hour() << ':'
-    << setw(2) << l.time.min()  << ':'
+    << setw(2) << l.time.minute()  << ':'
     << setw(2) << l.time.sec() << "."
     << setw(6) << l.time.usec()
     << ' '
@@ -204,8 +217,12 @@ void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data) {
     << l.filename << ':' << l.line_number << "]";
 }
 
-int main(int argc, char **argv) {
-  FLAGS_colorlogtostderr = false;
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_logging_custom_prefix_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
+	FLAGS_colorlogtostderr = false;
   FLAGS_timestamp_in_logfile_name = true;
 
   // Make sure stderr is not buffered as stderr seems to be buffered
@@ -219,7 +236,10 @@ int main(int argc, char **argv) {
   LogWithLevels(0, 0, 0, 0);  // simulate "before global c-tors"
   const string early_stderr = GetCapturedTestStderr();
 
+  // In a monolithic build, we may already have executed other google.log tests...
+#if !defined(BUILD_MONOLITHIC)
   EXPECT_FALSE(IsGoogleLoggingInitialized());
+#endif
 
   // Setting a custom prefix generator (it will use the default format so that
   // the golden outputs can be reused):
@@ -259,10 +279,6 @@ int main(int argc, char **argv) {
   TestCHECK();
   TestDCHECK();
   TestSTREQ();
-
-  // TODO: The golden test portion of this test is very flakey.
-  EXPECT_TRUE(
-      MungeAndDiffTestStderr(FLAGS_test_srcdir + "/src/logging_custom_prefix_unittest.err"));
 
   FLAGS_logtostderr = false;
 
@@ -490,7 +506,7 @@ TEST(DeathRawCHECK, logging) {
                "RAW: Check 1 == 2 failed: failure 2");
 }
 
-void TestLogString() {
+static void TestLogString() {
   vector<string> errors;
   vector<string> *no_errors = NULL;
 
@@ -507,7 +523,7 @@ void TestLogString() {
   }
 }
 
-void TestLogToString() {
+static void TestLogToString() {
   string error;
   string* no_error = NULL;
 
@@ -535,7 +551,7 @@ class TestLogSinkImpl : public LogSink {
   }
 };
 
-void TestLogSink() {
+static void TestLogSink() {
   TestLogSinkImpl sink;
   LogSink *no_sink = NULL;
 
@@ -574,7 +590,7 @@ enum {
   CASE_B
 };
 
-void TestCHECK() {
+static void TestCHECK() {
   // Tests using CHECK*() on int values.
   CHECK(1 == 1);
   CHECK_EQ(1, 1);
@@ -600,7 +616,7 @@ void TestCHECK() {
 #endif
 }
 
-void TestDCHECK() {
+static void TestDCHECK() {
 #if defined(NDEBUG)
   DCHECK( 1 == 2 ) << " DCHECK's shouldn't be compiled in normal mode";
 #endif
@@ -620,7 +636,7 @@ void TestDCHECK() {
   delete orig_ptr;
 }
 
-void TestSTREQ() {
+static void TestSTREQ() {
   CHECK_STREQ("this", "this");
   CHECK_STREQ(NULL, NULL);
   CHECK_STRCASEEQ("this", "tHiS");

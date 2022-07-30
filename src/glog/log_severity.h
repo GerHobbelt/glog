@@ -30,6 +30,10 @@
 #ifndef BASE_LOG_SEVERITY_H__
 #define BASE_LOG_SEVERITY_H__
 
+#ifndef GLOG_LOGGING_H
+#error "Include glog/logging.h instead of log_severity.h"
+#endif
+
 // The recommended semantics of the log levels are as follows:
 //
 // INFO:
@@ -54,7 +58,15 @@ const int GLOG_INFO = 0, GLOG_WARNING = 1, GLOG_ERROR = 2, GLOG_FATAL = 3,
   NUM_SEVERITIES = 4;
 #ifndef GLOG_NO_ABBREVIATED_SEVERITIES
 # ifdef ERROR
-#  error ERROR macro is defined. Define GLOG_NO_ABBREVIATED_SEVERITIES before including logging.h. See the document for detail.
+#  if !defined(GLOG_OVERRIDE_FOREIGN_SEVERITIES)
+#   error ERROR macro is defined. Define GLOG_NO_ABBREVIATED_SEVERITIES before including logging.h. See the document for detail.
+#  else
+#   pragma message("Warning: googlelog log_severity.h will override any foreign abbreviated severities now (FATAL, ERROR, WARNING, INFO)")
+#   undef ERROR
+#   undef WARNING
+#   undef INFO
+#   undef FATAL
+#  endif
 # endif
 const int INFO = GLOG_INFO, WARNING = GLOG_WARNING,
   ERROR = GLOG_ERROR, FATAL = GLOG_FATAL;
@@ -62,12 +74,12 @@ const int INFO = GLOG_INFO, WARNING = GLOG_WARNING,
 
 // DFATAL is FATAL in debug mode, ERROR in normal mode
 #ifdef NDEBUG
-#define DFATAL_LEVEL ERROR
+#define DFATAL_LEVEL GLOG_ERROR
 #else
-#define DFATAL_LEVEL FATAL
+#define DFATAL_LEVEL GLOG_FATAL
 #endif
 
-extern GLOG_EXPORT const char* const LogSeverityNames[NUM_SEVERITIES];
+extern GOOGLE_GLOG_DLL_DECL const char* const LogSeverityNames[NUM_SEVERITIES];
 
 // NDEBUG usage helpers related to (RAW_)DCHECK:
 //

@@ -42,6 +42,7 @@ using namespace GFLAGS_NAMESPACE;
 #include <gmock/gmock.h>
 
 #include "mock-log.h"
+
 // Introduce several symbols from gmock.
 using GOOGLE_NAMESPACE::glog_testing::ScopedMockLog;
 using testing::_;
@@ -71,7 +72,14 @@ TEST(CleanImmediatelyWithAbsolutePrefix, logging) {
   google::DisableLogCleaner();
 }
 
-int main(int argc, char **argv) {
+
+//-----------------------------------------------------------------------//
+
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_cleanup_with_absolute_prefix_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char **argv) {
   FLAGS_colorlogtostderr = false;
   FLAGS_timestamp_in_logfile_name = true;
 #ifdef HAVE_LIB_GFLAGS
@@ -98,4 +106,6 @@ int main(int argc, char **argv) {
 
   // so that death tests run before we use threads
   CHECK_EQ(RUN_ALL_TESTS(), 0);
+
+  return 0;
 }

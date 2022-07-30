@@ -34,29 +34,55 @@
 #include <cstdio>
 #include <string>
 #include <iosfwd>
+#include "config.h"
 #include <glog/logging.h>
 #include "base/commandlineflags.h"
-#include "config.h"
+
+#include "testing.h"
 
 DECLARE_bool(logtostderr);
+
+#if defined(BUILD_MONOLITHIC) && (GOOGLE_STRIP_LOG != 0)
+DECLARE_bool(check_mode);
+#else
 GLOG_DEFINE_bool(check_mode, false, "Prints 'opt' or 'dbg'");
+#endif
 
 using std::string;
 using namespace GOOGLE_NAMESPACE;
+
+#if defined(BUILD_MONOLITHIC) && (GOOGLE_STRIP_LOG != 0)
+
+extern int CheckNoReturn(bool b);
+
+#else
 
 int CheckNoReturn(bool b) {
   string s;
   if (b) {
     LOG(FATAL) << "Fatal";
-  } else {
-    return 0;
-  }
+  } 
+  return 0;
 }
 
-struct A { };
-std::ostream &operator<<(std::ostream &str, const A&) {return str;}
+#endif
 
-int main(int, char* argv[]) {
+struct A { };
+static std::ostream &operator<<(std::ostream &str, const A&) {return str;}
+
+//-----------------------------------------------------------------------//
+
+#if !defined(GOOGLE_STRIP_LOG)
+#define GOOGLE_STRIP_LOG        1
+#endif
+
+#if defined(BUILD_MONOLITHIC)
+#define CAT2(a, b, c)       a ## b ## c
+#define CAT(a, b, c)        CAT2(a, b, c)
+#define main(cnt, arr)      CAT(glog_logging_striptest, GOOGLE_STRIP_LOG, _main)(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
   FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
   if (FLAGS_check_mode) {
@@ -70,4 +96,6 @@ int main(int, char* argv[]) {
   bool flag = true;
   (flag ? LOG(INFO) : LOG(ERROR)) << "TESTMESSAGE COND";
   LOG(FATAL) << "TESTMESSAGE FATAL";
+  ShutdownGoogleLogging();
+  return 0;
 }

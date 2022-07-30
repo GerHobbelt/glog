@@ -38,6 +38,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "testing.h"
+
 namespace {
 
 using GOOGLE_NAMESPACE::GLOG_ERROR;
@@ -99,8 +101,12 @@ TEST(ScopedMockLogTest, LogDuringIntercept) {
 
 }  // namespace
 
-int main(int argc, char **argv) {
-  GOOGLE_NAMESPACE::InitGoogleLogging(argv[0]);
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_mock_log_test_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
+  google::InitGoogleLogging(argv[0]);
   testing::InitGoogleTest(&argc, argv);
   testing::InitGoogleMock(&argc, argv);
 

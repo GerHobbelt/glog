@@ -40,6 +40,8 @@
 #include "symbolize.h"
 #include "utilities.h"
 
+#include "testing.h"
+
 #ifdef HAVE_LIB_GFLAGS
 #include <gflags/gflags.h>
 using namespace GFLAGS_NAMESPACE;
@@ -412,14 +414,22 @@ __declspec(noinline) void TestWithReturnAddress() {
   const char *symbol = TrySymbolize(return_address);
 #if !defined(_MSC_VER) || !defined(NDEBUG)
   CHECK(symbol != NULL);
+#if defined(BUILD_MONOLITHIC)
+  CHECK_STREQ(symbol, "glog_symbolize_unittest_main");
+#else
   CHECK_STREQ(symbol, "main");
+#endif
 #endif
   cout << "Test case TestWithReturnAddress passed." << endl;
 }
 # endif  // __ELF__
 #endif  // HAVE_STACKTRACE
 
-int main(int argc, char **argv) {
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_symbolize_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
   FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
   InitGoogleTest(&argc, argv);

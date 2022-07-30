@@ -107,6 +107,27 @@ using std::fdopen;
 // There is no thread annotation support.
 #define EXCLUSIVE_LOCKS_REQUIRED(mu)
 
+// Sets the fill character and stores the previous one. Once the class instance
+// is destroyed, the previous fill character is restored.
+class FillSaver {
+public:
+  explicit FillSaver(std::ostream& out, char fill) : out_(out) {
+      prev_fill_ = out_.fill(fill);
+  }
+
+  ~FillSaver() {
+    out_.fill(prev_fill_);
+  }
+
+private:
+  // Not copyable
+  FillSaver(const FillSaver&);
+  FillSaver& operator=(const FillSaver&);
+
+  std::ostream& out_;
+  char prev_fill_;
+};
+
 static bool BoolFromEnv(const char *varname, bool defval) {
   const char* const valstr = getenv(varname);
   if (!valstr) {
@@ -124,10 +145,12 @@ GLOG_DEFINE_bool(alsologtostderr, BoolFromEnv("GOOGLE_ALSOLOGTOSTDERR", false),
                  "log messages go to stderr in addition to logfiles");
 GLOG_DEFINE_bool(colorlogtostderr, false,
                  "color messages logged to stderr (if supported by terminal)");
+GLOG_DEFINE_bool(logtostdout, BoolFromEnv("GOOGLE_LOGTOstdout", false),
+				 "log messages go to stdout instead of logfiles");
+GLOG_DEFINE_bool(alsologtostdout, BoolFromEnv("GOOGLE_ALSOLOGTOstdout", false),
+				 "log messages go to stdout in addition to logfiles");
 GLOG_DEFINE_bool(colorlogtostdout, false,
-                 "color messages logged to stdout (if supported by terminal)");
-GLOG_DEFINE_bool(logtostdout, BoolFromEnv("GOOGLE_LOGTOSTDOUT", false),
-                 "log messages go to stdout instead of logfiles");
+				 "color messages logged to stdout (if supported by terminal)");
 #ifdef GLOG_OS_LINUX
 GLOG_DEFINE_bool(drop_log_memory, true, "Drop in-memory buffers of log contents. "
                  "Logs can grow very quickly and they are rarely read before they "
@@ -206,12 +229,10 @@ GLOG_DEFINE_string(log_backtrace_at, "",
 GLOG_DEFINE_bool(log_utc_time, false,
     "Use UTC time for logging.");
 
-
 GLOG_DEFINE_int32(rolling_file_number, 10,
-    "total log files kept in the disk,"
-    "named log[0-9],if files are all over capacity,will"
+    "total log files kept on the disk, "
+    "named log[0-9], if files are all over capacity, will "
     "delete the oldest log file");
-
 
 // TODO(hamaji): consider windows
 #define PATH_SEPARATOR '/'
@@ -491,10 +512,7 @@ class LogFileObject : public base::Logger {
   // REQUIRES: lock_ is held
   bool CreateLogfile(const string& time_pid_string);
 
-
   void GetSuitableFileName(const char* originName,char* outputFileName);
-
-
 
 };
 
@@ -1052,20 +1070,44 @@ void LogFileObject::FlushUnlocked(){
   next_flush_time_ = CycleClock_Now() + UsecToCycles(next);
 }
 
+#if defined(OS_WINDOWS)
+
+std::wstring toNativeFilename(const std::string& str) {
+	std::wstring ret;
+	int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), NULL, 0);
+	if (len > 0) {
+		ret.resize(len);
+		MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), &ret[0], len);
+	}
+	return ret;
+}
+
+#endif
+
 bool LogFileObject::CreateLogfile(const string& time_pid_string) {
   string string_filename = base_filename_;
   if (FLAGS_timestamp_in_logfile_name) {
     string_filename += time_pid_string;
   }
+#if defined(OS_WINDOWS)
+  wchar_t filename[256] = {};
+  const wchar_t* fn = toNativeFilename(string_filename).c_str();
+#else
   char filename[256] = {};
-  GetSuitableFileName(string_filename.c_str(), filename);
+  const char* fn = string_filename.c_str();
+#endif  
+  GetSuitableFileName(fn, filename);
   //only write to files, create if non-existant.
   int flags = O_WRONLY | O_CREAT;
   if (FLAGS_timestamp_in_logfile_name) {
     //demand that the file is unique for our timestamp (fail if it exists).
     flags = flags | O_EXCL;
   }
+#if defined(OS_WINDOWS)
+  int fd = _wopen(filename, flags, FLAGS_logfile_mode);
+#else
   int fd = open(filename, flags, FLAGS_logfile_mode);
+#endif
   if (fd == -1) return false;
 #ifdef HAVE_FCNTL
   // Mark the file close-on-exec. We don't really care if this fails
@@ -1113,6 +1155,41 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
   }
 #endif
   // We try to create a symlink called <program_name>.<severity>,
+  // which is easier to use.  (Every time we create a new logfile,
+  // we destroy the old symlink and create a new one, so it always
+  // points to the latest logfile.)  If it fails, we're sad but it's
+  // no error.
+  if (!symlink_basename_.empty()) {
+    // take directory from filename
+    const char* slash = strrchr(filename, PATH_SEPARATOR);
+    const string linkname =
+      symlink_basename_ + '.' + LogSeverityNames[severity_];
+    string linkpath;
+    if ( slash ) linkpath = string(filename, static_cast<size_t>(slash-filename+1));  // get dirname
+    linkpath += linkname;
+    unlink(linkpath.c_str());                    // delete old one if it exists
+
+#if defined(GLOG_OS_WINDOWS)
+    // TODO(hamaji): Create lnk file on Windows?
+#elif defined(HAVE_UNISTD_H)
+    // Make the symlink be relative (in the same dir) so that if the
+    // entire log directory gets relocated the link is still valid.
+    const char *linkdest = slash ? (slash + 1) : filename;
+    if (symlink(linkdest, linkpath.c_str()) != 0) {
+      // silently ignore failures
+    }
+
+    // Make an additional link to the log file in a place specified by
+    // FLAGS_log_link, if indicated
+    if (!FLAGS_log_link.empty()) {
+      linkpath = FLAGS_log_link + "/" + linkname;
+      unlink(linkpath.c_str());                  // delete old one if it exists
+      if (symlink(filename, linkpath.c_str()) != 0) {
+        // silently ignore failures
+      }
+    }
+#endif
+  }
 
   return true;  // Everything worked
 }
@@ -1543,7 +1620,7 @@ LogMessage::LogMessageData::LogMessageData()
 }
 
 LogMessage::LogMessage(const char* file, int line, LogSeverity severity,
-                       int64 ctr, void (LogMessage::*send_method)())
+                       uint64 ctr, void (LogMessage::*send_method)())
     : allocated_(NULL) {
   Init(file, line, severity, send_method);
   data_->stream_.set_ctr(ctr);
@@ -1652,7 +1729,7 @@ void LogMessage::Init(const char* file,
   if (FLAGS_log_prefix && (line != kNoLogPrefix)) {
       std::ios saved_fmt(NULL);
       saved_fmt.copyfmt(stream());
-      stream().fill('0');
+      FillSaver saver(stream(), '0');
     #ifdef GLOG_CUSTOM_PREFIX_SUPPORT
       if (custom_prefix_callback == NULL) {
     #endif
@@ -1664,7 +1741,7 @@ void LogMessage::Init(const char* file,
                    << setw(2) << logmsgtime_.day()
                    << ' '
                    << setw(2) << logmsgtime_.hour() << ':'
-                   << setw(2) << logmsgtime_.min() << ':'
+                   << setw(2) << logmsgtime_.minute() << ':'
                    << setw(2) << logmsgtime_.sec() << "."
                    << setw(6) << logmsgtime_.usec()
                    << ' '
@@ -1705,19 +1782,29 @@ const LogMessageTime& LogMessage::getLogMessageTime() const {
   return logmsgtime_;
 }
 
-LogMessage::~LogMessage() {
-  Flush();
+__declspec(nothrow) void
+LogMessage::__FlushAndFailAtEnd() throw() {
+	try {
+		Flush();
 #ifdef GLOG_THREAD_LOCAL_STORAGE
-  if (data_ == static_cast<void*>(&thread_msg_data)) {
-    data_->~LogMessageData();
-    thread_data_available = true;
-  }
-  else {
-    delete allocated_;
-  }
+		if (data_ == static_cast<void*>(&thread_msg_data)) {
+			data_->~LogMessageData();
+			thread_data_available = true;
+		}
+		else {
+			delete allocated_;
+		}
 #else // !defined(GLOG_THREAD_LOCAL_STORAGE)
-  delete allocated_;
+		delete allocated_;
 #endif // defined(GLOG_THREAD_LOCAL_STORAGE)
+	}
+	catch (...) {
+		fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.\n");
+	}
+}
+
+LogMessage::~LogMessage() {
+	__FlushAndFailAtEnd();
 }
 
 int LogMessage::preserved_errno() const {
@@ -1759,15 +1846,22 @@ void LogMessage::Flush() {
   // the actual logging action per se.
   {
     MutexLock l(&log_mutex);
-    (this->*(data_->send_method_))();
-    ++num_messages_[static_cast<int>(data_->severity_)];
+	try
+	{
+		(this->*(data_->send_method_))();
+	}
+	catch (...)
+	{
+		// nada
+	}
+	++num_messages_[static_cast<int>(data_->severity_)];
   }
   LogDestination::WaitForSinks(data_);
 
   if (append_newline) {
     // Fix the ostrstream back how it was before we screwed with it.
     // It's 99.44% certain that we don't need to worry about doing this.
-    data_->message_text_[data_->num_chars_to_log_-1] = original_final_char;
+    data_->message_text_[--data_->num_chars_to_log_] = original_final_char;
   }
 
   // If errno was already set before we enter the logging call, we'll
@@ -1782,6 +1876,8 @@ void LogMessage::Flush() {
   // Note that this message is now safely logged.  If we're asked to flush
   // again, as a result of destruction, say, we'll do nothing on future calls.
   data_->has_been_flushed_ = true;
+
+  data_->stream_.clear();
 }
 
 // Copy of first FATAL log message so that we can print it out again
@@ -1893,9 +1989,8 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     LogDestination::WaitForSinks(data_);
 
     const char* message = "*** Check failure stack trace: ***\n";
-    if (write(STDERR_FILENO, message, strlen(message)) < 0) {
-      // Ignore errors.
-    }
+	fputs(message, stderr);  	// Ignore errors.
+	fflush(stderr);
 #if defined(__ANDROID__)
     // ANDROID_LOG_FATAL as this message is of FATAL severity.
     __android_log_write(ANDROID_LOG_FATAL,
@@ -1920,15 +2015,38 @@ void LogMessage::RecordCrashReason(
 #endif
 }
 
-GLOG_EXPORT logging_fail_func_t g_logging_fail_func =
-    reinterpret_cast<logging_fail_func_t>(&abort);
+[[noreturn]] void logging_fail() {
+	  fprintf(stderr, "Abort on Fatal Failure (logging_fail)...\n");
+	  fflush(stderr);
+	  if (IsDebuggerPresent())
+		DebugBreak();
+	  static int attempts = 0;
+	  if (!attempts)
+	  {
+		  attempts++;
+		  fprintf(stderr, "Throwing C++ exception (abort)\n");
+		  fflush(stderr);
+		  throw std::exception("aborting");
+	  }
+	  attempts++;
+	  fprintf(stderr, "Triggering SEH exception (abort)\n");
+	  fflush(stderr);
+	  volatile int* pInt = 0x00000000;
+	  *pInt = 20;
+#if 0
+	  abort();
+#endif
+}
+
+GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = &logging_fail;
 
 void InstallFailureFunction(logging_fail_func_t fail_func) {
   g_logging_fail_func = fail_func;
 }
 
-void LogMessage::Fail() {
+[[noreturn]] void LogMessage::Fail() {
   g_logging_fail_func();
+  throw std::exception("LogMessage::Fail::aborting...");
 }
 
 // L >= log_mutex (callers must hold the log_mutex).
@@ -2030,9 +2148,10 @@ ostream& operator<<(ostream &os, const PRIVATE_Counter&) {
 }
 
 ErrnoLogMessage::ErrnoLogMessage(const char* file, int line,
-                                 LogSeverity severity, int64 ctr,
+                                 LogSeverity severity, uint64 ctr,
                                  void (LogMessage::*send_method)())
-    : LogMessage(file, line, severity, ctr, send_method) {}
+    : LogMessage(file, line, severity, ctr, send_method) {
+}
 
 ErrnoLogMessage::~ErrnoLogMessage() {
   // Don't access errno directly because it may have been altered
@@ -2061,33 +2180,14 @@ LogSink::~LogSink() {
 }
 
 void LogSink::send(LogSeverity severity, const char* full_filename,
-                   const char* base_filename, int line,
-                   const LogMessageTime& time, const char* message,
-                   size_t message_len) {
-#if defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable : 4996)
-#endif  // __GNUC__
-  send(severity, full_filename, base_filename, line, &time.tm(), message,
-       message_len);
-#if defined(__GNUC__)
-#pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#pragma warning(pop)
-#endif  // __GNUC__
-}
-
-void LogSink::send(LogSeverity severity, const char* full_filename,
-                   const char* base_filename, int line, const std::tm* t,
-                   const char* message, size_t message_len) {
+		const char* base_filename, int line,
+		const LogMessageTime& logmsgtime, const char* message,
+		size_t message_len) {
   (void)severity;
   (void)full_filename;
   (void)base_filename;
   (void)line;
-  (void)t;
+  (void)logmsgtime;
   (void)message;
   (void)message_len;
 }
@@ -2108,7 +2208,7 @@ string LogSink::ToString(LogSeverity severity, const char* file, int line,
          << setw(2) << logmsgtime.day()
          << ' '
          << setw(2) << logmsgtime.hour() << ':'
-         << setw(2) << logmsgtime.min() << ':'
+         << setw(2) << logmsgtime.minute() << ':'
          << setw(2) << logmsgtime.sec() << '.'
          << setw(6) << logmsgtime.usec()
          << ' '
@@ -2213,53 +2313,12 @@ static string ShellEscape(const string& src) {
 // log_mutex.
 static bool SendEmailInternal(const char*dest, const char *subject,
                               const char*body, bool use_logging) {
-#ifndef __EMSCRIPTEN__
-  if (dest && *dest) {
-    if ( use_logging ) {
-      VLOG(1) << "Trying to send TITLE:" << subject
-              << " BODY:" << body << " to " << dest;
-    } else {
-      fprintf(stderr, "Trying to send TITLE: %s BODY: %s to %s\n",
-              subject, body, dest);
-    }
-
-    string logmailer = FLAGS_logmailer;
-    if (logmailer.empty()) {
-        logmailer = "/bin/mail";
-    }
-    string cmd =
-        logmailer + " -s" +
-        ShellEscape(subject) + " " + ShellEscape(dest);
-    if (use_logging) {
-        VLOG(4) << "Mailing command: " << cmd;
-    }
-
-    FILE* pipe = popen(cmd.c_str(), "w");
-    if (pipe != NULL) {
-      // Add the body if we have one
-      if (body) {
-        fwrite(body, sizeof(char), strlen(body), pipe);
-      }
-      bool ok = pclose(pipe) != -1;
-      if ( !ok ) {
-        if ( use_logging ) {
-          LOG(ERROR) << "Problems sending mail to " << dest << ": "
-                     << StrError(errno);
-        } else {
-          fprintf(stderr, "Problems sending mail to %s: %s\n",
-                  dest, StrError(errno).c_str());
-        }
-      }
-      return ok;
-    } else {
-      if ( use_logging ) {
-        LOG(ERROR) << "Unable to send mail to " << dest;
-      } else {
-        fprintf(stderr, "Unable to send mail to %s\n", dest);
-      }
-    }
+  const char* error = "Sending emails is disabled (#11930).";
+  if ( use_logging ) {
+    LOG(ERROR) << error;
+  } else {
+    fputs(error, stderr);
   }
-#endif
   return false;
 }
 
@@ -2538,9 +2597,21 @@ LogMessageFatal::LogMessageFatal(const char* file, int line,
                                  const CheckOpString& result) :
     LogMessage(file, line, result) {}
 
+__declspec(nothrow) void 
+LogMessageFatal::__FlushAndFailAtEnd() throw() {
+	try
+	{
+		Flush();
+		LogMessage::Fail();
+	}
+	catch (...)
+	{
+		fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.\n");
+	}
+}
+
 LogMessageFatal::~LogMessageFatal() {
-    Flush();
-    LogMessage::Fail();
+	__FlushAndFailAtEnd();
 }
 
 namespace base {
@@ -2673,11 +2744,9 @@ void LogMessageTime::CalcGmtOffset() {
   gmtoffset_ = static_cast<long int>(timestamp_ - gmt_sec + (isDst ? hour_secs : 0) ) ;
 }
 
-
 vector<std::string> split(const std::string& str, const std::string& delimeter)
 {
     vector<string> result;
-
 
     if (str.empty())
         return result;
@@ -2757,7 +2826,7 @@ void LogFileObject::GetSuitableFileName(const char* originName, char* outputFile
                     strncpy(outputFileName, tmpFileName.c_str(), tmpFileName.size());
                     return;
                 }
-                fileMap.insert({ file_stat.st_mtime,tmpFileName });
+                fileMap.insert({ file_stat.st_mtime, tmpFileName });
                 // A day is 86400 seconds, so 7 days is 86400 * 7 = 604800 seconds.
                 continue;
             }
@@ -2772,7 +2841,6 @@ void LogFileObject::GetSuitableFileName(const char* originName, char* outputFile
         auto name = std::min_element(fileMap.begin(), fileMap.end(), [](const auto& l, const auto& r) { return l.first < r.first; });
         int ret = remove(name->second.c_str());
         strncpy(outputFileName, name->second.c_str(), name->second.size());
-
     }
     else
     {

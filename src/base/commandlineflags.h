@@ -63,12 +63,12 @@
 
 #define DECLARE_VARIABLE(type, shorttype, name, tn) \
   namespace fL##shorttype {                         \
-    extern GLOG_EXPORT type FLAGS_##name;           \
+    extern GOOGLE_GLOG_DLL_DECL type FLAGS_##name;           \
   }                                                 \
   using fL##shorttype::FLAGS_##name
 #define DEFINE_VARIABLE(type, shorttype, name, value, meaning, tn) \
   namespace fL##shorttype {                                        \
-    GLOG_EXPORT type FLAGS_##name(value);                          \
+    GOOGLE_GLOG_DLL_DECL type FLAGS_##name(value);                          \
     char FLAGS_no##name;                                           \
   }                                                                \
   using fL##shorttype::FLAGS_##name
@@ -97,14 +97,14 @@
 // std::string, which doesn't play nicely with our FLAG__namespace hackery.
 #define DECLARE_string(name)                    \
   namespace fLS {                               \
-  extern GLOG_EXPORT std::string& FLAGS_##name; \
+  extern GOOGLE_GLOG_DLL_DECL std::string& FLAGS_##name; \
   }                                             \
   using fLS::FLAGS_##name
 #define DEFINE_string(name, value, meaning)                   \
   namespace fLS {                                             \
   std::string FLAGS_##name##_buf(value);                      \
-  GLOG_EXPORT std::string& FLAGS_##name = FLAGS_##name##_buf; \
-  char FLAGS_no##name;                                        \
+  GOOGLE_GLOG_DLL_DECL std::string& FLAGS_##name = FLAGS_##name##_buf; \
+  static char FLAGS_no##name = 0;                             \
   }                                                           \
   using fLS::FLAGS_##name
 

@@ -32,6 +32,8 @@
 #include "googletest.h"
 #include <glog/logging.h>
 
+#include "testing.h"
+
 #ifdef HAVE_LIB_GFLAGS
 #include <gflags/gflags.h>
 using namespace GFLAGS_NAMESPACE;
@@ -50,9 +52,15 @@ TEST(utilities, InitGoogleLoggingDeathTest) {
   ASSERT_DEATH(InitGoogleLogging("foobar"), "");
 }
 
-int main(int argc, char **argv) {
+#if defined(BUILD_MONOLITHIC)
+#define main(cnt, arr)      glog_utilities_unittest_main(cnt, arr)
+#endif
+
+int main(int argc, const char** argv) {
   InitGoogleLogging(argv[0]);
   InitGoogleTest(&argc, argv);
 
   CHECK_EQ(RUN_ALL_TESTS(), 0);
+
+  return 0;
 }

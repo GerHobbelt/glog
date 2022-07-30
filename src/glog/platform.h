@@ -34,7 +34,7 @@
 #ifndef GLOG_PLATFORM_H
 #define GLOG_PLATFORM_H
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+#if defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(__WIN32__)
 #define GLOG_OS_WINDOWS
 #elif defined(__CYGWIN__) || defined(__CYGWIN32__)
 #define GLOG_OS_CYGWIN

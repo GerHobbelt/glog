@@ -54,6 +54,9 @@
 #ifdef HAVE_PWD_H
 # include <pwd.h>
 #endif
+#ifdef HAVE_PTHREAD
+# include <pthread.h>
+#endif
 #ifdef __ANDROID__
 #include <android/log.h>
 #endif
@@ -64,10 +67,10 @@ using std::string;
 
 _START_GOOGLE_NAMESPACE_
 
-static const char* g_program_invocation_short_name = NULL;
+static std::string g_program_invocation_short_name;
 
 bool IsGoogleLoggingInitialized() {
-  return g_program_invocation_short_name != NULL;
+  return !g_program_invocation_short_name.empty();
 }
 
 _END_GOOGLE_NAMESPACE_
@@ -175,7 +178,8 @@ static void DumpStackTraceAndExit() {
 #endif  // HAVE_SIGACTION
   }
 
-  abort();
+  // as we're very probably called from within Fail(), we MUST NOT call the Fail() method for risk of stack overflow and Very Bad Things Happening(tm).
+  logging_fail();
 }
 
 _END_GOOGLE_NAMESPACE_
@@ -187,8 +191,8 @@ _START_GOOGLE_NAMESPACE_
 namespace glog_internal_namespace_ {
 
 const char* ProgramInvocationShortName() {
-  if (g_program_invocation_short_name != NULL) {
-    return g_program_invocation_short_name;
+  if (!g_program_invocation_short_name.empty()) {
+    return g_program_invocation_short_name.c_str();
   } else {
     // TODO(hamaji): Use /proc/self/cmdline and so?
     return "UNKNOWN";
@@ -227,7 +231,7 @@ static int gettimeofday(struct timeval *tv, void* /*tz*/) {
 #endif
 
 int64 CycleClock_Now() {
-  // TODO(hamaji): temporary impementation - it might be too slow.
+  // TODO(hamaji): temporary implementation - it might be too slow.
   struct timeval tv;
   gettimeofday(&tv, NULL);
   return static_cast<int64>(tv.tv_sec) * 1000000 + tv.tv_usec;
@@ -256,7 +260,7 @@ bool PidHasChanged() {
   return true;
 }
 
-pid_t GetTID() {
+int GetTID() {
   // On Linux and MacOSX, we try to use gettid().
 #if defined GLOG_OS_LINUX || defined GLOG_OS_MACOSX
 #ifndef __NR_gettid
@@ -278,7 +282,7 @@ pid_t GetTID() {
     pid_t tid = static_cast<pid_t>(syscall(__NR_gettid));
 #endif
     if (tid != -1) {
-      return tid;
+      return static_cast<int>(tid);
     }
     // Technically, this variable has to be volatile, but there is a small
     // performance penalty in accessing volatile variables and there should
@@ -290,12 +294,15 @@ pid_t GetTID() {
 
   // If gettid() could not be used, we use one of the following.
 #if defined GLOG_OS_LINUX
-  return getpid();  // Linux:  getpid returns thread ID when gettid is absent
-#elif defined GLOG_OS_WINDOWS && !defined GLOG_OS_CYGWIN
-  return static_cast<pid_t>(GetCurrentThreadId());
+  return static_cast<int>(getpid());  // Linux:  getpid returns thread ID when gettid is absent
+#elif defined GLOG_OS_WINDOWS && !defined GLOG_OS_CYGWIN && !defined(HAVE_PTHREAD)
+  return static_cast<int>(GetCurrentThreadId());
+#elif defined GLOG_OS_WINDOWS && defined(HAVE_PTHREAD) && defined(PTW32_VERSION_MAJOR)
+  // If none of the techniques above worked, we use pthread_self().
+  return static_cast<int>((pid_t)(uintptr_t)pthread_self().p);
 #elif defined(HAVE_PTHREAD)
   // If none of the techniques above worked, we use pthread_self().
-  return (pid_t)(uintptr_t)pthread_self();
+  return static_cast<int>((pid_t)(uintptr_t)pthread_self());
 #else
   return -1;
 #endif
@@ -362,8 +369,14 @@ void SetCrashReason(const CrashReason* r) {
 }
 
 void InitGoogleLoggingUtilities(const char* argv0) {
+#if !defined(BUILD_MONOLITHIC)
   CHECK(!IsGoogleLoggingInitialized())
       << "You called InitGoogleLogging() twice!";
+#else
+  // we may invoke this API multiple times in monolithic test builds
+  if (IsGoogleLoggingInitialized())
+    return;
+#endif
   const char* slash = strrchr(argv0, '/');
 #ifdef GLOG_OS_WINDOWS
   if (!slash)  slash = strrchr(argv0, '\\');
@@ -378,7 +391,7 @@ void InitGoogleLoggingUtilities(const char* argv0) {
 void ShutdownGoogleLoggingUtilities() {
   CHECK(IsGoogleLoggingInitialized())
       << "You called ShutdownGoogleLogging() without calling InitGoogleLogging() first!";
-  g_program_invocation_short_name = NULL;
+  g_program_invocation_short_name.clear();
 #ifdef HAVE_SYSLOG_H
   closelog();
 #endif
