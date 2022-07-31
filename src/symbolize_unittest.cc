@@ -31,13 +31,15 @@
 //
 // Unit tests for functions in symbolize.cc.
 
+#include "symbolize.h"
+
+#include <glog/logging.h>
+
 #include <csignal>
 #include <iostream>
 
 #include "config.h"
-#include <glog/logging.h>
 #include "googletest.h"
-#include "symbolize.h"
 #include "utilities.h"
 
 #include "testing.h"
@@ -49,6 +51,13 @@ using namespace GFLAGS_NAMESPACE;
 
 using namespace std;
 using namespace GOOGLE_NAMESPACE;
+
+// Avoid compile error due to "cast between pointer-to-function and
+// pointer-to-object is an extension" warnings.
+#if defined(__GNUG__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 
 #if defined(HAVE_STACKTRACE)
 
@@ -90,12 +99,16 @@ extern "C" {
 void nonstatic_func();
 void nonstatic_func() {
   volatile int a = 0;
-  ++a;
+  // NOTE: In C++20, increment of object of volatile-qualified type is
+  // deprecated.
+  a = a + 1;
 }
 
 static void static_func() {
   volatile int a = 0;
-  ++a;
+  // NOTE: In C++20, increment of object of volatile-qualified type is
+  // deprecated.
+  a = a + 1;
 }
 }
 
@@ -126,7 +139,9 @@ struct Foo {
 
 void ATTRIBUTE_NOINLINE Foo::func(int x) {
   volatile int a = x;
-  ++a;
+  // NOTE: In C++20, increment of object of volatile-qualified type is
+  // deprecated.
+  a = a + 1;
 }
 
 // With a modern GCC, Symbolize() should return demangled symbol
@@ -391,7 +406,9 @@ struct Foo {
 
 __declspec(noinline) void Foo::func(int x) {
   volatile int a = x;
-  ++a;
+  // NOTE: In C++20, increment of object of volatile-qualified type is
+  // deprecated.
+  a = a + 1;
 }
 
 TEST(Symbolize, SymbolizeWithDemangling) {
@@ -455,3 +472,7 @@ int main(int argc, const char** argv) {
   return 0;
 #endif  // HAVE_SYMBOLIZE
 }
+
+#if defined(__GNUG__)
+#pragma GCC diagnostic pop
+#endif
