@@ -1104,9 +1104,9 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
     flags = flags | O_EXCL;
   }
 #if defined(OS_WINDOWS)
-  int fd = _wopen(filename, flags, FLAGS_logfile_mode);
+  int fd = _wopen(filename, flags, static_cast<mode_t>(FLAGS_logfile_mode));
 #else
-  int fd = open(filename, flags, FLAGS_logfile_mode);
+  int fd = open(filename, flags, static_cast<mode_t>(FLAGS_logfile_mode));
 #endif
   if (fd == -1) return false;
 #ifdef HAVE_FCNTL
@@ -1381,7 +1381,8 @@ void LogFileObject::Write(bool force_flush,
         // 'posix_fadvise' introduced in API 21:
         // * https://android.googlesource.com/platform/bionic/+/6880f936173081297be0dc12f687d341b86a4cfa/libc/libc.map.txt#732
 # else
-        posix_fadvise(fileno(file_), dropped_mem_length_, this_drop_length,
+        posix_fadvise(fileno(file_), static_cast<off_t>(dropped_mem_length_),
+                      static_cast<off_t>(this_drop_length),
                       POSIX_FADV_DONTNEED);
 # endif
         dropped_mem_length_ = total_drop_length;
@@ -2272,6 +2273,7 @@ void SetExitOnDFatal(bool value) {
 }  // namespace internal
 }  // namespace base
 
+#ifndef GLOG_OS_EMSCRIPTEN
 // Shell-escaping as we need to shell out ot /bin/mail.
 static const char kDontNeedShellEscapeChars[] =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -2306,7 +2308,7 @@ static string ShellEscape(const string& src) {
   }
   return result;
 }
-
+#endif
 
 // use_logging controls whether the logging functions LOG/VLOG are used
 // to log errors.  It should be set to false when the caller holds the

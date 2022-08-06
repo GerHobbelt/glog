@@ -88,7 +88,7 @@
 
 #if defined(HAVE_LIB_UNWIND)
 # define STACKTRACE_H "stacktrace_libunwind-inl.h"
-#elif defined(HAVE__UNWIND_BACKTRACE)
+#elif defined(HAVE__UNWIND_BACKTRACE) && defined(HAVE__UNWIND_GETIP)
 # define STACKTRACE_H "stacktrace_unwind-inl.h"
 #elif !defined(NO_FRAME_POINTER)
 # if defined(__i386__) && __GNUC__ >= 2
@@ -100,7 +100,7 @@
 # endif
 #endif
 
-#if !defined(STACKTRACE_H) && defined(HAVE_EXECINFO_H)
+#if !defined(STACKTRACE_H) && defined(HAVE_EXECINFO_BACKTRACE)
 # define STACKTRACE_H "stacktrace_generic-inl.h"
 #endif
 
