@@ -1783,8 +1783,8 @@ const LogMessageTime& LogMessage::getLogMessageTime() const {
   return logmsgtime_;
 }
 
-__declspec(nothrow) void
-LogMessage::__FlushAndFailAtEnd() throw() {
+void
+LogMessage::__FlushAndFailAtEnd() {
 	try {
 		Flush();
 #ifdef GLOG_THREAD_LOCAL_STORAGE
@@ -2599,8 +2599,8 @@ LogMessageFatal::LogMessageFatal(const char* file, int line,
                                  const CheckOpString& result) :
     LogMessage(file, line, result) {}
 
-__declspec(nothrow) void 
-LogMessageFatal::__FlushAndFailAtEnd() throw() {
+__declspec(noreturn) void
+LogMessageFatal::__FlushAndFailAtEnd() {
 	try
 	{
 		Flush();

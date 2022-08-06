@@ -319,11 +319,11 @@ typedef void(*CustomPrefixCallback)(std::ostream& s, const LogMessageInfo& l, vo
 //         "program with --v=1 or more";
 //   VLOG_EVERY_N(1, 10)
 //      << "I'm printed every 10th occurrence, and when you run the program "
-//         "with --v=1 or more. Present occurence is " << google::COUNTER;
+//         "with --v=1 or more. Present occurrence is " << google::COUNTER;
 //   VLOG_IF_EVERY_N(1, (size > 1024), 10)
-//      << "I'm printed on every 10th occurence of case when size is more "
+//      << "I'm printed on every 10th occurrence of case when size is more "
 //         " than 1024, when you run the program with --v=1 or more. ";
-//         "Present occurence is " << google::COUNTER;
+//         "Present occurrence is " << google::COUNTER;
 //
 // The supported severity levels for macros that allow you to specify one
 // are (in increasing order of severity) INFO, WARNING, ERROR, and FATAL.
@@ -439,8 +439,15 @@ DECLARE_bool(timestamp_in_logfile_name);
 // Set whether log messages go to stdout instead of logfiles
 DECLARE_bool(logtostdout);
 
+// Set whether log messages go to stdout in addition to logfiles.
+DECLARE_bool(alsologtostdout);
+
 // Set color messages logged to stdout (if supported by terminal).
 DECLARE_bool(colorlogtostdout);
+
+// Log messages at a level >= this flag are automatically sent to
+// stdout in addition to log files.
+DECLARE_int32(stdoutthreshold);
 
 // Set whether log messages go to stderr instead of logfiles
 DECLARE_bool(logtostderr);
@@ -1127,7 +1134,7 @@ namespace google {
 
 #if @ac_cv_cxx11_atomic@ && __cplusplus >= 201103L
 #define SOME_KIND_OF_LOG_EVERY_N(severity, n, what_to_do) \
-  static std::atomic<int> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
+  static std::atomic<unsigned int> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES, sizeof(int), "")); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES_MOD_N, sizeof(int), "")); \
   ++LOG_OCCURRENCES; \
@@ -1138,7 +1145,7 @@ namespace google {
         &what_to_do).stream()
 
 #define SOME_KIND_OF_LOG_IF_EVERY_N(severity, condition, n, what_to_do) \
-  static std::atomic<int> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
+  static std::atomic<unsigned int> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES, sizeof(int), "")); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES_MOD_N, sizeof(int), "")); \
   ++LOG_OCCURRENCES; \
@@ -1149,7 +1156,7 @@ namespace google {
                  &what_to_do).stream()
 
 #define SOME_KIND_OF_PLOG_EVERY_N(severity, n, what_to_do) \
-  static std::atomic<int> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
+  static std::atomic<unsigned int> LOG_OCCURRENCES(0), LOG_OCCURRENCES_MOD_N(0); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES, sizeof(int), "")); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES_MOD_N, sizeof(int), "")); \
   ++LOG_OCCURRENCES; \
@@ -1160,7 +1167,7 @@ namespace google {
         &what_to_do).stream()
 
 #define SOME_KIND_OF_LOG_FIRST_N(severity, n, what_to_do) \
-  static std::atomic<int> LOG_OCCURRENCES(0); \
+  static std::atomic<unsigned int> LOG_OCCURRENCES(0); \
   GLOG_IFDEF_THREAD_SANITIZER(AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_OCCURRENCES, sizeof(int), "")); \
   if (LOG_OCCURRENCES <= n) \
     ++LOG_OCCURRENCES; \
@@ -1217,7 +1224,7 @@ namespace google {
 #else
 
 #define SOME_KIND_OF_LOG_EVERY_N(severity, n, what_to_do) \
-  static int LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
+  static unsigned int LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
   __sync_add_and_fetch(&LOG_OCCURRENCES, 1); \
   if (__sync_add_and_fetch(&LOG_OCCURRENCES_MOD_N, 1) > n) \
     __sync_sub_and_fetch(&LOG_OCCURRENCES_MOD_N, n); \
@@ -1227,7 +1234,7 @@ namespace google {
         &what_to_do).stream()
 
 #define SOME_KIND_OF_LOG_IF_EVERY_N(severity, condition, n, what_to_do) \
-  static int LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
+  static unsigned int LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
   __sync_add_and_fetch(&LOG_OCCURRENCES, 1); \
   if ((condition) && \
       (__sync_add_and_fetch(&LOG_OCCURRENCES_MOD_N, 1) || true) && \
@@ -1238,7 +1245,7 @@ namespace google {
                  &what_to_do).stream()
 
 #define SOME_KIND_OF_PLOG_EVERY_N(severity, n, what_to_do) \
-  static int LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
+  static unsigned int LOG_OCCURRENCES = 0, LOG_OCCURRENCES_MOD_N = 0; \
   __sync_add_and_fetch(&LOG_OCCURRENCES, 1); \
   if (__sync_add_and_fetch(&LOG_OCCURRENCES_MOD_N, 1) > n) \
     __sync_sub_and_fetch(&LOG_OCCURRENCES_MOD_N, n); \
@@ -1248,7 +1255,7 @@ namespace google {
         &what_to_do).stream()
 
 #define SOME_KIND_OF_LOG_FIRST_N(severity, n, what_to_do) \
-  static int LOG_OCCURRENCES = 0; \
+  static unsigned int LOG_OCCURRENCES = 0; \
   if (LOG_OCCURRENCES <= n) \
     __sync_add_and_fetch(&LOG_OCCURRENCES, 1); \
   if (LOG_OCCURRENCES <= n) \
@@ -1482,7 +1489,7 @@ public:
     kNoLogPrefix = -1
   };
 
-  // LogStream inherit from non-DLL-exported class (std::ostrstream)
+  // LogStream inherits from non-DLL-exported class (std::ostrstream)
   // and VC++ produces a warning for this situation.
   // However, MSDN says "C4275 can be ignored in Microsoft Visual C++
   // 2005 if you are deriving from a type in the Standard C++ Library"
@@ -1492,7 +1499,7 @@ GLOG_MSVC_PUSH_DISABLE_WARNING(4275)
   class GOOGLE_GLOG_DLL_DECL LogStream : public std::ostream {
 GLOG_MSVC_POP_WARNING()
   public:
-    LogStream(char *buf, int len, int64 ctr)
+    LogStream(char *buf, int len, uint64 ctr)
         : std::ostream(NULL),
           streambuf_(buf, len),
           ctr_(ctr),
@@ -1500,8 +1507,8 @@ GLOG_MSVC_POP_WARNING()
       rdbuf(&streambuf_);
     }
 
-    int64 ctr() const { return ctr_; }
-    void set_ctr(int64 ctr) { ctr_ = ctr; }
+    uint64 ctr() const { return ctr_; }
+    void set_ctr(uint64 ctr) { ctr_ = ctr; }
     LogStream* self() const { return self_; }
 
     // Legacy std::streambuf methods.
@@ -1513,7 +1520,7 @@ GLOG_MSVC_POP_WARNING()
     LogStream(const LogStream&);
     LogStream& operator=(const LogStream&);
     base_logging::LogStreamBuf streambuf_;
-    int64 ctr_;  // Counter hack (for the LOG_EVERY_X() macro)
+    uint64 ctr_;  // Counter hack (for the LOG_EVERY_X() macro)
     LogStream *self_;  // Consistency check hack
   };
 
@@ -1521,7 +1528,7 @@ public:
   // icc 8 requires this typedef to avoid an internal compiler error.
   typedef void (LogMessage::*SendMethod)();
 
-  LogMessage(const char* file, int line, LogSeverity severity, int64 ctr,
+  LogMessage(const char* file, int line, LogSeverity severity, uint64 ctr,
              SendMethod send_method);
 
   // Two special constructors that generate reduced amounts of code at
@@ -1561,6 +1568,8 @@ public:
 
   // A special constructor used for check failures
   LogMessage(const char* file, int line, const CheckOpString& result);
+
+  void __FlushAndFailAtEnd();
 
   ~LogMessage();
 
@@ -1631,6 +1640,7 @@ class GOOGLE_GLOG_DLL_DECL LogMessageFatal : public LogMessage {
   LogMessageFatal(const char* file, int line);
   LogMessageFatal(const char* file, int line, const CheckOpString& result);
   @ac_cv___attribute___noreturn@ ~LogMessageFatal();
+  @ac_cv___attribute___noreturn@ void __FlushAndFailAtEnd();
 };
 
 // A non-macro interface to the log facility; (useful
@@ -1694,7 +1704,7 @@ GOOGLE_GLOG_DLL_DECL std::ostream& operator<<(std::ostream &os,
 // Derived class for PLOG*() above.
 class GOOGLE_GLOG_DLL_DECL ErrnoLogMessage : public LogMessage {
  public:
-  ErrnoLogMessage(const char* file, int line, LogSeverity severity, int64 ctr,
+  ErrnoLogMessage(const char* file, int line, LogSeverity severity, uint64 ctr,
                   void (LogMessage::*send_method)());
 
   // Postpends ": strerror(errno) [errno]".
@@ -1863,6 +1873,9 @@ GOOGLE_GLOG_DLL_DECL void TruncateStdoutStderr();
 // Return the string representation of the provided LogSeverity level.
 // Thread-safe.
 GOOGLE_GLOG_DLL_DECL const char* GetLogSeverityName(LogSeverity severity);
+
+GOOGLE_GLOG_DLL_DECL @ac_cv___attribute___noreturn@ void logging_fail();
+
 
 // ---------------------------------------------------------------------
 // Implementation details that are not useful to most clients

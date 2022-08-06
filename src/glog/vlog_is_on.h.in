@@ -112,7 +112,8 @@ struct SiteFlag {
 // and if possible set *site_flag appropriately.
 extern GOOGLE_GLOG_DLL_DECL bool InitVLOG3__(
     @ac_google_namespace@::SiteFlag* site_flag,
-    @ac_google_namespace@::int32* site_default, const char* fname,
+    @ac_google_namespace@::int32* site_default, 
+    const char* fname,
     @ac_google_namespace@::int32 verbose_level);
 
 #endif  // BASE_VLOG_IS_ON_H_
