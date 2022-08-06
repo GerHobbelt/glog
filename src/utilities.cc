@@ -155,6 +155,8 @@ static void DumpStackTrace(int skip_count, DebugWriter *writerfn, void *arg) {
   }
 }
 
+static logging_fail_func_t base_logging_fail_func = nullptr;
+
 #if defined(__GNUC__)
 __attribute__((noreturn))
 #elif defined(_MSC_VER)
@@ -179,7 +181,7 @@ static void DumpStackTraceAndExit() {
   }
 
   // as we're very probably called from within Fail(), we MUST NOT call the Fail() method for risk of stack overflow and Very Bad Things Happening(tm).
-  logging_fail();
+  base_logging_fail_func(); // __internal_logging_fail();
 }
 
 _END_GOOGLE_NAMESPACE_
@@ -384,6 +386,8 @@ void InitGoogleLoggingUtilities(const char* argv0) {
   g_program_invocation_short_name = slash ? slash + 1 : argv0;
 
 #ifdef HAVE_STACKTRACE
+  InstallFailureFunction(nullptr);
+  base_logging_fail_func = GetInstalledFailureFunction();
   InstallFailureFunction(&DumpStackTraceAndExit);
 #endif
 }
