@@ -66,12 +66,6 @@ using std::map;
 using std::string;
 using std::vector;
 
-_START_GOOGLE_NAMESPACE_
-
-extern GOOGLE_GLOG_DLL_DECL void (*g_logging_fail_func)();
-
-_END_GOOGLE_NAMESPACE_
-
 #undef GOOGLE_GLOG_DLL_DECL
 #define GOOGLE_GLOG_DLL_DECL
 

@@ -59,6 +59,7 @@
 #include <vector>
 #include <cerrno>                   // for errno
 #include <sstream>
+#include <filesystem>
 #ifdef GLOG_OS_WINDOWS
 #include "windows/dirent.h"
 #else
@@ -93,6 +94,8 @@ using std::fclose;
 using std::fflush;
 using std::fprintf;
 using std::perror;
+
+namespace fs = std::filesystem;
 
 #include <map>
 
@@ -231,8 +234,8 @@ GLOG_DEFINE_bool(log_utc_time, false,
 
 GLOG_DEFINE_int32(rolling_file_number, 10,
     "total log files kept on the disk, "
-    "named log[0-9], if files are all over capacity, will "
-    "delete the oldest log file");
+    "named log[0-9]: if files are all over capacity (max_log_size), will "
+    "delete the oldest log file. 0 disables this feature.");
 
 // TODO(hamaji): consider windows
 #define PATH_SEPARATOR '/'
@@ -512,8 +515,7 @@ class LogFileObject : public base::Logger {
   // REQUIRES: lock_ is held
   bool CreateLogfile(const string& time_pid_string);
 
-  void GetSuitableFileName(const char* originName,char* outputFileName);
-
+  fs::path GetSuitableFileName(const fs::path &originName);
 };
 
 // Encapsulate all log cleaner related states
@@ -1090,24 +1092,18 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
     string_filename += time_pid_string;
   }
 #if defined(OS_WINDOWS)
-  wchar_t filename[256] = {};
-  const wchar_t* fn = toNativeFilename(string_filename).c_str();
+  fs::path fn(toNativeFilename(string_filename));
 #else
-  char filename[256] = {};
-  const char* fn = string_filename.c_str();
+  fs::path fn(string_filename);
 #endif  
-  GetSuitableFileName(fn, filename);
-  //only write to files, create if non-existant.
+  fs::path filename = GetSuitableFileName(fn);
+  //only write to files, create if non-existent.
   int flags = O_WRONLY | O_CREAT;
   if (FLAGS_timestamp_in_logfile_name) {
     //demand that the file is unique for our timestamp (fail if it exists).
     flags = flags | O_EXCL;
   }
-#if defined(OS_WINDOWS)
-  int fd = _wopen(filename, flags, static_cast<mode_t>(FLAGS_logfile_mode));
-#else
-  int fd = open(filename, flags, static_cast<mode_t>(FLAGS_logfile_mode));
-#endif
+  int fd = open(filename.u8string().c_str(), flags, static_cast<mode_t>(FLAGS_logfile_mode));
   if (fd == -1) return false;
 #ifdef HAVE_FCNTL
   // Mark the file close-on-exec. We don't really care if this fails
@@ -1141,7 +1137,8 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
   if (file_ == NULL) {  // Man, we're screwed!
     close(fd);
     if (FLAGS_timestamp_in_logfile_name) {
-      unlink(filename);  // Erase the half-baked evidence: an unusable log file, only if we just created it.
+      std::error_code dummy_err;
+      (void)fs::remove(filename, dummy_err);  // Erase the half-baked evidence: an unusable log file, only if we just created it.
     }
     return false;
   }
@@ -1160,35 +1157,32 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
   // points to the latest logfile.)  If it fails, we're sad but it's
   // no error.
   if (!symlink_basename_.empty()) {
-    // take directory from filename
-    const char* slash = strrchr(filename, PATH_SEPARATOR);
-    const string linkname =
-      symlink_basename_ + '.' + LogSeverityNames[severity_];
-    string linkpath;
-    if ( slash ) linkpath = string(filename, static_cast<size_t>(slash-filename+1));  // get dirname
-    linkpath += linkname;
-    unlink(linkpath.c_str());                    // delete old one if it exists
+	  std::error_code dummy_err;
+	  fs::path linkpath(symlink_basename_);
+	  linkpath = linkpath.replace_extension('.' + LogSeverityNames[severity_]);
+	  fs::remove(linkpath, dummy_err);                    // delete old one if it exists
 
-#if defined(GLOG_OS_WINDOWS)
-    // TODO(hamaji): Create lnk file on Windows?
-#elif defined(HAVE_UNISTD_H)
-    // Make the symlink be relative (in the same dir) so that if the
-    // entire log directory gets relocated the link is still valid.
-    const char *linkdest = slash ? (slash + 1) : filename;
-    if (symlink(linkdest, linkpath.c_str()) != 0) {
-      // silently ignore failures
-    }
+	  // Make the symlink be relative (in the same dir) so that if the
+	  // entire log directory gets relocated the link is still valid.
+	  fs::path linkdest(filename.filename());
+	  fs::create_symlink(linkdest, linkpath, dummy_err);
+	  if (dummy_err) {
+		  // silently ignore failures; for Windows we do try to create a hardlink instead of a symlink when symlink construction failed.
+		  fs::create_hard_link(linkdest, linkpath, dummy_err);
+	  }
 
-    // Make an additional link to the log file in a place specified by
-    // FLAGS_log_link, if indicated
-    if (!FLAGS_log_link.empty()) {
-      linkpath = FLAGS_log_link + "/" + linkname;
-      unlink(linkpath.c_str());                  // delete old one if it exists
-      if (symlink(filename, linkpath.c_str()) != 0) {
-        // silently ignore failures
-      }
-    }
-#endif
+      // Make an additional link to the log file in a place specified by
+      // FLAGS_log_link, if indicated
+	  if (!FLAGS_log_link.empty()) {
+		  std::error_code dummy_err;
+		  linkpath = fs::path(FLAGS_log_link) / linkpath.filename();
+		  fs::remove(linkpath, dummy_err);                    // delete old one if it exists
+		  fs::create_symlink(filename, linkpath, dummy_err);
+		  if (dummy_err) {
+			  // silently ignore failures; for Windows we do try to create a hardlink instead of a symlink when symlink construction failed.
+			  fs::create_hard_link(filename, linkpath, dummy_err);
+		  }
+	  }
   }
 
   return true;  // Everything worked
@@ -1998,7 +1992,7 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
                         glog_internal_namespace_::ProgramInvocationShortName(),
                         message);
 #endif
-    Fail();
+    //Fail();  -- do NOT call that one here: other loggers may be active and we want to flush them all. FlushAndFail will take care of the Fail after all that's been done.
   }
 }
 
@@ -2016,11 +2010,11 @@ void LogMessage::RecordCrashReason(
 #endif
 }
 
-[[noreturn]] void logging_fail() {
-	  fprintf(stderr, "Abort on Fatal Failure (logging_fail)...\n");
-	  fflush(stderr);
+[[noreturn]] static void __internal_logging_fail() {
 	  if (IsDebuggerPresent())
 		DebugBreak();
+	  fprintf(stderr, "Abort on Fatal Failure (logging_fail)...\n");
+	  fflush(stderr);
 	  static int attempts = 0;
 	  if (!attempts)
 	  {
@@ -2039,16 +2033,37 @@ void LogMessage::RecordCrashReason(
 #endif
 }
 
-GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = &logging_fail;
+GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = &__internal_logging_fail;
 
 void InstallFailureFunction(logging_fail_func_t fail_func) {
+  if (!fail_func)
+	fail_func = &__internal_logging_fail;
   g_logging_fail_func = fail_func;
 }
+
+logging_fail_func_t GetInstalledFailureFunction(void) {
+	return g_logging_fail_func;
+}
+
+bool HasInstalledCustomFailureFunction(void) {
+	return g_logging_fail_func != __internal_logging_fail;
+}
+
 
 [[noreturn]] void LogMessage::Fail() {
   g_logging_fail_func();
   throw std::exception("LogMessage::Fail::aborting...");
 }
+
+[[noreturn]] void logging_fail() {
+	g_logging_fail_func();
+	throw std::exception("logging_fail::FATAL::aborting...");
+}
+
+[[noreturn]] void NullStreamFatal::__Fail() {
+	g_logging_fail_func();
+	throw std::exception("NullStreamFatal::aborting...");
+};
 
 // L >= log_mutex (callers must hold the log_mutex).
 void LogMessage::SendToSink() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
@@ -2601,15 +2616,8 @@ LogMessageFatal::LogMessageFatal(const char* file, int line,
 
 __declspec(noreturn) void
 LogMessageFatal::__FlushAndFailAtEnd() {
-	try
-	{
-		Flush();
-		LogMessage::Fail();
-	}
-	catch (...)
-	{
-		fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.\n");
-	}
+	Flush();
+	LogMessage::Fail();
 }
 
 LogMessageFatal::~LogMessageFatal() {
@@ -2792,62 +2800,63 @@ vector<std::string> split(const std::string& str, const std::string& delimeter)
     return result;
 }
 
-void LogFileObject::GetSuitableFileName(const char* originName, char* outputFileName)
+fs::path LogFileObject::GetSuitableFileName(const fs::path &originName)
 {
-    std::string dir_delim_("/");
-#ifdef OS_WINDOWS
-    dir_delim_ = "\\";
-#endif
-    std::map< time_t, string> fileMap;
+    std::map< time_t, fs::path> fileMap;
 
-    std::string tmpPath(originName);
+	fs::path nextName(originName);
     struct stat file_stat;
-    int error = stat(originName, &file_stat);
+    int error = stat(nextName.u8string().c_str(), &file_stat);
     if (error != 0) {
-        strncpy(outputFileName, originName, strlen(originName));
-        return;
+        return nextName;
     }
 
-    fileMap.insert({ file_stat.st_mtime,tmpPath });
+    fileMap.insert({ file_stat.st_mtime, nextName});
 
     if ((file_stat.st_size >> 20) > MaxLogSize())
     {
-        vector<string> pathList = split(tmpPath, std::string(dir_delim_));
-        auto fileNameWithExt = pathList.at(pathList.size() - 1);
-        std::string log_directory;
-        std::for_each(pathList.begin(), pathList.end() - 1, [&](const std::string& piece) { log_directory += (piece + dir_delim_); });
+		int max_logfile_count;
+		fs::path bn = nextName.filename();
 
-        if (FLAGS_rolling_file_number <= 0 || FLAGS_rolling_file_number > 10) FLAGS_rolling_file_number = 10;
-        for (int i = 0; i < FLAGS_rolling_file_number; i++)
+		if (FLAGS_rolling_file_number < 0 || FLAGS_rolling_file_number > 100)
+		{
+			max_logfile_count = FLAGS_rolling_file_number = 10;
+		}
+		else if (FLAGS_rolling_file_number == 0)
+		{
+			// use a virtually infinite number of logfiles for the roll, so we won't ever get to thee point where we must delete an old logfile:
+			max_logfile_count = INT_MAX;
+		}
+
+		for (int i = 0; i < max_logfile_count; i++)
         {
-            string tmpFileName = log_directory + fileNameWithExt + std::to_string(i);
-            struct stat file_stat;
-            int error = stat(tmpFileName.c_str(), &file_stat);
+			char seqnrstr[20];
+			std::snprintf(seqnrstr, sizeof(seqnrstr), "-%03d", i);
+			nextName = nextName.replace_filename(bn.generic_string() + seqnrstr);
+
+			int error = stat(nextName.u8string().c_str(), &file_stat);
             if (error == 0) {
                 if ((file_stat.st_size >> 20) < MaxLogSize()) {
-                    strncpy(outputFileName, tmpFileName.c_str(), tmpFileName.size());
-                    return;
+					return nextName;
                 }
-                fileMap.insert({ file_stat.st_mtime, tmpFileName });
-                // A day is 86400 seconds, so 7 days is 86400 * 7 = 604800 seconds.
+                fileMap.insert({ file_stat.st_mtime, nextName });
                 continue;
             }
             else
             {
-                strncpy(outputFileName, tmpFileName.c_str(), tmpFileName.size());
-                return;
+				return nextName;
             }
         }
 
         // all full, remove the oldest file
         auto name = std::min_element(fileMap.begin(), fileMap.end(), [](const auto& l, const auto& r) { return l.first < r.first; });
-        int ret = remove(name->second.c_str());
-        strncpy(outputFileName, name->second.c_str(), name->second.size());
-    }
+		nextName = name->second;
+        fs::remove(nextName);
+		return nextName;
+	}
     else
     {
-        strncpy(outputFileName, originName, strlen(originName));
-        return;
+		return nextName;
     }
 }
 

@@ -34,6 +34,7 @@
 #include <cstdio>
 #include <string>
 #include <iosfwd>
+#include <assert.h>
 #include "config.h"
 #include <glog/logging.h>
 #include "base/commandlineflags.h"
@@ -70,6 +71,62 @@ int CheckNoReturn(bool b) {
 struct A { };
 static std::ostream &operator<<(std::ostream &str, const A&) {return str;}
 
+
+static int fatal_fail_handler_hits = 0;
+static int fatal_fail_catcher_hits = 0;
+static int fatal_fail_catcher_rethrow_hits = 0;
+
+static void dummy_logging_fail_handler_4_test()
+{
+	fatal_fail_handler_hits++;
+}
+
+static void handle_exception_eptr_4_fatal_fail(std::exception_ptr eptr) // passing by value is ok
+{
+	fatal_fail_catcher_hits++;
+	if (eptr) {
+		fatal_fail_catcher_rethrow_hits++;
+		std::rethrow_exception(eptr);
+	}
+}
+
+typedef void exec_f();
+
+static void contain_fatal_testcode(exec_f f) {
+	try
+	{
+		fatal_fail_handler_hits = 0;
+		fatal_fail_catcher_hits = 0;
+		fatal_fail_catcher_rethrow_hits = 0;
+
+		// make sure the old_handler is always reverted to at the end of the test, i.e. no matter whether f() has completed or aborted.
+		class auto_scope {
+		public:
+			logging_fail_func_t old_handler;
+			~auto_scope() {
+				InstallFailureFunction(old_handler);
+			}
+		};
+		auto_scope h{GetInstalledFailureFunction()};
+
+		InstallFailureFunction(dummy_logging_fail_handler_4_test);
+		assert(HasInstalledCustomFailureFunction());
+
+		f();
+	}
+	catch (...)
+	{
+		auto e = std::current_exception(); // capture
+		handle_exception_eptr_4_fatal_fail(e);
+	}
+}
+
+static void log_fatal()
+{
+	LOG(FATAL) << "TESTMESSAGE FATAL";
+}
+
+
 //-----------------------------------------------------------------------//
 
 #if !defined(GOOGLE_STRIP_LOG)
@@ -89,13 +146,29 @@ int main(int argc, const char** argv) {
     printf("%s\n", DEBUG_MODE ? "dbg" : "opt");
     return 0;
   }
+#if !defined(BUILD_MONOLITHIC)
+  assert(!HasInstalledCustomFailureFunction());
+#endif
+
   LOG(INFO) << "TESTMESSAGE INFO";
   LOG(WARNING) << 2 << "something" << "TESTMESSAGE WARNING"
                << 1 << 'c' << A() << std::endl;
   LOG(ERROR) << "TESTMESSAGE ERROR";
   bool flag = true;
   (flag ? LOG(INFO) : LOG(ERROR)) << "TESTMESSAGE COND";
-  LOG(FATAL) << "TESTMESSAGE FATAL";
+
+  contain_fatal_testcode(log_fatal);
+
+#if 0
+  contain_fatal_testcode([]{
+	  LOG(FATAL) << "TESTMESSAGE FATAL";
+  });
+#endif
+
+  assert(fatal_fail_handler_hits == 1);
+  assert(fatal_fail_catcher_hits == 1);
+  assert(fatal_fail_catcher_rethrow_hits == 1);
+
   ShutdownGoogleLogging();
   return 0;
 }
