@@ -2256,6 +2256,7 @@ void SetExitOnDFatal(bool value) {
 }  // namespace internal
 }  // namespace base
 
+#ifndef GLOG_OS_EMSCRIPTEN
 // Shell-escaping as we need to shell out ot /bin/mail.
 static const char kDontNeedShellEscapeChars[] =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -2290,7 +2291,7 @@ static string ShellEscape(const string& src) {
   }
   return result;
 }
-
+#endif
 
 // use_logging controls whether the logging functions LOG/VLOG are used
 // to log errors.  It should be set to false when the caller holds the
