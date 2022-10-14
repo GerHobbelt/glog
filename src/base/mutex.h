@@ -214,14 +214,14 @@ class Mutex {
 // assert.
 
 Mutex::Mutex() : mutex_(0) { }
-Mutex::~Mutex()            { assert(mutex_ == 0); }
-void Mutex::Lock()         { assert(--mutex_ == -1); }
-void Mutex::Unlock()       { assert(mutex_++ == -1); }
+Mutex::~Mutex()            { }
+void Mutex::Lock()         { }
+void Mutex::Unlock()       { }
 #ifdef GMUTEX_TRYLOCK
 bool Mutex::TryLock()      { if (mutex_) return false; Lock(); return true; }
 #endif
-void Mutex::ReaderLock()   { assert(++mutex_ > 0); }
-void Mutex::ReaderUnlock() { assert(mutex_-- > 0); }
+void Mutex::ReaderLock()   { }
+void Mutex::ReaderUnlock() { }
 
 #elif defined(_WIN32) || defined(__CYGWIN__)
 
