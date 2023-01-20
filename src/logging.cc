@@ -1119,7 +1119,7 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
     //demand that the file is unique for our timestamp (fail if it exists).
     flags = flags | O_EXCL;
   }
-  int fd = open(filename.u8string().c_str(), flags, static_cast<mode_t>(FLAGS_logfile_mode));
+  int fd = open(reinterpret_cast<const char *>(filename.u8string().c_str()), flags, static_cast<mode_t>(FLAGS_logfile_mode));
   if (fd == -1) return false;
 #ifdef HAVE_FCNTL
   // Mark the file close-on-exec. We don't really care if this fails
@@ -2827,7 +2827,7 @@ fs::path LogFileObject::GetSuitableFileName(const fs::path &originName)
 
 	fs::path nextName(originName);
     struct stat file_stat;
-    int error = stat(nextName.u8string().c_str(), &file_stat);
+    int error = stat(reinterpret_cast<const char *>(nextName.u8string().c_str()), &file_stat);
     if (error != 0) {
         return nextName;
     }
@@ -2855,7 +2855,7 @@ fs::path LogFileObject::GetSuitableFileName(const fs::path &originName)
 			std::snprintf(seqnrstr, sizeof(seqnrstr), "-%03d", i);
 			nextName = nextName.replace_filename(bn.generic_string() + seqnrstr);
 
-			int error = stat(nextName.u8string().c_str(), &file_stat);
+			int error = stat(reinterpret_cast<const char *>(nextName.u8string().c_str()), &file_stat);
             if (error == 0) {
                 if ((file_stat.st_size >> 20) < MaxLogSize()) {
 					return nextName;
