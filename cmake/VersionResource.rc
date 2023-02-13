@@ -1,17 +1,12 @@
+
+//#define WIN32_LEAN_AND_MEAN
+#define APSTUDIO_READONLY_SYMBOLS
+#define APSTUDIO_HIDDEN_SYMBOLS
+#include <windows.h>
+#include <winver.h>
+
 #include "VersionInfo.h"
 
-#if defined(__MINGW64__) || defined(__MINGW32__)
-	// MinGW-w64, MinGW
-	#if defined(__has_include) && __has_include(<winres.h>)
-		#include <winres.h>
-	#else
-		#include <afxres.h>
-		#include <winresrc.h>
-	#endif
-#else
-	// MSVC, Windows SDK
-	#include <winres.h>
-#endif
 
 //IDI_ICON1               ICON                    PRODUCT_ICON
 
