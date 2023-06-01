@@ -394,6 +394,37 @@ void InstallFailureSignalHandler() {
 #endif  // HAVE_SIGACTION
 }
 
+//
+// Code from Grappa, to expose DumpStackTreace() for debugging, see
+// https://github.com/uwsampa/grappa/blob/69f2f3674d6f8e512e0bf55264bb75b972fd82de/third-party/google-glog/src/signalhandler.cc#L346
+//
+
+// dump the stack trace
+void DumpStackTrace() {
+  // First dump time info.
+  DumpTimeInfo();
+
+  // Get the program counter from ucontext.
+#if (defined(HAVE_UCONTEXT_H) || defined(HAVE_SYS_UCONTEXT_H)) && defined(PC_FROM_UCONTEXT)
+  ucontext_t ucontext;
+  getcontext( &ucontext );
+  void *pc = GetPC( &ucontext );
+  DumpStackFrameInfo("PC: ", pc);
+#endif
+
+#ifdef HAVE_STACKTRACE
+  // Get the stack traces.
+  void *stack[32];
+  // +1 to exclude this function.
+  const int depth = GetStackTrace(stack, ARRAYSIZE(stack), 1);
+  //DumpSignalInfo(signal_number, signal_info);
+  // Dump the stack traces.
+  for (int i = 0; i < depth; ++i) {
+    DumpStackFrameInfo("    ", stack[i]);
+  }
+#endif
+}
+
 void InstallFailureWriter(void (*writer)(const char* data, int size)) {
 #if defined(HAVE_SIGACTION) || defined(OS_WINDOWS)
   g_failure_writer = writer;
