@@ -146,8 +146,12 @@ extern int GOOGLE_GLOG_DLL_DECL safe_vsnprintf(char* str, size_t size,
 #define DEFAULT_TEMPLATE_ROOTDIR  ".."
 
 // ----------------------------------- SYSTEM/PROCESS
+#if defined __MINGW64__ || defined WIN64 || defined _WIN64
+typedef __int64 pid_t;
+#else
 typedef int pid_t;
-#define getpid  _getpid
+#endif
+#define getpid _getpid
 
 #endif  // _MSC_VER
 
