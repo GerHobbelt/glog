@@ -2,7 +2,11 @@
 #include <glog/logging.h>
 #include <glog/stl_logging.h>
 
-int main(int argc, char* argv[]) {
+#ifdef BUILD_MONOLITHIC
+#define main     glog_bazel_example_main
+#endif
+
+int main(int argc, const char** argv) {
   // Initialize Google's logging library.
   google::InitGoogleLogging(argv[0]);
 
