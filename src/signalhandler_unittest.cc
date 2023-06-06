@@ -68,7 +68,7 @@ static void* DieInThread(void*) {
   volatile int a = 0;
   volatile int b = 1 / a;
   fprintf(stderr, "We should have died: b=%d\n", b);
-  return NULL;
+  return nullptr;
 }
 
 static void WriteToStdout(const char* data, size_t size) {
@@ -102,8 +102,8 @@ int main(int argc, const char** argv) {
   } else if (command == "die_in_thread") {
 #if defined(HAVE_PTHREAD)
     pthread_t thread;
-    pthread_create(&thread, NULL, &DieInThread, NULL);
-    pthread_join(thread, NULL);
+    pthread_create(&thread, nullptr, &DieInThread, nullptr);
+    pthread_join(thread, nullptr);
 #else
     fprintf(stderr, "no pthread\n");
     return 1;

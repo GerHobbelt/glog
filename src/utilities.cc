@@ -87,7 +87,7 @@ GLOG_DEFINE_bool(symbolize_stacktrace, true,
 
 _START_GOOGLE_NAMESPACE_
 
-typedef void DebugWriter(const char*, void*);
+using DebugWriter = void(const char*, void*);
 
 // The %p field width for printf() functions is two characters per byte.
 // For some environments, add two extra bytes for the leading "0x".
@@ -157,13 +157,12 @@ static void DumpStackTrace(int skip_count, DebugWriter *writerfn, void *arg) {
 
 static logging_fail_func_t base_logging_fail_func = nullptr;
 
-#if defined(__GNUC__)
+#ifdef __GNUC__
 __attribute__((noreturn))
-#elif defined(_MSC_VER)
-__declspec(noreturn)
 #endif
-static void DumpStackTraceAndExit() {
-  DumpStackTrace(1, DebugWriteToStderr, NULL);
+static void
+DumpStackTraceAndExit() {
+  DumpStackTrace(1, DebugWriteToStderr, nullptr);
 
   // TODO(hamaji): Use signal instead of sigaction?
   if (IsFailureSignalHandlerInstalled()) {
@@ -174,7 +173,7 @@ static void DumpStackTraceAndExit() {
     memset(&sig_action, 0, sizeof(sig_action));
     sigemptyset(&sig_action.sa_mask);
     sig_action.sa_handler = SIG_DFL;
-    sigaction(SIGABRT, &sig_action, NULL);
+    sigaction(SIGABRT, &sig_action, nullptr);
 #elif defined(GLOG_OS_WINDOWS)
     signal(SIGABRT, SIG_DFL);
 #endif  // HAVE_SIGACTION
@@ -235,7 +234,7 @@ static int gettimeofday(struct timeval *tv, void* /*tz*/) {
 int64 CycleClock_Now() {
   // TODO(hamaji): temporary implementation - it might be too slow.
   struct timeval tv;
-  gettimeofday(&tv, NULL);
+  gettimeofday(&tv, nullptr);
   return static_cast<int64>(tv.tv_sec) * 1000000 + tv.tv_usec;
 }
 
@@ -278,10 +277,10 @@ int GetTID() {
   if (!lacks_gettid) {
 #if (defined(GLOG_OS_MACOSX) && defined(HAVE_PTHREAD_THREADID_NP))
     uint64_t tid64;
-    const int error = pthread_threadid_np(NULL, &tid64);
+    const int error = pthread_threadid_np(nullptr, &tid64);
     pid_t tid = error ? -1 : static_cast<pid_t>(tid64);
 #else
-    pid_t tid = static_cast<pid_t>(syscall(__NR_gettid));
+    auto tid = static_cast<pid_t>(syscall(__NR_gettid));
 #endif
     if (tid != -1) {
       return static_cast<int>(tid);
@@ -330,12 +329,12 @@ static void MyUserNameInitializer() {
 #else
   const char* user = getenv("USER");
 #endif
-  if (user != NULL) {
+  if (user != nullptr) {
     g_my_user_name = user;
   } else {
 #if defined(HAVE_PWD_H) && defined(HAVE_UNISTD_H)
     struct passwd pwd;
-    struct passwd* result = NULL;
+    struct passwd* result = nullptr;
     char buffer[1024] = {'\0'};
     uid_t uid = geteuid();
     int pwuid_res = getpwuid_r(uid, &pwd, buffer, sizeof(buffer), &result);
@@ -350,7 +349,6 @@ static void MyUserNameInitializer() {
       g_my_user_name = "invalid-user";
     }
   }
-
 }
 REGISTER_MODULE_INITIALIZER(utilities, MyUserNameInitializer())
 
@@ -362,7 +360,7 @@ void DumpStackTraceToString(string* stacktrace) {
 
 // We use an atomic operation to prevent problems with calling CrashReason
 // from inside the Mutex implementation (potentially through RAW_CHECK).
-static const CrashReason* g_reason = 0;
+static const CrashReason* g_reason = nullptr;
 
 void SetCrashReason(const CrashReason* r) {
   sync_val_compare_and_swap(&g_reason,
