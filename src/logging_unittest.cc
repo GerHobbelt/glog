@@ -1,4 +1,5 @@
-// Copyright (c) 2002, Google Inc.
+
+// Copyright (c) 2023, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -49,6 +50,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <fstream>
 #include <memory>
 #include <queue>
 #include <sstream>
@@ -184,6 +186,31 @@ static void BM_vlog(int n) {
 }
 BENCHMARK(BM_vlog)
 
+// Dynamically generate a prefix using the default format and write it to the stream.
+static void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data) {
+  // Assert that `data` contains the expected contents before producing the
+  // prefix (otherwise causing the tests to fail):
+  if (data == NULL || *static_cast<string*>(data) != "good data") {
+    return;
+  }
+
+  s << l.severity[0]
+    << setw(4) << 1900 + l.time.year()
+    << setw(2) << 1 + l.time.month()
+    << setw(2) << l.time.day()
+    << ' '
+    << setw(2) << l.time.hour() << ':'
+    << setw(2) << l.time.min()  << ':'
+    << setw(2) << l.time.sec() << "."
+    << setw(6) << l.time.usec()
+    << ' '
+    << setfill(' ') << setw(5)
+    << l.thread_id << setfill('0')
+    << ' '
+    << l.filename << ':' << l.line_number << "]";
+}
+
+int main(int argc, char **argv) {
 
 TEST(GoogleLog, golden_test) {
 	// TODO: The golden test portion of this test is very flakey.
@@ -214,7 +241,10 @@ int main(int argc, const char** argv) {
 
   EXPECT_FALSE(IsGoogleLoggingInitialized());
 
-  InitGoogleLogging(argv[0]);
+  // Setting a custom prefix generator (it will use the default format so that
+  // the golden outputs can be reused):
+  string prefix_attacher_data = "good data";
+  InitGoogleLogging(argv[0], &PrefixAttacher, static_cast<void*>(&prefix_attacher_data));
 
   EXPECT_TRUE(IsGoogleLoggingInitialized());
 
@@ -1500,4 +1530,18 @@ TEST(UserDefinedClass, logging) {
 
   // We must be able to compile this.
   CHECK_EQ(u, u);
+}
+
+TEST(LogMsgTime, gmtoff) {
+  /*
+   * Unit test for GMT offset API
+   * TODO: To properly test this API, we need a platform independent way to set time-zone.
+   * */
+  google::LogMessage log_obj(__FILE__, __LINE__);
+
+  long int nGmtOff = log_obj.getLogMessageTime().gmtoff();
+  // GMT offset ranges from UTC-12:00 to UTC+14:00
+  const long utc_min_offset = -43200;
+  const long utc_max_offset = 50400;
+  EXPECT_TRUE( (nGmtOff >= utc_min_offset) && (nGmtOff <= utc_max_offset) );
 }
