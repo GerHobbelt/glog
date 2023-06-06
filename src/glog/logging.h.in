@@ -853,7 +853,7 @@ DEFINE_CHECK_OP_IMPL(Check_GT, > )
 #define CHECK_OP_LOG(name, op, val1, val2, log) CHECK((val1) op (val2))
 #elif DCHECK_IS_ON()
 // In debug mode, avoid constructing CheckOpStrings if possible,
-// to reduce the overhead of CHECK statments by 2x.
+// to reduce the overhead of CHECK statements by 2x.
 // Real DCHECK-heavy tests have seen 1.5x speedups.
 
 // The meaning of "string" might be different between now and
@@ -1355,6 +1355,15 @@ GLOG_MSVC_PUSH_DISABLE_WARNING(4275)
   class GOOGLE_GLOG_DLL_DECL LogStream : public std::ostream {
 GLOG_MSVC_POP_WARNING()
   public:
+#if defined __has_attribute
+#  if __has_attribute (used)
+    // In some cases, like when compiling glog as a static library with GCC and
+    // linking against a Clang-built executable, this constructor will be
+    // removed by the linker. We use this attribute to prevent the linker from
+    // discarding it.
+    __attribute__ ((used))
+#  endif
+#endif
     LogStream(char *buf, int len, uint64 ctr)
         : std::ostream(NULL),
           streambuf_(buf, len),
@@ -1438,7 +1447,7 @@ public:
   // is so that streaming can be done more efficiently.
   static const size_t kMaxLogMessageLen;
 
-  // Theses should not be called directly outside of logging.*,
+  // These should not be called directly outside of logging.*,
   // only passed as SendMethod arguments to other LogMessage methods:
   void SendToLog();  // Actually dispatch to the logs
   void SendToSyslogAndLog();  // Actually dispatch to syslog and the logs
@@ -1667,8 +1676,8 @@ GOOGLE_GLOG_DLL_DECL void LogToStderr();
 GOOGLE_GLOG_DLL_DECL void SetEmailLogging(LogSeverity min_severity,
                                           const char* addresses);
 
-// A simple function that sends email. dest is a commma-separated
-// list of addressess.  Thread-safe.
+// A simple function that sends email. dest is a comma-separated
+// list of addresses.  Thread-safe.
 GOOGLE_GLOG_DLL_DECL bool SendEmail(const char *dest, const char *subject, 
                            const char* body);
 
