@@ -301,6 +301,8 @@ int GetTID() {
 #elif defined GLOG_OS_WINDOWS && defined(HAVE_PTHREAD) && defined(PTW32_VERSION_MAJOR)
   // If none of the techniques above worked, we use pthread_self().
   return static_cast<int>((pid_t)(uintptr_t)pthread_self().p);
+#elif defined GLOG_OS_OPENBSD
+  return getthrid();
 #elif defined(HAVE_PTHREAD)
   // If none of the techniques above worked, we use pthread_self().
   return static_cast<int>((pid_t)(uintptr_t)pthread_self());
