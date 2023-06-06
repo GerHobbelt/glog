@@ -34,7 +34,7 @@ include (GenerateExportHeader)
 include (GetCacheVariables)
 include (GNUInstallDirs)
 
-option (BUILD_SHARED_LIBS "Build shared libraries" ON)
+option (BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option (PRINT_UNSYMBOLIZED_STACK_TRACES
   "Print file offsets in traces instead of symbolizing" OFF)
 option (WITH_GFLAGS "Use gflags" ON)
@@ -475,6 +475,11 @@ set (GLOG_SRCS
   src/vlog_is_on.cc
 )
 
+# Because Xcode won't build a library without any sources, but glog is built from the binary of glog_base.
+set (GLOG_EMPTY_SRC
+  src/glog/empty.cc
+)
+
 if (HAVE_PTHREAD OR WIN32 OR CYGWIN)
   list (APPEND GLOG_SRCS src/signalhandler.cc)
 endif (HAVE_PTHREAD OR WIN32 OR CYGWIN)
@@ -493,6 +498,7 @@ add_library (glog_internal OBJECT
 target_compile_features (glog_internal PUBLIC $<TARGET_PROPERTY:glog,COMPILE_FEATURES>)
 
 add_library (glog
+  ${GLOG_EMPTY_SRC}
   $<TARGET_OBJECTS:glog_internal>
 )
 target_compile_features (glog PUBLIC cxx_std_14)
