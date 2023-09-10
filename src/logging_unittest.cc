@@ -200,7 +200,7 @@ static void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data)
     << setw(2) << l.time.day()
     << ' '
     << setw(2) << l.time.hour() << ':'
-    << setw(2) << l.time.min()  << ':'
+    << setw(2) << l.time.minute()  << ':'
     << setw(2) << l.time.sec() << "."
     << setw(6) << l.time.usec()
     << ' '
@@ -209,8 +209,6 @@ static void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data)
     << ' '
     << l.filename << ':' << l.line_number << "]";
 }
-
-int main(int argc, char **argv) {
 
 TEST(GoogleLog, golden_test) {
 	// TODO: The golden test portion of this test is very flakey.
@@ -1419,7 +1417,7 @@ TEST(TestExitOnDFatal, ToBeOrNotToBe) {
   base::internal::SetExitOnDFatal(true);
   EXPECT_TRUE(base::internal::GetExitOnDFatal());
 
-#ifdef GTEST_HAS_DEATH_TEST
+#if GTEST_HAS_DEATH_TEST
   // Death comes on little cats' feet.
   EXPECT_DEBUG_DEATH({
       LOG(DFATAL) << "This should be fatal in debug mode";
@@ -1507,6 +1505,9 @@ TEST(LogMsgTime, gmtoff) {
   EXPECT_TRUE( (nGmtOff >= utc_min_offset) && (nGmtOff <= utc_max_offset) );
 }
 
+#if 0  // Mgt. Decision: permanently disabled feature: no mailing logging or
+       // anything. Hard Removal enforced. [GHo]
+
 TEST(EmailLogging, ValidAddress) {
   FlagSaver saver;
   FLAGS_logmailer = "/usr/bin/true";
@@ -1534,3 +1535,5 @@ TEST(EmailLogging, MaliciousAddress) {
 
   EXPECT_FALSE(SendEmail("!/bin/true@example.com", "Example subject", "Example body"));
 }
+
+#endif

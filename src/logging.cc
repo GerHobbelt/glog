@@ -198,8 +198,14 @@ GLOG_DEFINE_int32(logemaillevel, 999,
                   "Email log messages logged at this level or higher"
                   " (0 means email all; 3 means email FATAL only;"
                   " ...)");
+
+#if 0  // Mgt. Decision: permanently disabled feature: no mailing logging or
+       // anything. Hard Removal enforced. [GHo]
+
 GLOG_DEFINE_string(logmailer, "",
                    "Mailer used to send logging email");
+
+#endif
 
 // Compute the default value for --log_dir
 static const char* DefaultLogDir() {
