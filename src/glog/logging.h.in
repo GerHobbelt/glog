@@ -480,6 +480,9 @@ DECLARE_bool(log_utc_time);
 // max rolling file number; 0 disabled the feature
 DECLARE_int32(rolling_file_number);
 
+// Mailer used to send logging email
+DECLARE_string(logmailer);
+
 // Log messages below the GOOGLE_STRIP_LOG level will be compiled away for
 // security reasons. See LOG(severtiy) below.
 
