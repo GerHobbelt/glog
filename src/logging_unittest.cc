@@ -894,7 +894,7 @@ struct MyLogger : public base::Logger {
 
   void Flush() override {}
 
-  uint32 LogSize() override { return data.length(); }
+  std::size_t LogSize() override { return data.length(); }
 
  private:
   bool* set_on_destruction_;
@@ -1027,7 +1027,7 @@ struct RecordDeletionLogger : public base::Logger {
     wrapped_logger_->Write(force_flush, timestamp, message, length);
   }
   void Flush() override { wrapped_logger_->Flush(); }
-  uint32 LogSize() override { return wrapped_logger_->LogSize(); }
+  std::size_t LogSize() override { return wrapped_logger_->LogSize(); }
 
  private:
   bool* set_on_destruction_;

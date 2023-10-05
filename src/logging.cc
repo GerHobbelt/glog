@@ -453,7 +453,7 @@ class LogFileObject : public base::Logger {
 
   // It is the actual file length for the system loggers,
   // i.e., INFO, ERROR, etc.
-  uint32 LogSize() override {
+  std::size_t LogSize() override {
     MutexLock l(&lock_);
     return file_length_;
   }
@@ -475,7 +475,7 @@ class LogFileObject : public base::Logger {
   LogSeverity severity_;
   uint32 bytes_since_flush_{0};
   uint32 dropped_mem_length_{0};
-  uint32 file_length_{0};
+  std::size_t file_length_{0};
   unsigned int rollover_attempt_;
   int64 next_flush_time_{0};  // cycle count at which to flush log
   WallTime start_time_;
