@@ -618,7 +618,8 @@ class Thread {
     pthread_join(th_, nullptr);
   }
 #else
-# error No thread implementation.
+  void Start() {}
+  void Join() {}
 #endif
 
  protected:
@@ -637,7 +638,7 @@ class Thread {
   }
   HANDLE handle_;
   DWORD th_;
-#else
+#elif defined(HAVE_PTHREAD)
   pthread_t th_;
 #endif
 };

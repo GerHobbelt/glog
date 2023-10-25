@@ -50,7 +50,6 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
 #include <memory>
 #include <queue>
 #include <sstream>
@@ -58,8 +57,8 @@
 #include <vector>
 
 #include "base/commandlineflags.h"
-#include <glog/logging.h>
-#include <glog/raw_logging.h>
+#include "glog/logging.h"
+#include "glog/raw_logging.h"
 #include "googletest.h"
 
 #include "testing.h"
@@ -905,7 +904,7 @@ struct MyLogger : public base::Logger {
 
   void Flush() override {}
 
-  uint32 LogSize() override { return data.length(); }
+  uint32 LogSize() override { return static_cast<uint32>(data.length()); }
 
  private:
   bool* set_on_destruction_;

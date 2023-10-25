@@ -29,8 +29,9 @@
 //
 // Author: Shinichiro Hamaji
 #include "utilities.h"
+
+#include "glog/logging.h"
 #include "googletest.h"
-#include <glog/logging.h>
 
 #include "testing.h"
 

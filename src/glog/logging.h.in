@@ -60,10 +60,10 @@
 #define GLOG_MSVC_POP_WARNING()
 #endif
 
-#include <glog/platform.h>
+#include "glog/platform.h"
 
 #if @ac_cv_have_glog_export@
-#include <glog/export.h>
+#include "glog/export.h"
 #endif
 
 // We care a lot about number of bits things take up.  Unfortunately,
@@ -613,8 +613,8 @@ DECLARE_string(logmailer);
 @ac_google_start_namespace@
 
 // They need the definitions of integer types.
-#include <glog/log_severity.h>
-#include <glog/vlog_is_on.h>
+#include "glog/log_severity.h"
+#include "glog/vlog_is_on.h"
 
 // Initialize google's logging library. You will see the program name
 // specified by argv0 in log outputs.
@@ -1060,13 +1060,13 @@ namespace google {
   constexpr std::chrono::nanoseconds LOG_TIME_PERIOD =                         \
       std::chrono::duration_cast<std::chrono::nanoseconds>(                    \
           std::chrono::duration<double>(seconds));                             \
-  static std::atomic<@ac_google_namespace@ ::int64> LOG_PREVIOUS_TIME_RAW;    \
+  static std::atomic<@ac_google_namespace@::int64> LOG_PREVIOUS_TIME_RAW;      \
   GLOG_IFDEF_THREAD_SANITIZER(                                                 \
       AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_TIME_PERIOD,            \
-                              sizeof(@ac_google_namespace @ ::int64), ""));    \
+                              sizeof(@ac_google_namespace@::int64), ""));      \
   GLOG_IFDEF_THREAD_SANITIZER(                                                 \
       AnnotateBenignRaceSized(__FILE__, __LINE__, &LOG_PREVIOUS_TIME_RAW,      \
-                              sizeof(@ac_google_namespace @ ::int64), ""));    \
+                              sizeof(@ac_google_namespace@::int64), ""));      \
   const auto LOG_CURRENT_TIME =                                                \
       std::chrono::duration_cast<std::chrono::nanoseconds>(                    \
           std::chrono::steady_clock::now().time_since_epoch());                \
@@ -1080,8 +1080,8 @@ namespace google {
             .count(),                                                          \
         std::memory_order_relaxed);                                            \
   if (LOG_TIME_DELTA > LOG_TIME_PERIOD)                                        \
-  @ac_google_namespace@ ::LogMessage(                                         \
-      __FILE__, __LINE__, @ac_google_namespace@ ::GLOG_##severity)            \
+  @ac_google_namespace@::LogMessage(                                           \
+      __FILE__, __LINE__, @ac_google_namespace@::GLOG_##severity)              \
       .stream()
 
 #define SOME_KIND_OF_LOG_EVERY_N(severity, n, what_to_do) \
@@ -1802,11 +1802,11 @@ class GOOGLE_GLOG_DLL_DECL NullStream : public LogMessage::LogStream {
   // (they'll never be actually displayed). This will be needed if a
   // NullStream& is implicitly converted to LogStream&, in which case
   // the overloaded NullStream::operator<< will not be invoked.
-  NullStream() : LogMessage::LogStream(message_buffer_, 1, 0) { }
+  NullStream();
   NullStream(const char* /*file*/, int /*line*/,
-             const CheckOpString& /*result*/) :
-      LogMessage::LogStream(message_buffer_, 1, 0) { }
-  NullStream &stream() { return *this; }
+             const CheckOpString& /*result*/);
+  NullStream& stream();
+
  private:
   // A very short buffer for messages (which we discard anyway). This
   // will be needed if NullStream& converted to LogStream& (e.g. as a
@@ -1827,10 +1827,12 @@ inline NullStream& operator<<(NullStream &str, const T &) { return str; }
 // trace), like LogMessageFatal.
 class GOOGLE_GLOG_DLL_DECL NullStreamFatal : public NullStream {
  public:
+  using NullStream::NullStream;
+ 
   NullStreamFatal() { }
   NullStreamFatal(const char* file, int line, const CheckOpString& result) :
       NullStream(file, line, result) { }
-  ~NullStreamFatal() {
+  [[noreturn]] ~NullStreamFatal() {
 	  __Fail();
   }
  protected:

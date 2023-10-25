@@ -32,15 +32,16 @@
 // The common part of the striplog tests.
 
 #include <cstdio>
-#include <string>
 #include <iosfwd>
 #include <assert.h>
 #include <setjmp.h>
 #include "config.h"
-#include <glog/logging.h>
+#include <string>
+
 #include "base/commandlineflags.h"
 
 #include "testing.h"
+#include "glog/logging.h"
 
 DECLARE_bool(logtostderr);
 
