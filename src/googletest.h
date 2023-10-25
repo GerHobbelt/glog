@@ -45,6 +45,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <map>
+#include <new>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -677,11 +678,19 @@ void operator delete[](void* p);
 
 #else
 
-void* operator new(size_t size) GOOGLE_GLOG_THROW_BAD_ALLOC {
+void* operator new(size_t size, const std::nothrow_t&) noexcept {
   if (GOOGLE_NAMESPACE::g_new_hook) {
     GOOGLE_NAMESPACE::g_new_hook();
   }
   return malloc(size);
+}
+
+void* operator new(size_t size) GOOGLE_GLOG_THROW_BAD_ALLOC {
+  void* p = ::operator new(size, std::nothrow);
+  if (p == nullptr) {
+    throw std::bad_alloc{};
+  }
+  return p;
 }
 
 void* operator new[](size_t size) GOOGLE_GLOG_THROW_BAD_ALLOC {
