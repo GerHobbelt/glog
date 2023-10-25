@@ -85,7 +85,7 @@
 
 @ac_google_start_namespace@
 
-    typedef std::int32_t int32;
+typedef std::int32_t int32;
 typedef std::uint32_t uint32;
 typedef std::int64_t int64;
 typedef std::uint64_t uint64;
@@ -375,6 +375,7 @@ typedef void(*CustomPrefixCallback)(std::ostream& s, const LogMessageInfo& l, vo
 #endif
 
 #ifndef DECLARE_VARIABLE
+#define MUST_UNDEF_GFLAGS_DECLARE_MACROS
 #define DECLARE_VARIABLE(type, shorttype, name, tn)                     \
   namespace fL##shorttype {                                             \
     extern GOOGLE_GLOG_DLL_DECL type FLAGS_##name;                      \
@@ -485,6 +486,15 @@ DECLARE_int32(rolling_file_number);
 // Mailer used to send logging email
 DECLARE_string(logmailer);
 
+#endif
+
+#ifdef MUST_UNDEF_GFLAGS_DECLARE_MACROS
+#undef MUST_UNDEF_GFLAGS_DECLARE_MACROS
+#undef DECLARE_VARIABLE
+#undef DECLARE_bool
+#undef DECLARE_int32
+#undef DECLARE_uint32
+#undef DECLARE_string
 #endif
 
 // Log messages below the GOOGLE_STRIP_LOG level will be compiled away for
@@ -621,8 +631,8 @@ DECLARE_string(logmailer);
 GOOGLE_GLOG_DLL_DECL void InitGoogleLogging(const char* argv0);
 
 GOOGLE_GLOG_DLL_DECL void InitGoogleLogging(const char* argv0,
-                                   CustomPrefixCallback prefix_callback,
-                                   void* prefix_callback_data = NULL);
+                                            CustomPrefixCallback prefix_callback,
+                                            void* prefix_callback_data = NULL);
 
 // Check if google's logging library has been initialized.
 GOOGLE_GLOG_DLL_DECL bool IsGoogleLoggingInitialized();
@@ -735,7 +745,7 @@ inline unsigned short GetReferenceableValue(unsigned short     t) { return t; }
 inline int            GetReferenceableValue(int                t) { return t; }
 inline unsigned int   GetReferenceableValue(unsigned int       t) { return t; }
 inline long           GetReferenceableValue(long               t) { return t; }
-inline unsigned long GetReferenceableValue(unsigned long t) { return t; }
+inline unsigned long  GetReferenceableValue(unsigned long      t) { return t; }
 inline long long      GetReferenceableValue(long long          t) { return t; }
 inline unsigned long long GetReferenceableValue(unsigned long long t) {
   return t;
@@ -1621,11 +1631,6 @@ class GOOGLE_GLOG_DLL_DECL LogSink {
                     const char* base_filename, int line,
                     const LogMessageTime& logmsgtime, const char* message,
                     size_t message_len);
-  // Provide an overload for compatibility purposes
-  GLOG_DEPRECATED
-  virtual void send(LogSeverity severity, const char* full_filename,
-                    const char* base_filename, int line, const std::tm* t,
-                    const char* message, size_t message_len);
 
   // Redefine this to implement waiting for
   // the sink's logging logic to complete.
@@ -1802,10 +1807,11 @@ class GOOGLE_GLOG_DLL_DECL NullStream : public LogMessage::LogStream {
   // (they'll never be actually displayed). This will be needed if a
   // NullStream& is implicitly converted to LogStream&, in which case
   // the overloaded NullStream::operator<< will not be invoked.
-  NullStream();
+  NullStream() : LogMessage::LogStream(message_buffer_, 1, 0) { }
   NullStream(const char* /*file*/, int /*line*/,
-             const CheckOpString& /*result*/);
-  NullStream& stream();
+             const CheckOpString& /*result*/) :
+      LogMessage::LogStream(message_buffer_, 1, 0) { }
+  NullStream &stream() { return *this; }
 
  private:
   // A very short buffer for messages (which we discard anyway). This
