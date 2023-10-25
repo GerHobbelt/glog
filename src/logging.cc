@@ -2178,14 +2178,6 @@ void LogMessage::RecordCrashReason(
 
 GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = &__internal_logging_fail;
 
-NullStream::NullStream() : LogMessage::LogStream(message_buffer_, 1, 0) {}
-NullStream::NullStream(const char* /*file*/, int /*line*/,
-                       const CheckOpString& /*result*/)
-    : LogMessage::LogStream(message_buffer_, 1, 0) {}
-NullStream& NullStream::stream() { return *this; }
-
-NullStreamFatal::~NullStreamFatal() { _exit(EXIT_FAILURE); }
-
 void InstallFailureFunction(logging_fail_func_t fail_func) {
   if (!fail_func)
 	fail_func = &__internal_logging_fail;
@@ -2788,13 +2780,13 @@ LogMessageFatal::LogMessageFatal(const char* file, int line,
                                  const CheckOpString& result) :
     LogMessage(file, line, result) {}
 
-__declspec(noreturn) void
+[[noreturn]] void
 LogMessageFatal::__FlushAndFailAtEnd() {
 	Flush();
 	LogMessage::Fail();
 }
 
-LogMessageFatal::~LogMessageFatal() {
+[[noreturn]] LogMessageFatal::~LogMessageFatal() {
 	__FlushAndFailAtEnd();
 }
 
