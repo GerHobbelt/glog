@@ -53,6 +53,7 @@
 #include <iostream>
 #include <cstdarg>
 #include <cstdlib>
+#include <signal.h>
 #ifdef HAVE_PWD_H
 # include <pwd.h>
 #endif
@@ -2154,25 +2155,31 @@ void LogMessage::RecordCrashReason(
 }
 
 [[noreturn]] static void __internal_logging_fail() {
-	  if (IsDebuggerPresent())
+	if (IsDebuggerPresent())
 		DebugBreak();
-	  fprintf(stderr, "Abort on Fatal Failure (logging_fail)...\n");
-	  fflush(stderr);
-	  static int attempts = 0;
-	  if (!attempts)
-	  {
-		  attempts++;
-		  fprintf(stderr, "Throwing C++ exception (abort)\n");
-		  fflush(stderr);
-		  throw std::exception("aborting");
-	  }
-	  attempts++;
-	  fprintf(stderr, "Triggering SEH exception (abort)\n");
-	  fflush(stderr);
-	  volatile int* pInt = 0x00000000;
-	  *pInt = 20;
+#if defined(SIGTRAP) 
+	raise(SIGTRAP);
+#endif
+	fprintf(stderr, "Abort on Fatal Failure (logging_fail)...\n");
+	fflush(stderr);
+#if defined(SIGABRT) 
+	raise(SIGABRT);
+#endif
+	static int attempts = 0;
+	if (!attempts)
+	{
+		attempts++;
+		fprintf(stderr, "Throwing C++ exception (abort)\n");
+		fflush(stderr);
+		throw std::exception("aborting");
+	}
+	attempts++;
+	fprintf(stderr, "Triggering SEH exception (abort)\n");
+	fflush(stderr);
+	volatile int* pInt = 0x00000000;
+	*pInt = 20;
 #if 0
-	  abort();
+	abort();
 #endif
 }
 
