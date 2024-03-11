@@ -8,7 +8,6 @@ extern "C" {
 #endif
 
 int glog_demangle_unittest_main(int argc, const char** argv);
-int glog_logging_custom_prefix_unittest_main(int argc, const char** argv);
 int glog_logging_striptest0_main(int argc, const char** argv);
 int glog_logging_striptest2_main(int argc, const char** argv);
 int glog_logging_striptest10_main(int argc, const char** argv);
