@@ -57,7 +57,7 @@
 #endif
 
 #if !defined(GLOG_EXPORT) || !defined(GLOG_NO_EXPORT)
-#  error <glog/logging.h> was not included correctly. See the documention for how to consume the library.
+#  error <glog/logging.h> was not included correctly. See the documentation for how to consume the library.
 #endif
 
 #include "glog/flags.h"
@@ -83,10 +83,6 @@ struct GOOGLE_GLOG_DLL_DECL LogMessageTime {
   LogMessageTime();
   explicit LogMessageTime(std::chrono::system_clock::time_point now);
 
-  [[deprecated("Use LogMessageTime::when() instead.")]] std::time_t timestamp()
-      const noexcept {
-    return std::chrono::system_clock::to_time_t(when());
-  }
   const std::chrono::system_clock::time_point& when() const noexcept {
     return timestamp_;
   }
@@ -100,10 +96,6 @@ struct GOOGLE_GLOG_DLL_DECL LogMessageTime {
   int dayOfWeek() const noexcept { return tm_.tm_wday; }
   int dayInYear() const noexcept { return tm_.tm_yday; }
   int dst() const noexcept { return tm_.tm_isdst; }
-  [[deprecated("Use LogMessageTime::gmtoffset() instead.")]] long gmtoff()
-      const noexcept {
-    return gmtoffset_.count();
-  }
   std::chrono::seconds gmtoffset() const noexcept { return gmtoffset_; }
   const std::tm& tm() const noexcept { return tm_; }
 
@@ -113,24 +105,6 @@ struct GOOGLE_GLOG_DLL_DECL LogMessageTime {
       timestamp_;  // Time of creation of LogMessage in seconds
   std::chrono::microseconds usecs_;
   std::chrono::seconds gmtoffset_;
-};
-
-struct [[deprecated("Use LogMessage instead.")]] LogMessageInfo {
-  explicit LogMessageInfo(const char* const severity_,
-                          const char* const filename_, const int& line_number_,
-                          std::thread::id thread_id_,
-                          const LogMessageTime& time_)
-      : severity(severity_),
-        filename(filename_),
-        line_number(line_number_),
-        thread_id(thread_id_),
-        time(time_) {}
-
-  const char* const severity;
-  const char* const filename;
-  const int& line_number;
-  std::thread::id thread_id;
-  const LogMessageTime& time;
 };
 
 }  // namespace google
@@ -482,27 +456,6 @@ namespace google {
 // specified by argv0 in log outputs.
 GOOGLE_GLOG_DLL_DECL void InitGoogleLogging(const char* argv0);
 
-class LogMessage;
-
-#if defined(__GNUG__)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable : 4996)
-#endif  // __GNUG__
-using CustomPrefixCallback
-    [[deprecated("Use PrefixFormatterCallback instead.")]] =
-        void (*)(std::ostream&, const LogMessageInfo&, void*);
-#if defined(__GNUG__)
-#  pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#  pragma warning(pop)
-#endif  // __GNUG__
-[[deprecated("Use InstallPrefixFormatter instead.")]] GLOG_EXPORT void
-InitGoogleLogging(const char* argv0, CustomPrefixCallback prefix_callback,
-                  void* prefix_callback_data = nullptr);
-
 // Check if google's logging library has been initialized.
 GOOGLE_GLOG_DLL_DECL bool IsGoogleLoggingInitialized();
 
@@ -510,6 +463,8 @@ GOOGLE_GLOG_DLL_DECL bool IsGoogleLoggingInitialized();
 GOOGLE_GLOG_DLL_DECL void ShutdownGoogleLogging();
 
 typedef void (*logging_fail_func_t)();
+
+class LogMessage;
 
 using PrefixFormatterCallback = void (*)(std::ostream&, const LogMessage&,
                                          void*);
@@ -521,12 +476,8 @@ GLOG_EXPORT void InstallPrefixFormatter(PrefixFormatterCallback callback,
 // previously set function.
 GLOG_EXPORT logging_fail_func_t InstallFailureFunction(logging_fail_func_t fail_func);
 
-GOOGLE_GLOG_DLL_DECL logging_fail_func_t GetInstalledFailureFunction(void);
-GOOGLE_GLOG_DLL_DECL bool HasInstalledCustomFailureFunction(void);
-
 // Enable/Disable old log cleaner.
-[[deprecated("Use the type-safe std::chrono::minutes EnableLogCleaner overload instead.")]] 
-GOOGLE_GLOG_DLL_DECL void EnableLogCleaner(unsigned int overdue_days);
+GLOG_EXPORT void EnableLogCleaner(const std::chrono::minutes& overdue);
 GOOGLE_GLOG_DLL_DECL void DisableLogCleaner();
 GOOGLE_GLOG_DLL_DECL void SetApplicationFingerprint(const std::string& fingerprint);
 
@@ -1357,11 +1308,6 @@ class GOOGLE_GLOG_DLL_DECL LogMessage {
   // Must be called without the log_mutex held.  (L < log_mutex)
   static int64 num_messages(int severity);
 
-  [[deprecated("Use LogMessage::time() instead.")]] const LogMessageTime&
-  getLogMessageTime() const {
-    return time();
-  }
-
   LogSeverity severity() const noexcept;
   int line() const noexcept;
   const std::thread::id& thread_id() const noexcept;
@@ -1518,7 +1464,7 @@ class GOOGLE_GLOG_DLL_DECL LogSink {
   virtual void send(LogSeverity severity, const char* full_filename,
                     const char* base_filename, int line,
                     const LogMessageTime& time, const char* message,
-                    size_t message_len);
+                    size_t message_len) = 0;
 
   // Redefine this to implement waiting for
   // the sink's logging logic to complete.
@@ -1633,15 +1579,9 @@ class GOOGLE_GLOG_DLL_DECL Logger {
   // appropriate by the higher level logging facility.  For example,
   // textual log messages already contain timestamps, and the
   // file:linenumber header.
-  [[deprecated(
-      "Logger::Write accepting a std::time_t timestamp is provided for "
-      "compatibility purposes only. New code should implement the "
-      "std::chrono::system_clock::time_point overload.")]] virtual void
-  Write(bool force_flush, time_t timestamp, const char* message,
-        size_t message_len);
   virtual void Write(bool force_flush,
                      const std::chrono::system_clock::time_point& timestamp,
-                     const char* message, size_t message_len);
+                     const char* message, size_t message_len) = 0;
 
   // Flush any buffered messages
   virtual void Flush() = 0;
