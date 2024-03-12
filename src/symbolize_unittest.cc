@@ -88,9 +88,7 @@ static const char *TrySymbolize(void *pc) {
 #    endif  // __i386__
 #  else
 #  endif  // __GNUC__ >= 4
-#  if defined(__i386__) || defined(__x86_64__)
-#    define TEST_X86_32_AND_64 1
-#  endif  // defined(__i386__) || defined(__x86_64__)
+#  define TEST_WITH_LABEL_ADDRESSES
 #endif
 
 // Make them C linkage to avoid mangled names.
@@ -336,8 +334,9 @@ TEST(Symbolize, SymbolizeWithDemanglingStackConsumption) {
 extern "C" {
 inline void* always_inline inline_func() {
   void *pc = nullptr;
-#ifdef TEST_X86_32_AND_64
-  __asm__ __volatile__("call 1f; 1: pop %0" : "=r"(pc));
+#ifdef TEST_WITH_LABEL_ADDRESSES
+  pc = &&curr_pc;
+  curr_pc:
 #endif
   return pc;
 }
@@ -345,14 +344,15 @@ inline void* always_inline inline_func() {
 void* ATTRIBUTE_NOINLINE non_inline_func();
 void* ATTRIBUTE_NOINLINE non_inline_func() {
   void *pc = nullptr;
-#ifdef TEST_X86_32_AND_64
-  __asm__ __volatile__("call 1f; 1: pop %0" : "=r"(pc));
+#ifdef TEST_WITH_LABEL_ADDRESSES
+  pc = &&curr_pc;
+  curr_pc:
 #endif
   return pc;
 }
 
 static void ATTRIBUTE_NOINLINE TestWithPCInsideNonInlineFunction() {
-#if defined(TEST_X86_32_AND_64) && defined(HAVE_ATTRIBUTE_NOINLINE)
+#if defined(TEST_WITH_LABEL_ADDRESSES) && defined(HAVE_ATTRIBUTE_NOINLINE)
   void *pc = non_inline_func();
   const char *symbol = TrySymbolize(pc);
 
@@ -365,7 +365,7 @@ static void ATTRIBUTE_NOINLINE TestWithPCInsideNonInlineFunction() {
 }
 
 static void ATTRIBUTE_NOINLINE TestWithPCInsideInlineFunction() {
-#if defined(TEST_X86_32_AND_64) && defined(HAVE_ALWAYS_INLINE)
+#if defined(TEST_WITH_LABEL_ADDRESSES) && defined(HAVE_ALWAYS_INLINE)
   void *pc = inline_func();  // Must be inlined.
   const char *symbol = TrySymbolize(pc);
 
