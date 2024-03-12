@@ -41,7 +41,7 @@
 #  include "glog/export.h"
 #endif
 
-#if !defined(GLOG_EXPORT)
+#if !defined(GOOGLE_GLOG_DLL_DECL)
 #  error <glog/flags.h> was not included correctly. See the documentation for how to consume the library.
 #endif
 
@@ -77,7 +77,7 @@
 #ifndef DECLARE_VARIABLE
 #  define DECLARE_VARIABLE(type, shorttype, name, tn) \
     namespace fL##shorttype {                         \
-      extern GLOG_EXPORT type FLAGS_##name;           \
+      extern GOOGLE_GLOG_DLL_DECL type FLAGS_##name;           \
     }                                                 \
     using fL##shorttype::FLAGS_##name
 
@@ -97,7 +97,7 @@
 // std::string, which doesn't play nicely with our FLAG__namespace hackery.
 #  define DECLARE_string(name)                    \
     namespace fLS {                               \
-    extern GLOG_EXPORT std::string& FLAGS_##name; \
+    extern GOOGLE_GLOG_DLL_DECL std::string& FLAGS_##name; \
     }                                             \
     using fLS::FLAGS_##name
 #endif

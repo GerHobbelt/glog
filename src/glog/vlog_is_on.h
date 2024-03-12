@@ -67,7 +67,7 @@
 #  include "glog/export.h"
 #endif
 
-#if !defined(GLOG_EXPORT)
+#if !defined(GOOGLE_GLOG_DLL_DECL)
 #  error <glog/vlog_is_on.h> was not included correctly. See the documentation for how to consume the library.
 #endif
 

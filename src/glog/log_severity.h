@@ -34,7 +34,7 @@
 #error "Include glog/logging.h instead of log_severity.h"
 #endif
 
-#if !defined(GLOG_EXPORT)
+#if !defined(GOOGLE_GLOG_DLL_DECL)
 #  error <glog/log_severity.h> was not included correctly. See the documentation for how to consume the library.
 #endif
 

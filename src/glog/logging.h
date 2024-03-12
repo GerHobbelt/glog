@@ -56,7 +56,7 @@
 #  include "glog/export.h"
 #endif
 
-#if !defined(GLOG_EXPORT) || !defined(GLOG_NO_EXPORT)
+#if !defined(GOOGLE_GLOG_DLL_DECL) || !defined(GLOG_NO_EXPORT)
 #  error <glog/logging.h> was not included correctly. See the documentation for how to consume the library.
 #endif
 
@@ -469,15 +469,15 @@ class LogMessage;
 using PrefixFormatterCallback = void (*)(std::ostream&, const LogMessage&,
                                          void*);
 
-GLOG_EXPORT void InstallPrefixFormatter(PrefixFormatterCallback callback,
+GOOGLE_GLOG_DLL_DECL void InstallPrefixFormatter(PrefixFormatterCallback callback,
                                         void* data = nullptr);
 
 // Install a function which will be called after LOG(FATAL). Returns the
 // previously set function.
-GLOG_EXPORT logging_fail_func_t InstallFailureFunction(logging_fail_func_t fail_func);
+GOOGLE_GLOG_DLL_DECL logging_fail_func_t InstallFailureFunction(logging_fail_func_t fail_func);
 
 // Enable/Disable old log cleaner.
-GLOG_EXPORT void EnableLogCleaner(const std::chrono::minutes& overdue);
+GOOGLE_GLOG_DLL_DECL void EnableLogCleaner(const std::chrono::minutes& overdue);
 GOOGLE_GLOG_DLL_DECL void DisableLogCleaner();
 GOOGLE_GLOG_DLL_DECL void SetApplicationFingerprint(const std::string& fingerprint);
 
@@ -769,7 +769,7 @@ using _Check_string = std::string;
 // Helper functions for string comparisons.
 // To avoid bloat, the definitions are in logging.cc.
 #define DECLARE_CHECK_STROP_IMPL(func, expected)                        \
-  GLOG_EXPORT std::unique_ptr<std::string> Check##func##expected##Impl( \
+  GOOGLE_GLOG_DLL_DECL std::unique_ptr<std::string> Check##func##expected##Impl( \
       const char* s1, const char* s2, const char* names);
 
 DECLARE_CHECK_STROP_IMPL(strcmp, true)
@@ -1664,17 +1664,17 @@ class GOOGLE_GLOG_DLL_DECL NullStreamFatal : public NullStream {
 GOOGLE_GLOG_DLL_DECL void InstallFailureSignalHandler();
 
 // Returns true if FailureSignalHandler is installed.
-GLOG_EXPORT bool IsFailureSignalHandlerInstalled();
+GOOGLE_GLOG_DLL_DECL bool IsFailureSignalHandlerInstalled();
 
 // Installs a function that is used for writing the failure dump.  "data"
 // is the pointer to the beginning of a message to be written, and "size"
 // is the size of the message.  You should not expect the data is
 // terminated with '\0'.
-GLOG_EXPORT void InstallFailureWriter(
+GOOGLE_GLOG_DLL_DECL void InstallFailureWriter(
                                                      size_t size));
 
 // Dump stack trace as a string.
-GLOG_EXPORT std::string GetStackTrace();
+GOOGLE_GLOG_DLL_DECL std::string GetStackTrace();
 
 }  // namespace google
 

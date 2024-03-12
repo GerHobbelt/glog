@@ -47,7 +47,7 @@
 #  include "glog/export.h"
 #endif
 
-#if !defined(GLOG_EXPORT)
+#if !defined(GOOGLE_GLOG_DLL_DECL)
 #  error "port.h" was not included correctly.
 #endif
 

@@ -129,17 +129,17 @@ def glog_library(with_gflags = 1, **kwargs):
     gflags_deps = ["@com_github_gflags_gflags//:gflags"] if with_gflags else []
 
     final_lib_defines = select({
-        # GLOG_EXPORT is normally set by export.h, but that's not
+        # GOOGLE_GLOG_DLL_DECL is normally set by export.h, but that's not
         # generated for Bazel.
         "@bazel_tools//src/conditions:windows": [
             "GLOG_DEPRECATED=__declspec(deprecated)",
-            "GLOG_EXPORT=",
+            "GOOGLE_GLOG_DLL_DECL=",
             "GLOG_NO_ABBREVIATED_SEVERITIES",
             "GLOG_NO_EXPORT=",
         ],
         "//conditions:default": [
             "GLOG_DEPRECATED=__attribute__((deprecated))",
-            "GLOG_EXPORT=__attribute__((visibility(\\\"default\\\")))",
+            "GOOGLE_GLOG_DLL_DECL=__attribute__((visibility(\\\"default\\\")))",
             "GLOG_NO_EXPORT=__attribute__((visibility(\\\"default\\\")))",
         ],
     })
