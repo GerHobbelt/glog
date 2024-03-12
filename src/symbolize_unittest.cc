@@ -43,13 +43,13 @@
 
 #include "testing.h"
 
-#ifdef HAVE_LIB_GFLAGS
+#ifdef GLOG_USE_GFLAGS
 #include <gflags/gflags.h>
 using namespace GFLAGS_NAMESPACE;
 #endif
 
 using namespace std;
-using namespace GOOGLE_NAMESPACE;
+using namespace google;
 
 // Avoid compile error due to "cast between pointer-to-function and
 // pointer-to-object is an extension" warnings.

@@ -65,7 +65,7 @@
 
 using std::string;
 
-_START_GOOGLE_NAMESPACE_
+namespace google {
 
 static std::string g_program_invocation_short_name;
 
@@ -73,7 +73,7 @@ bool IsGoogleLoggingInitialized() {
   return !g_program_invocation_short_name.empty();
 }
 
-_END_GOOGLE_NAMESPACE_
+}  // namespace google
 
 // The following APIs are all internal.
 #ifdef HAVE_STACKTRACE
@@ -85,7 +85,7 @@ _END_GOOGLE_NAMESPACE_
 GLOG_DEFINE_bool(symbolize_stacktrace, true,
                  "Symbolize the stack trace in the tombstone");
 
-_START_GOOGLE_NAMESPACE_
+namespace google {
 
 using DebugWriter = void(const char*, void*);
 
@@ -183,11 +183,11 @@ DumpStackTraceAndExit() {
   base_logging_fail_func(); // __internal_logging_fail();
 }
 
-_END_GOOGLE_NAMESPACE_
+}  // namespace google
 
 #endif  // HAVE_STACKTRACE
 
-_START_GOOGLE_NAMESPACE_
+namespace google {
 
 namespace glog_internal_namespace_ {
 
@@ -403,7 +403,7 @@ void ShutdownGoogleLoggingUtilities() {
 
 }  // namespace glog_internal_namespace_
 
-_END_GOOGLE_NAMESPACE_
+}  // namespace google
 
 // Make an implementation of stacktrace compiled.
 #ifdef STACKTRACE_H

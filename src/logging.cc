@@ -29,7 +29,7 @@
 
 #define _GNU_SOURCE 1 // needed for O_NOFOLLOW and pread()/pwrite()
 
-#include "utilities.h"
+#include "glog/logging.h"
 
 #include <algorithm>
 #include <cassert>
@@ -38,54 +38,66 @@
 #include <iterator>
 #include <string>
 
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>  // For _exit.
+#include "base/commandlineflags.h"  // to get the program name
+#include "base/googleinit.h"
+#include "config.h"
+#include "glog/raw_logging.h"
+#include "utilities.h"
+
+#ifdef HAVE_STACKTRACE
+#include "stacktrace.h"
 #endif
-#include <climits>
-#include <sys/types.h>
-#include <sys/stat.h>
-#ifdef HAVE_SYS_UTSNAME_H
-# include <sys/utsname.h>  // For uname.
-#endif
-#include <ctime>
-#include <fcntl.h>
-#include <cstdio>
-#include <iostream>
-#include <cstdarg>
-#include <cstdlib>
-#include <signal.h>
-#ifdef HAVE_PWD_H
-# include <pwd.h>
-#endif
-#ifdef HAVE_SYSLOG_H
-# include <syslog.h>
-#endif
-#ifdef HAVE__CHSIZE_S
-#include <io.h> // for truncate log file
-#endif
-#include <vector>
-#include <cerrno>                   // for errno
-#include <set>
-#include <sstream>
-#include <regex>
-#include <cctype> // for std::isspace
-#include <filesystem>
+
 #ifdef GLOG_OS_WINDOWS
 #include "windows/dirent.h"
 #else
-#include <dirent.h> // for automatic removal of old logs
+#include <dirent.h>  // for automatic removal of old logs
 #endif
-#include "base/commandlineflags.h"  // to get the program name
-#include "base/googleinit.h"
-#include "glog/logging.h"
-#include "glog/raw_logging.h"
 
-#ifdef HAVE_STACKTRACE
-# include "stacktrace.h"
+#include <fcntl.h>
+#include <sys/stat.h>
+
+#include <cctype>  // for std::isspace
+#include <cerrno>  // for errno
+#include <climits>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <regex>
+#include <sstream>
+#include <vector>
+#include <set>
+#include <filesystem>
+
+#include <signal.h>
+#ifdef HAVE__CHSIZE_S
+#include <io.h>  // for truncate log file
+#endif
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
+#ifdef HAVE_SYS_UTSNAME_H
+#include <sys/utsname.h>  // For uname.
+#endif
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
 #endif
 
 #ifdef __ANDROID__
 #include <android/log.h>
+#endif
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifndef HAVE_MODE_T
+typedef int mode_t;
 #endif
 
 using std::string;
@@ -177,8 +189,7 @@ GLOG_DEFINE_bool(drop_log_memory, true, "Drop in-memory buffers of log contents.
 //
 // The default is ERROR instead of FATAL so that users can see problems
 // when they run a program without having to look in another file.
-DEFINE_int32(stderrthreshold,
-             GOOGLE_NAMESPACE::GLOG_ERROR,
+DEFINE_int32(stderrthreshold, google::GLOG_ERROR,
              "log messages at or above this level are copied to stderr in "
              "addition to logfiles.  This flag obsoletes --alsologtostderr.");
 
@@ -269,10 +280,6 @@ GLOG_DEFINE_int32(rolling_file_number, 10,
 enum { PATH_SEPARATOR = '/' };
 
 #ifndef HAVE_PREAD
-#if defined(GLOG_OS_WINDOWS)
-#include <basetsd.h>
-#define ssize_t SSIZE_T
-#endif
 static ssize_t pread(int fd, void* buf, size_t count, off_t offset) {
   off_t orig_offset = lseek(fd, 0, SEEK_CUR);
   if (orig_offset == (off_t)-1)
@@ -353,7 +360,7 @@ static bool TerminalSupportsColor() {
   return term_supports_color;
 }
 
-_START_GOOGLE_NAMESPACE_
+namespace google {
 
 enum GLogColor {
   COLOR_DEFAULT,
@@ -3033,4 +3040,4 @@ fs::path LogFileObject::GetSuitableFileName(const fs::path &originName)
     }
 }
 
-_END_GOOGLE_NAMESPACE_
+}  // namespace google

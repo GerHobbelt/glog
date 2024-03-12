@@ -42,10 +42,10 @@
 
 namespace {
 
-using GOOGLE_NAMESPACE::GLOG_ERROR;
-using GOOGLE_NAMESPACE::GLOG_INFO;
-using GOOGLE_NAMESPACE::GLOG_WARNING;
-using GOOGLE_NAMESPACE::glog_testing::ScopedMockLog;
+using google::GLOG_ERROR;
+using google::GLOG_INFO;
+using google::GLOG_WARNING;
+using google::glog_testing::ScopedMockLog;
 using std::string;
 using testing::_;
 using testing::EndsWith;
