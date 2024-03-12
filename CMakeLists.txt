@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.21)
+cmake_minimum_required (VERSION 3.22)
 project (glog
   VERSION 0.7.0
   DESCRIPTION "C++ implementation of the Google logging module"
@@ -37,15 +37,14 @@ option (PRINT_UNSYMBOLIZED_STACK_TRACES
   "Print file offsets in traces instead of symbolizing" OFF)
 option (WITH_GFLAGS "Use gflags" ON)
 option (WITH_GTEST "Use Google Test" ON)
-option (WITH_PKGCONFIG "Enable pkg-config support" ON)
+option (WITH_PKGCONFIG "Enable pkg-config support" OFF)
 option (WITH_SYMBOLIZE "Enable symbolize module" ON)
-option (WITH_THREADS "Enable multithreading support" ON)
+option (WITH_TLS "Enable Thread Local Storage (TLS) support" ON)
 
 set (WITH_UNWIND libunwind CACHE STRING "unwind driver")
 set_property (CACHE WITH_UNWIND PROPERTY STRINGS none unwind libunwind)
 
 cmake_dependent_option (WITH_GMOCK "Use Google Mock" ON WITH_GTEST OFF)
-cmake_dependent_option (WITH_TLS "Enable Thread Local Storage (TLS) support" ON WITH_THREADS OFF)
 
 set (WITH_FUZZING none CACHE STRING "Fuzzing engine")
 set_property (CACHE WITH_FUZZING PROPERTY STRINGS none libfuzzer ossfuzz)
@@ -58,17 +57,12 @@ if (NOT WITH_GTEST)
   set (CMAKE_DISABLE_FIND_PACKAGE_GTest ON)
 endif (NOT WITH_GTEST)
 
-if (NOT WITH_THREADS)
-  set (CMAKE_DISABLE_FIND_PACKAGE_Threads ON)
-endif (NOT WITH_THREADS)
-
 set (CMAKE_C_VISIBILITY_PRESET hidden)
 set (CMAKE_CXX_VISIBILITY_PRESET hidden)
 set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 set (CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 set (CMAKE_DEBUG_POSTFIX d)
-set (CMAKE_THREAD_PREFER_PTHREAD 1)
 
 find_package (GTest NO_MODULE)
 
@@ -89,7 +83,7 @@ if (WITH_GFLAGS)
   endif (gflags_FOUND)
 endif (WITH_GFLAGS)
 
-find_package (Threads)
+find_package (Threads REQUIRED)
 find_package (Unwind)
 
 if (Unwind_FOUND)
@@ -160,44 +154,15 @@ check_cxx_symbol_exists (backtrace_symbols execinfo.h
 check_cxx_symbol_exists (_chsize_s io.h HAVE__CHSIZE_S)
 
 cmake_push_check_state (RESET)
-
-set (CMAKE_REQUIRED_DEFINITIONS -D_XOPEN_SOURCE=500)
-
-if (Threads_FOUND)
-  set (CMAKE_REQUIRED_LIBRARIES Threads::Threads)
-endif (Threads_FOUND)
-
-check_cxx_symbol_exists (pthread_rwlock_destroy pthread.h HAVE_RWLOCK_DESTROY)
-check_cxx_symbol_exists (pthread_rwlock_init pthread.h HAVE_RWLOCK_INIT)
-check_cxx_symbol_exists (pthread_rwlock_rdlock pthread.h HAVE_RWLOCK_RDLOCK)
-check_cxx_symbol_exists (pthread_rwlock_unlock pthread.h HAVE_RWLOCK_UNLOCK)
-check_cxx_symbol_exists (pthread_rwlock_wrlock pthread.h HAVE_RWLOCK_WRLOCK)
-check_cxx_symbol_exists (pthread_threadid_np pthread.h HAVE_PTHREAD_THREADID_NP)
-
-cmake_pop_check_state ()
-
-if (HAVE_RWLOCK_INIT AND HAVE_RWLOCK_RDLOCK AND HAVE_RWLOCK_WRLOCK AND
-    HAVE_RWLOCK_UNLOCK AND HAVE_RWLOCK_DESTROY)
-  set (HAVE_RWLOCK TRUE)
-endif (HAVE_RWLOCK_INIT AND HAVE_RWLOCK_RDLOCK AND HAVE_RWLOCK_WRLOCK AND
-    HAVE_RWLOCK_UNLOCK AND HAVE_RWLOCK_DESTROY)
-
-cmake_push_check_state (RESET)
 set (CMAKE_REQUIRED_LIBRARIES dbghelp)
 check_cxx_symbol_exists (UnDecorateSymbolName "windows.h;dbghelp.h" HAVE_DBGHELP)
 cmake_pop_check_state ()
 
-check_cxx_source_compiles ("
-int main(void)
-{
-  int a; if (__sync_val_compare_and_swap(&a, 0, 1)) return 1; return 0;
-}
-" HAVE___SYNC_VAL_COMPARE_AND_SWAP)
-
-check_cxx_source_compiles ("
-__declspec(selectany) int a;
-int main(void) { return 0; }
-" HAVE___DECLSPEC)
+if (WITH_FUZZING STREQUAL none)
+  # Disable compiler demangler if fuzzing is active; we only want to use the
+  # glog demangler then.
+  check_cxx_symbol_exists (abi::__cxa_demangle cxxabi.h HAVE___CXA_DEMANGLE)
+endif (WITH_FUZZING STREQUAL none)
 
 if (WITH_TLS)
   set (GLOG_THREAD_LOCAL_STORAGE 1)
@@ -318,14 +283,6 @@ check_cxx_symbol_exists (localtime_r "cstdlib;ctime" HAVE_LOCALTIME_R)
 
 set (SIZEOF_VOID_P ${CMAKE_SIZEOF_VOID_P})
 
-if (WITH_THREADS AND Threads_FOUND)
-  if (CMAKE_USE_PTHREADS_INIT)
-    set (HAVE_PTHREAD 1)
-  endif (CMAKE_USE_PTHREADS_INIT)
-else (WITH_THREADS AND Threads_FOUND)
-  set (NO_THREADS 1)
-endif (WITH_THREADS AND Threads_FOUND)
-
 # fopen/open on Cygwin can not handle unix-type paths like /home/....
 # therefore we translate TEST_SRC_DIR to windows-path.
 if (CYGWIN)
@@ -384,6 +341,8 @@ set (GLOG_PUBLIC_H
   src/glog/platform.h
   src/glog/raw_logging.h
   src/glog/stl_logging.h
+  src/glog/types.h
+  src/glog/flags.h
   src/glog/vlog_is_on.h
 )
 
@@ -391,9 +350,9 @@ set (GLOG_SRCS
   ${GLOG_PUBLIC_H}
   src/base/commandlineflags.h
   src/base/googleinit.h
-  src/base/mutex.h
   src/demangle.cc
   src/demangle.h
+  src/flags.cc
   src/logging.cc
   src/raw_logging.cc
   src/signalhandler.cc
@@ -409,12 +368,14 @@ set (GLOG_EMPTY_SRC
   src/glog/empty.cc
 )
 
-if (CYGWIN OR WIN32)
+# NOTE MSYS2 defines both WIN32 and UNIX. Do not use windows port in this case.
+if ((CYGWIN OR WIN32) AND NOT UNIX)
   list (APPEND GLOG_SRCS
     src/windows/port.cc
     src/windows/port.h
   )
-endif (CYGWIN OR WIN32)
+  set (_glog_USE_WINDOWS_PORT TRUE)
+endif ((CYGWIN OR WIN32) AND NOT UNIX)
 
 add_library (glog_internal OBJECT
   ${_glog_BINARY_CMake_MODULES}
@@ -446,6 +407,19 @@ set (glog_libraries_options_for_static_linking)
 # CMake always uses the generated export header
 target_compile_definitions (glog PUBLIC GLOG_USE_GLOG_EXPORT)
 
+if (_glog_USE_WINDOWS_PORT)
+  target_compile_definitions (glog PRIVATE GLOG_USE_WINDOWS_PORT)
+endif (_glog_USE_WINDOWS_PORT)
+
+unset (_glog_USE_WINDOWS_PORT)
+
+if (WIN32)
+  # Do not define min and max as macros
+  target_compile_definitions (glog PRIVATE NOMINMAX)
+  # Exclude unnecessary funcitonality
+  target_compile_definitions (glog PRIVATE WIN32_LEAN_AND_MEAN)
+endif (WIN32)
+
 if (HAVE_LIB_GFLAGS)
   target_compile_definitions (glog PUBLIC GLOG_USE_GFLAGS)
 endif (HAVE_LIB_GFLAGS)
@@ -461,15 +435,11 @@ if (HAVE_DBGHELP)
   set (glog_libraries_options_for_static_linking "${glog_libraries_options_for_static_linking} -ldbghelp")
 endif (HAVE_DBGHELP)
 
-if (HAVE_PTHREAD)
-  target_link_libraries (glog PRIVATE Threads::Threads)
+target_link_libraries (glog PRIVATE Threads::Threads)
 
-  set (Threads_DEPENDENCY "find_dependency (Threads)")
-
-  if (CMAKE_THREAD_LIBS_INIT)
-    set (glog_libraries_options_for_static_linking "${glog_libraries_options_for_static_linking} ${CMAKE_THREAD_LIBS_INIT}")
-  endif (CMAKE_THREAD_LIBS_INIT)
-endif (HAVE_PTHREAD)
+if (CMAKE_THREAD_LIBS_INIT)
+  set (glog_libraries_options_for_static_linking "${glog_libraries_options_for_static_linking} ${CMAKE_THREAD_LIBS_INIT}")
+endif (CMAKE_THREAD_LIBS_INIT)
 
 if (gflags_FOUND)
   # Prefer the gflags target that uses double colon convention
@@ -605,6 +575,13 @@ if (BUILD_TESTING)
 
   target_link_libraries (demangle_unittest PRIVATE glog_test)
 
+  add_test (NAME demangle COMMAND demangle_unittest)
+
+  if (HAVE___CXA_DEMANGLE)
+    # Demangle tests use a different (reduced) representation of symbols
+    set_tests_properties (demangle PROPERTIES DISABLED ON)
+  endif (HAVE___CXA_DEMANGLE)
+
   if (HAVE_STACKTRACE)
     add_executable (stacktrace_unittest
       src/stacktrace_unittest.cc
@@ -627,7 +604,6 @@ if (BUILD_TESTING)
     target_link_libraries (signalhandler_unittest PRIVATE glog_test)
   endif (HAVE_STACKTRACE AND HAVE_SYMBOLIZE)
 
-  add_test (NAME demangle COMMAND demangle_unittest)
   add_test (NAME logging COMMAND logging_unittest)
 
   set_tests_properties (logging PROPERTIES TIMEOUT 30)
@@ -809,6 +785,170 @@ if (BUILD_TESTING)
     striplog2
     striplog10
     PROPERTIES WILL_FAIL ON
+  )
+
+  add_test (NAME log_severity_constants COMMAND ${CMAKE_CTEST_COMMAND}
+    --build-config $<CONFIG>
+    --build-and-test
+    "${glog_SOURCE_DIR}/src/log_severity_unittest"
+    "${glog_BINARY_DIR}/Tests/log_severity_constants"
+    --build-generator ${CMAKE_GENERATOR}
+    --build-makeprogram ${CMAKE_MAKE_PROGRAM}
+    --build-target glog_log_severity_constants
+    --build-options
+    -DCMAKE_BUILD_TYPE=$<CONFIG>
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+    -DCMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
+    -Dglog_DIR=${glog_BINARY_DIR}
+  )
+  set_tests_properties (log_severity_constants PROPERTIES
+    PASS_REGULAR_EXPRESSION "COMPACT_GOOGLE_LOG_[1-3]"
+  )
+
+  add_test (NAME log_severity_conversion COMMAND ${CMAKE_CTEST_COMMAND}
+    --build-config $<CONFIG>
+    --build-and-test
+    "${glog_SOURCE_DIR}/src/log_severity_unittest"
+    "${glog_BINARY_DIR}/Tests/log_severity_conversion"
+    --build-generator ${CMAKE_GENERATOR}
+    --build-makeprogram ${CMAKE_MAKE_PROGRAM}
+    --build-target glog_log_severity_conversion
+    --build-options
+    -DCMAKE_BUILD_TYPE=$<CONFIG>
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+    -DCMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
+    -Dglog_DIR=${glog_BINARY_DIR}
+  )
+
+  if (CMAKE_COMPILER_IS_GNUCXX)
+    set_tests_properties (log_severity_conversion PROPERTIES
+      PASS_REGULAR_EXPRESSION "error: invalid conversion from (‘|')int(’|')"
+    )
+  elseif (CMAKE_CXX_COMPILER_ID MATCHES Clang)
+    set_tests_properties (log_severity_conversion PROPERTIES
+      PASS_REGULAR_EXPRESSION "no known conversion from 'int'"
+    )
+  elseif (MSVC)
+    set_tests_properties (log_severity_conversion PROPERTIES
+      PASS_REGULAR_EXPRESSION "error C2440"
+    )
+  else (CMAKE_COMPILER_IS_GNUCXX)
+    message (AUTHOR_WARNING
+      "Unsupported C++ compiler ${CMAKE_CXX_COMPILER_ID}: "
+      "log_severity_conversion test will be disabled"
+    )
+    set_tests_properties (log_severity_conversion DISABLED ON)
+  endif (CMAKE_COMPILER_IS_GNUCXX)
+
+  add_test (NAME includes_logging COMMAND ${CMAKE_CTEST_COMMAND}
+    --build-config $<CONFIG>
+    --build-and-test
+    "${glog_SOURCE_DIR}/src/includes_unittest"
+    "${glog_BINARY_DIR}/Tests/includes_logging"
+    --build-generator ${CMAKE_GENERATOR}
+    --build-makeprogram ${CMAKE_MAKE_PROGRAM}
+    --build-target glog_includes_logging
+    --build-options
+    -DCMAKE_BUILD_TYPE=$<CONFIG>
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+    -DCMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
+    -Dglog_DIR=${glog_BINARY_DIR}
+  )
+
+  add_test (NAME includes_vlog_is_on COMMAND ${CMAKE_CTEST_COMMAND}
+    --build-config $<CONFIG>
+    --build-and-test
+    "${glog_SOURCE_DIR}/src/includes_unittest"
+    "${glog_BINARY_DIR}/Tests/includes_vlog_is_on"
+    --build-generator ${CMAKE_GENERATOR}
+    --build-makeprogram ${CMAKE_MAKE_PROGRAM}
+    --build-target glog_includes_vlog_is_on
+    --build-options
+    -DCMAKE_BUILD_TYPE=$<CONFIG>
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+    -DCMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
+    -Dglog_DIR=${glog_BINARY_DIR}
+  )
+
+  add_test (NAME includes_raw_logging COMMAND ${CMAKE_CTEST_COMMAND}
+    --build-config $<CONFIG>
+    --build-and-test
+    "${glog_SOURCE_DIR}/src/includes_unittest"
+    "${glog_BINARY_DIR}/Tests/includes_raw_logging"
+    --build-generator ${CMAKE_GENERATOR}
+    --build-makeprogram ${CMAKE_MAKE_PROGRAM}
+    --build-target glog_includes_raw_logging
+    --build-options
+    -DCMAKE_BUILD_TYPE=$<CONFIG>
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+    -DCMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
+    -Dglog_DIR=${glog_BINARY_DIR}
+  )
+
+  add_test (NAME includes_stl_logging COMMAND ${CMAKE_CTEST_COMMAND}
+    --build-config $<CONFIG>
+    --build-and-test
+    "${glog_SOURCE_DIR}/src/includes_unittest"
+    "${glog_BINARY_DIR}/Tests/includes_stl_logging"
+    --build-generator ${CMAKE_GENERATOR}
+    --build-makeprogram ${CMAKE_MAKE_PROGRAM}
+    --build-target glog_includes_stl_logging
+    --build-options
+    -DCMAKE_BUILD_TYPE=$<CONFIG>
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
+    -DCMAKE_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}
+    -Dglog_DIR=${glog_BINARY_DIR}
+  )
+
+  add_test (NAME dcheck_on COMMAND ${CMAKE_CTEST_COMMAND}
+    --build-config Debug
+    --build-and-test
+    "${glog_SOURCE_DIR}/src/dcheck_unittest"
+    "${glog_BINARY_DIR}/Tests/dcheck_on"
+    --build-generator ${CMAKE_GENERATOR}
+    --build-generator-platform "${CMAKE_GENERATOR_PLATFORM}"
+    --build-generator-toolset "${CMAKE_GENERATOR_TOOLSET}"
+    --build-makeprogram ${CMAKE_MAKE_PROGRAM}
+    --build-target glog_dcheck
+    --build-options
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON
+    -Dglog_DIR=${glog_BINARY_DIR}
+    --test-command glog_dcheck
+  )
+  set_tests_properties (dcheck_on PROPERTIES
+    DISABLED $<NOT:$<CONFIG:Debug,RelWithDebInfo>>
+    ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:$<TARGET_FILE_DIR:glog>"
+    PASS_REGULAR_EXPRESSION "Assert failed: false"
+  )
+
+  add_test (NAME dcheck_off COMMAND ${CMAKE_CTEST_COMMAND}
+    --build-config Release
+    --build-and-test
+    "${glog_SOURCE_DIR}/src/dcheck_unittest"
+    "${glog_BINARY_DIR}/Tests/dcheck_off"
+    --build-generator ${CMAKE_GENERATOR}
+    --build-generator-platform "${CMAKE_GENERATOR_PLATFORM}"
+    --build-generator-toolset "${CMAKE_GENERATOR_TOOLSET}"
+    --build-makeprogram ${CMAKE_MAKE_PROGRAM}
+    --build-target glog_dcheck
+    --build-options
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_FIND_PACKAGE_NO_PACKAGE_REGISTRY=ON
+    -Dglog_DIR=${glog_BINARY_DIR}
+    --test-command glog_dcheck
+  )
+  # There should be no output
+  set_tests_properties (dcheck_off PROPERTIES
+    DISABLED $<NOT:$<CONFIG:Release,MinSizeRel>>
+    ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:$<TARGET_FILE_DIR:glog>"
+    PASS_REGULAR_EXPRESSION ""
   )
 endif (BUILD_TESTING)
 

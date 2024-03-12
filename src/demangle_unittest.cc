@@ -152,10 +152,10 @@ TEST(Demangle, FromFile) {
 #endif
 
 int main(int argc, const char** argv) {
+  InitGoogleTest(&argc, argv);
 #ifdef GLOG_USE_GFLAGS
   ParseCommandLineFlags(&argc, &argv, true);
 #endif
-  InitGoogleTest(&argc, argv);
 
   FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);

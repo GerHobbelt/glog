@@ -1,4 +1,4 @@
-// Copyright (c) 2023, Google Inc.
+// Copyright (c) 2024, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // Author: Shinichiro Hamaji
+//         Sergiu Deitsch
 //
 // Define utilities for glog internal usage.
 
@@ -53,11 +54,12 @@
 #define PRIoS __PRIS_PREFIX "o"
 
 #include <string>
+#include <thread>
+#include <type_traits>
 
-#include "base/mutex.h"  // This must go first so we get _XOPEN_SOURCE
 #include "glog/logging.h"
 
-#if defined(GLOG_OS_WINDOWS)
+#if defined(GLOG_USE_WINDOWS_PORT)
 #  include "port.h"
 #endif
 
@@ -164,49 +166,14 @@ namespace glog_internal_namespace_ {
 
 const char* ProgramInvocationShortName();
 
-int64 CycleClock_Now();
-
-int64 UsecToCycles(int64 usec);
-WallTime WallTime_Now();
-
 int32 GetMainThreadPid();
 bool PidHasChanged();
-
-int GetTID();
 
 const std::string& MyUserName();
 
 // Get the part of filepath after the last path separator.
 // (Doesn't modify filepath, contrary to basename() in libgen.h.)
 const char* const_basename(const char* filepath);
-
-// Wrapper of __sync_val_compare_and_swap. If the GCC extension isn't
-// defined, we try the CPU specific logics (we only support x86 and
-// x86_64 for now) first, then use a naive implementation, which has a
-// race condition.
-template <typename T>
-inline T sync_val_compare_and_swap(T* ptr, T oldval, T newval) {
-#if defined(HAVE___SYNC_VAL_COMPARE_AND_SWAP)
-  return __sync_val_compare_and_swap(ptr, oldval, newval);
-#elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
-  T ret;
-  __asm__ __volatile__("lock; cmpxchg %1, (%2);"
-                       : "=a"(ret)
-                       // GCC may produces %sil or %dil for
-                       // constraint "r", but some of apple's gas
-                       // doesn't know the 8 bit registers.
-                       // We use "q" to avoid these registers.
-                       : "q"(newval), "q"(ptr), "a"(oldval)
-                       : "memory", "cc");
-  return ret;
-#else
-  T ret = *ptr;
-  if (ret == oldval) {
-    *ptr = newval;
-  }
-  return ret;
-#endif
-}
 
 void DumpStackTraceToString(std::string* stacktrace);
 
@@ -227,6 +194,24 @@ void SetCrashReason(const CrashReason* r);
 
 void InitGoogleLoggingUtilities(const char* argv0);
 void ShutdownGoogleLoggingUtilities();
+
+template <class Functor>
+class ScopedExit final {
+ public:
+  template <class F, std::enable_if_t<
+                         std::is_constructible<Functor, F&&>::value>* = nullptr>
+  constexpr explicit ScopedExit(F&& functor) noexcept(
+      std::is_nothrow_constructible<Functor, F&&>::value)
+      : functor_{std::forward<F>(functor)} {}
+  ~ScopedExit() noexcept(noexcept(std::declval<Functor&>()())) { functor_(); }
+  ScopedExit(const ScopedExit& other) = delete;
+  ScopedExit& operator=(const ScopedExit& other) = delete;
+  ScopedExit(ScopedExit&& other) noexcept = delete;
+  ScopedExit& operator=(ScopedExit&& other) noexcept = delete;
+
+ private:
+  Functor functor_;
+};
 
 }  // namespace glog_internal_namespace_
 

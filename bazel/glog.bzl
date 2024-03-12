@@ -59,8 +59,6 @@ def glog_library(with_gflags = 1, **kwargs):
         "-Wno-unused-function",
         "-Wno-unused-local-typedefs",
         "-Wno-unused-variable",
-        # Allows src/base/mutex.h to include pthread.h.
-        "-DHAVE_PTHREAD",
         # Allows src/logging.cc to determine the host name.
         "-DHAVE_SYS_UTSNAME_H",
         # For src/utilities.cc.
@@ -74,6 +72,7 @@ def glog_library(with_gflags = 1, **kwargs):
 
     linux_or_darwin_copts = wasm_copts + [
         "-DGOOGLE_GLOG_DLL_DECL=__attribute__((visibility(\\\"default\\\")))",
+        "-DGLOG_NO_EXPORT=__attribute__((visibility(\\\"default\\\")))",
         "-DHAVE_MODE_T",
         "-DHAVE_SSIZE_T",
         "-DHAVE_SYS_TYPES_H",
@@ -98,14 +97,14 @@ def glog_library(with_gflags = 1, **kwargs):
     darwin_only_copts = [
         # For stacktrace.
         "-DHAVE_DLADDR",
-        # Avoid deprecated syscall().
-        "-DHAVE_PTHREAD_THREADID_NP",
     ]
 
     windows_only_copts = [
         # Override -DGOOGLE_GLOG_DLL_DECL= from the cc_library's defines.
         "-DGOOGLE_GLOG_DLL_DECL=__declspec(dllexport)",
+        "-DGLOG_NO_EXPORT=",
         "-DGLOG_NO_ABBREVIATED_SEVERITIES",
+        "-DGLOG_USE_WINDOWS_PORT",
         "-DHAVE__CHSIZE_S",
         "-I" + src_windows,
     ]
@@ -154,7 +153,6 @@ def glog_library(with_gflags = 1, **kwargs):
         name = "shared_headers",
         srcs = [
             "src/base/commandlineflags.h",
-            "src/base/mutex.h",
             "src/stacktrace.h",
             "src/utilities.h",
         ]
@@ -169,6 +167,7 @@ def glog_library(with_gflags = 1, **kwargs):
             "src/base/googleinit.h",
             "src/demangle.cc",
             "src/demangle.h",
+            "src/flags.cc",
             "src/logging.cc",
             "src/raw_logging.cc",
             "src/signalhandler.cc",
@@ -187,11 +186,13 @@ def glog_library(with_gflags = 1, **kwargs):
             "//conditions:default": [],
         }),
         hdrs = [
+            "src/glog/flags.h",
             "src/glog/log_severity.h",
             "src/glog/logging.h",
             "src/glog/platform.h",
             "src/glog/raw_logging.h",
             "src/glog/stl_logging.h",
+            "src/glog/types.h",
             "src/glog/vlog_is_on.h",
         ],
         # https://github.com/google/glog/issues/837: Replacing
@@ -254,10 +255,13 @@ def glog_library(with_gflags = 1, **kwargs):
     native.cc_library(
         name = "strip_include_prefix_hack",
         hdrs = [
+            "src/glog/flags.h",
             "src/glog/log_severity.h",
             "src/glog/logging.h",
+            "src/glog/platform.h",
             "src/glog/raw_logging.h",
             "src/glog/stl_logging.h",
+            "src/glog/types.h",
             "src/glog/vlog_is_on.h",
         ],
     )

@@ -1,4 +1,4 @@
-// Copyright (c) 2023, Google Inc.
+// Copyright (c) 2024, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,25 +44,26 @@
 #  include <sys/wait.h>
 #endif
 
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <queue>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "base/commandlineflags.h"
 #include "glog/logging.h"
 #include "glog/raw_logging.h"
 #include "googletest.h"
-
 #include "testing.h"
 
-DECLARE_string(log_backtrace_at);  // logging.cc
 
 #ifdef GLOG_USE_GFLAGS
 #  include <gflags/gflags.h>
@@ -372,10 +373,19 @@ struct NewHook {
   ~NewHook() { g_new_hook = nullptr; }
 };
 
+namespace {
+int* allocInt() { return new int; }
+}  // namespace
+
 TEST(DeathNoAllocNewHook, logging) {
   // tests that NewHook used below works
   NewHook new_hook;
-  ASSERT_DEATH({ new int; }, "unexpected new");
+  // Avoid unused warnings under MinGW
+  //
+  // NOTE MSVC produces warning C4551 here if we do not take the address of the
+  // function explicitly.
+  (void)&allocInt;
+  ASSERT_DEATH({ allocInt(); }, "unexpected new");
 }
 
 void TestRawLogging() {
@@ -945,7 +955,8 @@ struct MyLogger : public base::Logger {
 
   ~MyLogger() override { *set_on_destruction_ = true; }
 
-  void Write(bool /* should_flush */, time_t /* timestamp */,
+  void Write(bool /* should_flush */,
+             const std::chrono::system_clock::time_point& /* timestamp */,
              const char* message, size_t length) override {
     data.append(message, length);
   }
@@ -1078,8 +1089,9 @@ struct RecordDeletionLogger : public base::Logger {
     *set_on_destruction_ = false;
   }
   ~RecordDeletionLogger() override { *set_on_destruction_ = true; }
-  void Write(bool force_flush, time_t timestamp, const char* message,
-             size_t length) override {
+  void Write(bool force_flush,
+             const std::chrono::system_clock::time_point& timestamp,
+             const char* message, size_t length) override {
     wrapped_logger_->Write(force_flush, timestamp, message, length);
   }
   void Flush() override { wrapped_logger_->Flush(); }
@@ -1205,40 +1217,40 @@ static vector<string> global_messages;
 // helper for TestWaitingLogSink below.
 // Thread that does the logic of TestWaitingLogSink
 // It's free to use LOG() itself.
-class TestLogSinkWriter : public Thread {
+class TestLogSinkWriter {
  public:
-  TestLogSinkWriter() {
-    SetJoinable(true);
-    Start();
-  }
+  TestLogSinkWriter() : t_{&TestLogSinkWriter::Run, this} {}
 
   // Just buffer it (can't use LOG() here).
   void Buffer(const string& message) {
-    mutex_.Lock();
+    mutex_.lock();
     RAW_LOG(INFO, "Buffering");
     messages_.push(message);
-    mutex_.Unlock();
+    mutex_.unlock();
     RAW_LOG(INFO, "Buffered");
   }
 
   // Wait for the buffer to clear (can't use LOG() here).
   void Wait() {
+    using namespace std::chrono_literals;
     RAW_LOG(INFO, "Waiting");
-    mutex_.Lock();
+    mutex_.lock();
     while (!NoWork()) {
-      mutex_.Unlock();
-      SleepForMilliseconds(1);
-      mutex_.Lock();
+      mutex_.unlock();
+      std::this_thread::sleep_for(1ms);
+      mutex_.lock();
     }
     RAW_LOG(INFO, "Waited");
-    mutex_.Unlock();
+    mutex_.unlock();
   }
 
   // Trigger thread exit.
   void Stop() {
-    MutexLock l(&mutex_);
+    std::lock_guard<std::mutex> l(mutex_);
     should_exit_ = true;
   }
+
+  void Join() { t_.join(); }
 
  private:
   // helpers ---------------
@@ -1248,22 +1260,23 @@ class TestLogSinkWriter : public Thread {
   bool HaveWork() { return !messages_.empty() || should_exit_; }
 
   // Thread body; CAN use LOG() here!
-  void Run() override {
+  void Run() {
+    using namespace std::chrono_literals;
     while (true) {
-      mutex_.Lock();
+      mutex_.lock();
       while (!HaveWork()) {
-        mutex_.Unlock();
-        SleepForMilliseconds(1);
-        mutex_.Lock();
+        mutex_.unlock();
+        std::this_thread::sleep_for(1ms);
+        mutex_.lock();
       }
       if (should_exit_ && messages_.empty()) {
-        mutex_.Unlock();
+        mutex_.unlock();
         break;
       }
       // Give the main thread time to log its message,
       // so that we get a reliable log capture to compare to golden file.
       // Same for the other sleep below.
-      SleepForMilliseconds(20);
+      std::this_thread::sleep_for(20ms);
       RAW_LOG(INFO, "Sink got a messages");  // only RAW_LOG under mutex_ here
       string message = messages_.front();
       messages_.pop();
@@ -1271,8 +1284,8 @@ class TestLogSinkWriter : public Thread {
       // where LOG() usage can't be eliminated,
       // e.g. pushing the message over with an RPC:
       size_t messages_left = messages_.size();
-      mutex_.Unlock();
-      SleepForMilliseconds(20);
+      mutex_.unlock();
+      std::this_thread::sleep_for(20ms);
       // May not use LOG while holding mutex_, because Buffer()
       // acquires mutex_, and Buffer is called from LOG(),
       // which has its own internal mutex:
@@ -1285,7 +1298,8 @@ class TestLogSinkWriter : public Thread {
 
   // data ---------------
 
-  Mutex mutex_;
+  std::thread t_;
+  std::mutex mutex_;
   bool should_exit_{false};
   queue<string> messages_;  // messages to be logged
 };
@@ -1296,7 +1310,7 @@ class TestLogSinkWriter : public Thread {
 class TestWaitingLogSink : public LogSink {
  public:
   TestWaitingLogSink() {
-    tid_ = pthread_self();  // for thread-specific behavior
+    tid_ = std::this_thread::get_id();  // for thread-specific behavior
     AddLogSink(this);
   }
   ~TestWaitingLogSink() override {
@@ -1314,7 +1328,7 @@ class TestWaitingLogSink : public LogSink {
     // Push it to Writer thread if we are the original logging thread.
     // Note: Something like ThreadLocalLogSink is a better choice
     //       to do thread-specific LogSink logic for real.
-    if (pthread_equal(tid_, pthread_self())) {
+    if (tid_ == std::this_thread::get_id()) {
       writer_.Buffer(ToString(severity, base_filename, line, logmsgtime,
                               message, message_len));
     }
@@ -1322,11 +1336,11 @@ class TestWaitingLogSink : public LogSink {
 
   void WaitTillSent() override {
     // Wait for Writer thread if we are the original logging thread.
-    if (pthread_equal(tid_, pthread_self())) writer_.Wait();
+    if (tid_ == std::this_thread::get_id()) writer_.Wait();
   }
 
  private:
-  pthread_t tid_;
+  std::thread::id tid_;
   TestLogSinkWriter writer_;
 };
 
@@ -1337,15 +1351,16 @@ static void TestLogSinkWaitTillSent() {
   // reentered
   global_messages.clear();
   {
+    using namespace std::chrono_literals;
     TestWaitingLogSink sink;
     // Sleeps give the sink threads time to do all their work,
     // so that we get a reliable log capture to compare to the golden file.
     LOG(INFO) << "Message 1";
-    SleepForMilliseconds(60);
+    std::this_thread::sleep_for(60ms);
     LOG(ERROR) << "Message 2";
-    SleepForMilliseconds(60);
+    std::this_thread::sleep_for(60ms);
     LOG(WARNING) << "Message 3";
-    SleepForMilliseconds(60);
+    std::this_thread::sleep_for(60ms);
   }
   for (auto& global_message : global_messages) {
     LOG(INFO) << "Sink capture: " << global_message;
@@ -1426,7 +1441,7 @@ TEST(LogAtLevel, Basic) {
   EXPECT_CALL(log, Log(GLOG_WARNING, StrNe(__FILE__), "function version"));
   EXPECT_CALL(log, Log(GLOG_INFO, __FILE__, "macro version"));
 
-  int severity = GLOG_WARNING;
+  LogSeverity severity = GLOG_WARNING;
   LogAtLevel(severity, "function version");
 
   severity = GLOG_INFO;
@@ -1544,10 +1559,11 @@ TEST(LogMsgTime, gmtoff) {
    * */
   google::LogMessage log_obj(__FILE__, __LINE__);
 
-  long int nGmtOff = log_obj.getLogMessageTime().gmtoff();
+  std::chrono::seconds nGmtOff = log_obj.time().gmtoffset();
   // GMT offset ranges from UTC-12:00 to UTC+14:00
-  const long utc_min_offset = -43200;
-  const long utc_max_offset = 50400;
+  using namespace std::chrono_literals;
+  const std::chrono::hours utc_min_offset = -12h;
+  const std::chrono::hours utc_max_offset = 14h;
   EXPECT_TRUE((nGmtOff >= utc_min_offset) && (nGmtOff <= utc_max_offset));
 }
 

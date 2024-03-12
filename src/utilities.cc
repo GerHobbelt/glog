@@ -1,4 +1,4 @@
-// Copyright (c) 2008, Google Inc.
+// Copyright (c) 2024, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,15 +31,18 @@
 
 #include "utilities.h"
 
+#include <atomic>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 
+#include "base/googleinit.h"
 #include "config.h"
+
 #ifdef HAVE_SYS_TIME_H
 #  include <sys/time.h>
 #endif
-#include <ctime>
 #if defined(HAVE_SYSCALL_H)
 #  include <syscall.h>  // for syscall()
 #elif defined(HAVE_SYS_SYSCALL_H)
@@ -61,8 +64,6 @@
 #  include <android/log.h>
 #endif
 
-#include "base/googleinit.h"
-
 using std::string;
 
 namespace google {
@@ -81,9 +82,6 @@ bool IsGoogleLoggingInitialized() {
 #  include "base/commandlineflags.h"
 #  include "stacktrace.h"
 #  include "symbolize.h"
-
-GLOG_DEFINE_bool(symbolize_stacktrace, true,
-                 "Symbolize the stack trace in the tombstone");
 
 namespace google {
 
@@ -200,52 +198,6 @@ const char* ProgramInvocationShortName() {
   }
 }
 
-#ifdef GLOG_OS_WINDOWS
-struct timeval {
-  long tv_sec, tv_usec;
-};
-
-// Based on:
-// http://www.google.com/codesearch/p?hl=en#dR3YEbitojA/os_win32.c&q=GetSystemTimeAsFileTime%20license:bsd
-// See COPYING for copyright information.
-static int gettimeofday(struct timeval* tv, void* /*tz*/) {
-#  ifdef __GNUC__
-#    pragma GCC diagnostic push
-#    pragma GCC diagnostic ignored "-Wlong-long"
-#  endif
-#  define EPOCHFILETIME (116444736000000000ULL)
-  FILETIME ft;
-  ULARGE_INTEGER li;
-  uint64 tt;
-
-  GetSystemTimeAsFileTime(&ft);
-  li.LowPart = ft.dwLowDateTime;
-  li.HighPart = ft.dwHighDateTime;
-  tt = (li.QuadPart - EPOCHFILETIME) / 10;
-  tv->tv_sec = tt / 1000000;
-  tv->tv_usec = tt % 1000000;
-#  ifdef __GNUC__
-#    pragma GCC diagnostic pop
-#  endif
-
-  return 0;
-}
-#endif
-
-int64 CycleClock_Now() {
-  // TODO(hamaji): temporary implementation - it might be too slow.
-  struct timeval tv;
-  gettimeofday(&tv, nullptr);
-  return static_cast<int64>(tv.tv_sec) * 1000000 + tv.tv_usec;
-}
-
-int64 UsecToCycles(int64 usec) { return usec; }
-
-WallTime WallTime_Now() {
-  // Now, cycle clock is retuning microseconds since the epoch.
-  return CycleClock_Now() * 0.000001;
-}
-
 static int32 g_main_thread_pid = getpid();
 int32 GetMainThreadPid() { return g_main_thread_pid; }
 
@@ -256,56 +208,6 @@ bool PidHasChanged() {
   }
   g_main_thread_pid = pid;
   return true;
-}
-
-int GetTID() {
-  // On Linux and MacOSX, we try to use gettid().
-#if defined GLOG_OS_LINUX || defined GLOG_OS_MACOSX
-#  ifndef __NR_gettid
-#    ifdef GLOG_OS_MACOSX
-#      define __NR_gettid SYS_gettid
-#    elif !defined __i386__
-#      error "Must define __NR_gettid for non-x86 platforms"
-#    else
-#      define __NR_gettid 224
-#    endif
-#  endif
-  static bool lacks_gettid = false;
-  if (!lacks_gettid) {
-#  if (defined(GLOG_OS_MACOSX) && defined(HAVE_PTHREAD_THREADID_NP))
-    uint64_t tid64;
-    const int error = pthread_threadid_np(nullptr, &tid64);
-    pid_t tid = error ? -1 : static_cast<pid_t>(tid64);
-#  else
-    auto tid = static_cast<pid_t>(syscall(__NR_gettid));
-#  endif
-    if (tid != -1) {
-      return static_cast<int>(tid);
-    }
-    // Technically, this variable has to be volatile, but there is a small
-    // performance penalty in accessing volatile variables and there should
-    // not be any serious adverse effect if a thread does not immediately see
-    // the value change to "true".
-    lacks_gettid = true;
-  }
-#endif  // GLOG_OS_LINUX || GLOG_OS_MACOSX
-
-  // If gettid() could not be used, we use one of the following.
-#if defined GLOG_OS_LINUX
-  return static_cast<int>(getpid());  // Linux:  getpid returns thread ID when gettid is absent
-#elif defined GLOG_OS_WINDOWS && !defined GLOG_OS_CYGWIN && !defined(HAVE_PTHREAD)
-  return static_cast<int>(GetCurrentThreadId());
-#elif defined GLOG_OS_WINDOWS && defined(HAVE_PTHREAD) && defined(PTW32_VERSION_MAJOR)
-  // If none of the techniques above worked, we use pthread_self().
-  return static_cast<int>((pid_t)(uintptr_t)pthread_self().p);
-#elif defined GLOG_OS_OPENBSD
-  return getthrid();
-#elif defined(HAVE_PTHREAD)
-  // If none of the techniques above worked, we use pthread_self().
-  return static_cast<int>((pid_t)(uintptr_t)pthread_self());
-#else
-  return -1;
-#endif
 }
 
 const char* const_basename(const char* filepath) {
@@ -356,11 +258,11 @@ void DumpStackTraceToString(string* stacktrace) {
 
 // We use an atomic operation to prevent problems with calling CrashReason
 // from inside the Mutex implementation (potentially through RAW_CHECK).
-static const CrashReason* g_reason = nullptr;
+static std::atomic<const CrashReason*> g_reason{nullptr};
 
 void SetCrashReason(const CrashReason* r) {
-  sync_val_compare_and_swap(&g_reason, reinterpret_cast<const CrashReason*>(0),
-                            r);
+  const CrashReason* expected = nullptr;
+  g_reason.compare_exchange_strong(expected, r);
 }
 
 void InitGoogleLoggingUtilities(const char* argv0) {
