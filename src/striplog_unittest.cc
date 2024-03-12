@@ -1,4 +1,4 @@
-// Copyright (c) 2007, Google Inc.
+// Copyright (c) 2023, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,9 @@
 
 // The common part of the striplog tests.
 
+#include <csignal>
 #include <cstdio>
+#include <cstdlib>
 #include <iosfwd>
 #include <assert.h>
 #include <setjmp.h>
@@ -43,7 +45,6 @@
 #include "testing.h"
 #include "glog/logging.h"
 
-DECLARE_bool(logtostderr);
 
 #if defined(BUILD_MONOLITHIC) && (GOOGLE_STRIP_LOG != 0)
 DECLARE_bool(check_mode);
@@ -64,13 +65,14 @@ int CheckNoReturn(bool b) {
   string s;
   if (b) {
     LOG(FATAL) << "Fatal";
+    // fallthrough: Workaround for MSVC warning C4715
   } 
   return 0;
 }
 
 #endif
 
-struct A { };
+struct A {};
 static std::ostream &operator<<(std::ostream &str, const A&) {return str;}
 
 
@@ -131,6 +133,13 @@ static void log_fatal()
 
 static jmp_buf ret_on_uncaught_exception;
 
+namespace {
+void handle_abort(int /*code*/) { 
+    std::exit(EXIT_FAILURE); 
+}
+}  // namespace
+
+
 //-----------------------------------------------------------------------//
 
 #if !defined(GOOGLE_STRIP_LOG)
@@ -144,6 +153,13 @@ static jmp_buf ret_on_uncaught_exception;
 #endif
 
 int main(int argc, const char** argv) {
+#if defined(_MSC_VER)
+  // Avoid presenting an interactive dialog that will cause the test to time
+  // out.
+  _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
+#endif  // defined(_MSC_VER)
+  std::signal(SIGABRT, handle_abort);
+
   FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
   if (FLAGS_check_mode) {
@@ -155,8 +171,8 @@ int main(int argc, const char** argv) {
 #endif
 
   LOG(INFO) << "TESTMESSAGE INFO";
-  LOG(WARNING) << 2 << "something" << "TESTMESSAGE WARNING"
-               << 1 << 'c' << A() << std::endl;
+  LOG(WARNING) << 2 << "something"
+               << "TESTMESSAGE WARNING" << 1 << 'c' << A() << std::endl;
   LOG(ERROR) << "TESTMESSAGE ERROR";
   bool flag = true;
   (flag ? LOG(INFO) : LOG(ERROR)) << "TESTMESSAGE COND";

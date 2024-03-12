@@ -1,4 +1,4 @@
-// Copyright (c) 1999, Google Inc.
+// Copyright (c) 2023, Google Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -2211,6 +2211,9 @@ bool HasInstalledCustomFailureFunction(void) {
 }
 
 [[noreturn]] void NullStreamFatal::__Fail() {
+    // TODO:
+    // Cannot use g_logging_fail_func here as it may output the backtrace which
+    // would be inconsistent with NullStream behavior.
 	g_logging_fail_func();
 	throw std::exception("NullStreamFatal::aborting...");
 };
