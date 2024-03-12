@@ -1874,8 +1874,7 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
     std::snprintf(fileline, sizeof(fileline), "%s:%d", data_->basename_, line);
 #ifdef HAVE_STACKTRACE
     if (FLAGS_log_backtrace_at == fileline) {
-      string stacktrace;
-      DumpStackTraceToString(&stacktrace);
+      string stacktrace = GetStackTrace();
       stream() << " (stacktrace:\n" << stacktrace << ") ";
     }
 #endif
@@ -1896,6 +1895,7 @@ void
 LogMessage::__FlushAndFailAtEnd() {
 	try {
 		Flush();
+  bool fail = data_->severity_ == GLOG_FATAL && exit_on_dfatal;
 #ifdef GLOG_THREAD_LOCAL_STORAGE
 		if (data_ == static_cast<void*>(&thread_msg_data)) {
 			data_->~LogMessageData();
@@ -1907,13 +1907,32 @@ LogMessage::__FlushAndFailAtEnd() {
 #else         // !defined(GLOG_THREAD_LOCAL_STORAGE)
 		delete allocated_;
 #endif        // defined(GLOG_THREAD_LOCAL_STORAGE)
+        //
+
+  if (fail) {
+    const char* message = "*** Check failure stack trace: ***\n";
+    if (write(fileno(stderr), message, strlen(message)) < 0) {
+      // Ignore errors.
 	}
+    AlsoErrorWrite(GLOG_FATAL,
+                   glog_internal_namespace_::ProgramInvocationShortName(),
+                   message);
+#if defined(__cpp_lib_uncaught_exceptions) && \
+    (__cpp_lib_uncaught_exceptions >= 201411L)
+    if (std::uncaught_exceptions() == 0)
+#else
+    if (!std::uncaught_exception())
+#endif
+    {
+      Fail();
+  }
+}
 	catch (...) {
 		fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.\n");
 	}
 }
 
-LogMessage::~LogMessage() {
+LogMessage::~LogMessage() noexcept(false) {
 	__FlushAndFailAtEnd();
 }
 
@@ -2083,21 +2102,7 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
       }
     }
 
-    // release the lock that our caller (directly or indirectly)
-    // LogMessage::~LogMessage() grabbed so that signal handlers
-    // can use the logging facility. Alternately, we could add
-    // an entire unsafe logging interface to bypass locking
-    // for signal handlers but this seems simpler.
-    log_mutex.unlock();
     LogDestination::WaitForSinks(data_);
-
-    const char* message = "*** Check failure stack trace: ***\n";
-	fputs(message, stderr);  	// Ignore errors.
-	fflush(stderr);
-    AlsoErrorWrite(GLOG_FATAL,
-                   glog_internal_namespace_::ProgramInvocationShortName(),
-                   message);
-    //Fail();  -- do NOT call that one here: other loggers may be active and we want to flush them all. FlushAndFail will take care of the Fail after all that's been done.
   }
 }
 
@@ -2145,10 +2150,10 @@ void LogMessage::RecordCrashReason(logging::internal::CrashReason* reason) {
 
 GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = &__internal_logging_fail;
 
-void InstallFailureFunction(logging_fail_func_t fail_func) {
+logging_fail_func_t InstallFailureFunction(logging_fail_func_t fail_func) {
   if (!fail_func)
 	fail_func = &__internal_logging_fail;
-  g_logging_fail_func = fail_func;
+  return std::exchange(g_logging_fail_func, fail_func);
 }
 
 logging_fail_func_t GetInstalledFailureFunction(void) {
@@ -2660,17 +2665,17 @@ namespace logging {
 namespace internal {
 // Helper functions for string comparisons.
 #define DEFINE_CHECK_STROP_IMPL(name, func, expected)                         \
-  string* Check##func##expected##Impl(const char* s1, const char* s2,         \
-                                      const char* names) {                    \
+  std::unique_ptr<string> Check##func##expected##Impl(                        \
+      const char* s1, const char* s2, const char* names) {                    \
     bool equal = s1 == s2 || (s1 && s2 && !func(s1, s2));                     \
-    if (equal == expected)                                                    \
+    if (equal == (expected))                                                  \
       return nullptr;                                                         \
     else {                                                                    \
       ostringstream ss;                                                       \
       if (!s1) s1 = "";                                                       \
       if (!s2) s2 = "";                                                       \
       ss << #name " failed: " << names << " (" << s1 << " vs. " << s2 << ")"; \
-      return new string(ss.str());                                            \
+      return std::make_unique<std::string>(ss.str());                         \
     }                                                                         \
   }
 DEFINE_CHECK_STROP_IMPL(CHECK_STREQ, strcmp, true)
@@ -2768,7 +2773,7 @@ LogMessageFatal::__FlushAndFailAtEnd() {
 	LogMessage::Fail();
 }
 
-[[noreturn]] LogMessageFatal::~LogMessageFatal() {
+[[noreturn]] LogMessageFatal::~LogMessageFatal() noexcept(false) {
 	__FlushAndFailAtEnd();
 }
 
@@ -2787,9 +2792,9 @@ ostream* CheckOpMessageBuilder::ForVar2() {
   return stream_;
 }
 
-string* CheckOpMessageBuilder::NewString() {
+std::unique_ptr<string> CheckOpMessageBuilder::NewString() {
   *stream_ << ")";
-  return new string(stream_->str());
+  return std::make_unique<std::string>(stream_->str());
 }
 
 template <>

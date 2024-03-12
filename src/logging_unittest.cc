@@ -41,6 +41,7 @@
 #include <mutex>
 #include <queue>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
@@ -1597,3 +1598,18 @@ TEST(EmailLogging, MaliciousAddress) {
 }
 
 #endif
+
+TEST(Logging, FatalThrow) {
+  auto const fail_func =
+      InstallFailureFunction(+[]()
+#if defined(__has_attribute)
+#  if __has_attribute(noreturn)
+                                  __attribute__((noreturn))
+#  endif  // __has_attribute(noreturn)
+#endif    // defined(__has_attribute)
+                             { throw std::logic_error{"fail"}; });
+  auto restore_fail = [fail_func] { InstallFailureFunction(fail_func); };
+  ScopedExit<decltype(restore_fail)> restore{restore_fail};
+  EXPECT_THROW({ LOG(FATAL) << "must throw to fail"; }, std::logic_error);
+}
+
