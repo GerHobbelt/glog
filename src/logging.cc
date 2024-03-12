@@ -960,7 +960,7 @@ LogFileObject::LogFileObject(LogSeverity severity, const char* base_filename)
       severity_(severity),
       rollover_attempt_(kRolloverAttemptFrequency - 1),
       start_time_(std::chrono::system_clock::now()),
-      initialized_(false) {
+      initialized_(false) {}
 
 LogFileObject::~LogFileObject() {
   std::lock_guard<std::mutex> l{mutex_};
