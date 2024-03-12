@@ -40,6 +40,7 @@
 #include "glog/logging.h"
 #include "googletest.h"
 #include "utilities.h"
+#include "stacktrace.h"
 
 #include "testing.h"
 
@@ -62,11 +63,13 @@ using namespace google;
 
 #  define always_inline
 
-#  if defined(__ELF__) || defined(GLOG_OS_WINDOWS) || defined(GLOG_OS_CYGWIN)
+#  if defined(HAVE_ELF_H) || defined(HAVE_SYS_EXEC_ELF_H) || \
+      defined(GLOG_OS_WINDOWS) || defined(GLOG_OS_CYGWIN)
 // A wrapper function for Symbolize() to make the unit test simple.
-static const char* TrySymbolize(void* pc) {
+static const char* TrySymbolize(void* pc, google::SymbolizeOptions options =
+                                              google::SymbolizeOptions::kNone) {
   static char symbol[4096];
-  if (Symbolize(pc, symbol, sizeof(symbol))) {
+  if (Symbolize(pc, symbol, sizeof(symbol), options)) {
     return symbol;
   } else {
     return nullptr;
@@ -74,8 +77,7 @@ static const char* TrySymbolize(void* pc) {
 }
 #  endif
 
-#  if defined(__ELF__)
-
+#  if defined(HAVE_ELF_H) || defined(HAVE_SYS_EXEC_ELF_H)
 // This unit tests make sense only with GCC.
 // Uses lots of GCC specific features.
 #    if defined(__GNUC__) && !defined(__OPENCC__)
@@ -396,7 +398,8 @@ static void ATTRIBUTE_NOINLINE TestWithPCInsideInlineFunction() {
 static void ATTRIBUTE_NOINLINE TestWithReturnAddress() {
 #    if defined(HAVE_ATTRIBUTE_NOINLINE)
   void* return_address = __builtin_return_address(0);
-  const char* symbol = TrySymbolize(return_address);
+  const char* symbol =
+      TrySymbolize(return_address, google::SymbolizeOptions::kNoLineNumbers);
 
 #      if !defined(_MSC_VER) || !defined(NDEBUG)
   CHECK(symbol != nullptr);
@@ -441,7 +444,8 @@ __declspec(noinline) void TestWithReturnAddress() {
       _ReturnAddress()
 #    endif
       ;
-  const char* symbol = TrySymbolize(return_address);
+  const char* symbol =
+      TrySymbolize(return_address, google::SymbolizeOptions::kNoLineNumbers);
 #    if !defined(_MSC_VER) || !defined(NDEBUG)
   CHECK(symbol != nullptr);
 #if defined(BUILD_MONOLITHIC)
@@ -452,8 +456,8 @@ __declspec(noinline) void TestWithReturnAddress() {
 #    endif
   cout << "Test case TestWithReturnAddress passed." << endl;
 }
-#  endif  // __ELF__
-#endif    // HAVE_STACKTRACE
+#  endif
+#endif  // HAVE_STACKTRACE
 
 #if defined(BUILD_MONOLITHIC)
 #define main(cnt, arr)      glog_symbolize_unittest_main(cnt, arr)
@@ -464,7 +468,7 @@ int main(int argc, const char** argv) {
   InitGoogleLogging(argv[0]);
   InitGoogleTest(&argc, argv);
 #if defined(HAVE_SYMBOLIZE) && defined(HAVE_STACKTRACE)
-#  if defined(__ELF__)
+#  if defined(HAVE_ELF_H) || defined(HAVE_SYS_EXEC_ELF_H)
   // We don't want to get affected by the callback interface, that may be
   // used to install some callback function at InitGoogle() time.
   InstallSymbolizeCallback(nullptr);
@@ -479,7 +483,7 @@ int main(int argc, const char** argv) {
 #  else   // GLOG_OS_WINDOWS
   printf("PASS (no symbolize_unittest support)\n");
   return 0;
-#  endif  // __ELF__
+#  endif  // defined(HAVE_ELF_H) || defined(HAVE_SYS_EXEC_ELF_H)
 #else
   printf("PASS (no symbolize support)\n");
   return 0;

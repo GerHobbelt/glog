@@ -103,8 +103,6 @@ constexpr int NUM_SEVERITIES = 4;
 #define DFATAL_LEVEL GLOG_FATAL
 #endif
 
-extern GOOGLE_GLOG_DLL_DECL const char* const LogSeverityNames[NUM_SEVERITIES];
-
 // NDEBUG usage helpers related to (RAW_)DCHECK:
 //
 // DEBUG_MODE is for small !NDEBUG uses like

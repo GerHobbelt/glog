@@ -61,6 +61,7 @@
 #include "glog/logging.h"
 #include "glog/raw_logging.h"
 #include "googletest.h"
+#include "stacktrace.h"
 #include "utilities.h"
 #include "testing.h"
 
@@ -186,30 +187,33 @@ static void BM_vlog(int n) {
 }
 BENCHMARK(BM_vlog)
 
+namespace {
+
 // Dynamically generate a prefix using the default format and write it to the
 // stream.
-static void PrefixAttacher(std::ostream &s, const LogMessageInfo &l, void* data) {
+static void PrefixAttacher(std::ostream &s, const LogMessageInfo &m, void* data) {
   // Assert that `data` contains the expected contents before producing the
   // prefix (otherwise causing the tests to fail):
   if (data == nullptr || *static_cast<string*>(data) != "good data") {
     return;
   }
 
-  s << l.severity[0]
-    << setw(4) << 1900 + l.time.year()
-    << setw(2) << 1 + l.time.month()
-    << setw(2) << l.time.day()
+  s << m.severity[0]
+    << setw(4) << 1900 + m.time.year()
+    << setw(2) << 1 + m.time.month()
+    << setw(2) << m.time.day()
     << ' '
-    << setw(2) << l.time.hour() << ':'
-    << setw(2) << l.time.minute()  << ':'
-    << setw(2) << l.time.sec() << "."
-    << setw(6) << l.time.usec()
+    << setw(2) << m.time.hour() << ':'
+    << setw(2) << m.time.minute()  << ':'
+    << setw(2) << m.time.sec() << "."
+    << setw(6) << m.time.usec()
     << ' '
-    << setfill(' ') << setw(5)
-    << l.thread_id << setfill('0')
+    << setfill(' ') << setw(5) << m.thread_id << setfill('0')
     << ' '
-    << l.filename << ':' << l.line_number << "]";
+    << l.line_number << "]";
 }
+
+}  // namespace
 
 TEST(GoogleLog, golden_test) {
 	// TODO: The golden test portion of this test is very flakey.
@@ -243,8 +247,8 @@ int main(int argc, const char** argv) {
   // Setting a custom prefix generator (it will use the default format so that
   // the golden outputs can be reused):
   string prefix_attacher_data = "good data";
-  InitGoogleLogging(argv[0], &PrefixAttacher,
-                    static_cast<void*>(&prefix_attacher_data));
+  InitGoogleLogging(argv[0]);
+  InstallPrefixFormatter(&PrefixAttacher, &prefix_attacher_data);
 
   EXPECT_TRUE(IsGoogleLoggingInitialized());
 

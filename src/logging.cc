@@ -48,12 +48,10 @@
 #include <utility>
 
 #include "config.h"
+#include "glog/platform.h"
 #include "glog/raw_logging.h"
+#include "stacktrace.h"
 #include "utilities.h"
-
-#ifdef HAVE_STACKTRACE
-#  include "stacktrace.h"
-#endif
 
 #ifdef GLOG_OS_WINDOWS
 #  include "windows/dirent.h"
@@ -225,6 +223,7 @@ static bool TerminalSupportsColor() {
 
 namespace google {
 
+GLOG_NO_EXPORT
 std::string StrError(int err);
 
 enum GLogColor { COLOR_DEFAULT, COLOR_RED, COLOR_GREEN, COLOR_YELLOW };
@@ -291,13 +290,15 @@ static uint32 MaxLogSize() {
 // is so that streaming can be done more efficiently.
 const size_t LogMessage::kMaxLogMessageLen = 30000;
 
-struct LogMessage::LogMessageData {
+namespace logging {
+namespace internal {
+struct LogMessageData {
   LogMessageData();
 
   int preserved_errno_;  // preserved errno
   // Buffer space; contains complete message text.
   char message_text_[LogMessage::kMaxLogMessageLen + 1];
-  LogStream stream_;
+  LogMessage::LogStream stream_;
   LogSeverity severity_;  // What level is this LogMessage logged at?
   int line_;              // line number where logging call is.
   void (LogMessage::*send_method_)();  // Call this in destructor to send
@@ -314,11 +315,13 @@ struct LogMessage::LogMessageData {
   const char* fullname_;        // fullname of file that called LOG
   bool has_been_flushed_;       // false => data has not been flushed
   bool first_fatal_;            // true => this was first fatal msg
+  std::thread::id thread_id_;
 
- private:
   LogMessageData(const LogMessageData&) = delete;
-  void operator=(const LogMessageData&) = delete;
+  LogMessageData& operator=(const LogMessageData&) = delete;
 };
+}  // namespace internal
+}  // namespace logging
 
 // A mutex that allows only one thread to log at a time, to keep things from
 // getting jumbled.  Some other very uncommon logging operations (like
@@ -333,8 +336,7 @@ int64 LogMessage::num_messages_[NUM_SEVERITIES] = {0, 0, 0, 0};
 // Globally disable log writing (if disk is full)
 static bool stop_writing = false;
 
-const char* const LogSeverityNames[NUM_SEVERITIES] = {"INFO", "WARNING",
-                                                      "ERROR", "FATAL"};
+const char* const LogSeverityNames[] = {"INFO", "WARNING", "ERROR", "FATAL"};
 
 // Has the user called SetExitOnDFatal(true)?
 static bool exit_on_dfatal = true;
@@ -376,9 +378,78 @@ constexpr std::intmax_t kSecondsInDay = 60 * 60 * 24;
 constexpr std::intmax_t kSecondsInWeek = kSecondsInDay * 7;
 
 // Optional user-configured callback to print custom prefixes.
-CustomPrefixCallback custom_prefix_callback = nullptr;
-// User-provided data to pass to the callback:
-void* custom_prefix_callback_data = nullptr;
+class PrefixFormatter {
+ public:
+#if defined(__GNUG__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4996)
+#endif  // __GNUG__
+  PrefixFormatter(CustomPrefixCallback callback, void* data) noexcept
+      : version{V1}, callback_v1{callback}, data{data} {}
+#if defined(__GNUG__)
+#  pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#  pragma warning(pop)
+#endif  // __GNUG__
+  PrefixFormatter(PrefixFormatterCallback callback, void* data) noexcept
+      : version{V2}, callback_v2{callback}, data{data} {}
+
+  void operator()(std::ostream& s, const LogMessage& message) const {
+    switch (version) {
+      case V1:
+#if defined(__GNUG__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4996)
+#endif  // __GNUG__
+        callback_v1(s,
+                    LogMessageInfo(LogSeverityNames[message.severity()],
+                                   message.basename(), message.line(),
+                                   message.thread_id(), message.time()),
+                    data);
+#if defined(__GNUG__)
+#  pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#  pragma warning(pop)
+#endif  // __GNUG__
+        break;
+      case V2:
+        callback_v2(s, message, data);
+        break;
+    }
+  }
+
+  PrefixFormatter(const PrefixFormatter& other) = delete;
+  PrefixFormatter& operator=(const PrefixFormatter& other) = delete;
+
+ private:
+  enum Version { V1, V2 } version;
+  union {
+#if defined(__GNUG__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4996)
+#endif  // __GNUG__
+    CustomPrefixCallback callback_v1;
+#if defined(__GNUG__)
+#  pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#  pragma warning(pop)
+#endif  // __GNUG__
+    PrefixFormatterCallback callback_v2;
+  };
+  // User-provided data to pass to the callback:
+  void* data;
+};
+
+std::unique_ptr<PrefixFormatter> g_prefix_formatter;
 
 struct Filetime {
   std::string name;
@@ -572,12 +643,12 @@ class LogDestination {
   // Send logging info to all registered sinks.
   static void LogToSinks(LogSeverity severity, const char* full_filename,
                          const char* base_filename, int line,
-                         const LogMessageTime& logmsgtime, const char* message,
+                         const LogMessageTime& time, const char* message,
                          size_t message_len);
 
   // Wait for all registered sinks via WaitTillSent
   // including the optional one in "data".
-  static void WaitForSinks(LogMessage::LogMessageData* data);
+  static void WaitForSinks(logging::internal::LogMessageData* data);
 
   static LogDestination* log_destination(LogSeverity severity);
 
@@ -872,19 +943,20 @@ inline void LogDestination::LogToAllLogfiles(
 inline void LogDestination::LogToSinks(LogSeverity severity,
                                        const char* full_filename,
                                        const char* base_filename, int line,
-                                       const LogMessageTime& logmsgtime,
+                                       const LogMessageTime& time,
                                        const char* message,
                                        size_t message_len) {
   std::shared_lock<SinkMutex> l{sink_mutex_};
   if (sinks_) {
     for (size_t i = sinks_->size(); i-- > 0;) {
-      (*sinks_)[i]->send(severity, full_filename, base_filename, line,
-                         logmsgtime, message, message_len);
+      (*sinks_)[i]->send(severity, full_filename, base_filename, line, time,
+                         message, message_len);
     }
   }
 }
 
-inline void LogDestination::WaitForSinks(LogMessage::LogMessageData* data) {
+inline void LogDestination::WaitForSinks(
+    logging::internal::LogMessageData* data) {
   std::shared_lock<SinkMutex> l{sink_mutex_};
   if (sinks_) {
     for (size_t i = sinks_->size(); i-- > 0;) {
@@ -1435,10 +1507,7 @@ void LogFileObject::Write(
       uint32 this_drop_length = total_drop_length - dropped_mem_length_;
       if (this_drop_length >= (2U << 20U)) {
         // Only advise when >= 2MiB to drop
-#  if defined(__ANDROID__) && defined(__ANDROID_API__) && (__ANDROID_API__ < 21)
-        // 'posix_fadvise' introduced in API 21:
-        // * https://android.googlesource.com/platform/bionic/+/6880f936173081297be0dc12f687d341b86a4cfa/libc/libc.map.txt#732
-#  else
+#  if defined(HAVE_POSIX_FADVISE)
         posix_fadvise(
             fileno(file_.get()), static_cast<off_t>(dropped_mem_length_),
             static_cast<off_t>(this_drop_length), POSIX_FADV_DONTNEED);
@@ -1657,8 +1726,8 @@ bool LogCleaner::IsLogLastModifiedOver(
 static std::mutex fatal_msg_lock;
 static logging::internal::CrashReason crash_reason;
 static bool fatal_msg_exclusive = true;
-static LogMessage::LogMessageData fatal_msg_data_exclusive;
-static LogMessage::LogMessageData fatal_msg_data_shared;
+static logging::internal::LogMessageData fatal_msg_data_exclusive;
+static logging::internal::LogMessageData fatal_msg_data_shared;
 
 #ifdef GLOG_THREAD_LOCAL_STORAGE
 // Static thread-local log data space to use, because typically at most one
@@ -1668,16 +1737,16 @@ static thread_local bool thread_data_available = true;
 
 #  if defined(__cpp_lib_byte) && __cpp_lib_byte >= 201603L
 // std::aligned_storage is deprecated in C++23
-alignas(LogMessage::LogMessageData) static thread_local std::byte
-    thread_msg_data[sizeof(LogMessage::LogMessageData)];
+alignas(logging::internal::LogMessageData) static thread_local std::byte
+    thread_msg_data[sizeof(logging::internal::LogMessageData)];
 #  else   // !(defined(__cpp_lib_byte) && __cpp_lib_byte >= 201603L)
 static thread_local std::aligned_storage<
-    sizeof(LogMessage::LogMessageData),
-    alignof(LogMessage::LogMessageData)>::type thread_msg_data;
+    sizeof(logging::internal::LogMessageData),
+    alignof(logging::internal::LogMessageData)>::type thread_msg_data;
 #  endif  // defined(__cpp_lib_byte) && __cpp_lib_byte >= 201603L
 #endif    // defined(GLOG_THREAD_LOCAL_STORAGE)
 
-LogMessage::LogMessageData::LogMessageData()
+logging::internal::LogMessageData::LogMessageData()
     : stream_(message_text_, LogMessage::kMaxLogMessageLen, 0) {}
 
 LogMessage::LogMessage(const char* file, int line, LogSeverity severity,
@@ -1687,7 +1756,8 @@ LogMessage::LogMessage(const char* file, int line, LogSeverity severity,
   data_->stream_.set_ctr(ctr);
 }
 
-LogMessage::LogMessage(const char* file, int line, const CheckOpString& result)
+LogMessage::LogMessage(const char* file, int line,
+                       const logging::internal::CheckOpString& result)
     : allocated_(nullptr) {
   Init(file, line, GLOG_FATAL, &LogMessage::SendToLog);
   stream() << "Check failed: " << (*result.str_) << " ";
@@ -1733,13 +1803,13 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
     // No need for locking, because this is thread local.
     if (thread_data_available) {
       thread_data_available = false;
-      data_ = new (&thread_msg_data) LogMessageData;
+      data_ = new (&thread_msg_data) logging::internal::LogMessageData;
     } else {
-      allocated_ = new LogMessageData();
+      allocated_ = new logging::internal::LogMessageData();
       data_ = allocated_;
     }
 #else   // !defined(GLOG_THREAD_LOCAL_STORAGE)
-    allocated_ = new LogMessageData();
+    allocated_ = new logging::internal::LogMessageData();
     data_ = allocated_;
 #endif  // defined(GLOG_THREAD_LOCAL_STORAGE)
     data_->first_fatal_ = false;
@@ -1770,6 +1840,7 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
   data_->basename_ = const_basename(file);
   data_->fullname_ = file;
   data_->has_been_flushed_ = false;
+  data_->thread_id_ = std::this_thread::get_id();
 
   // If specified, prepend a prefix to each line.  For example:
   //    I20201018 160715 f5d4fbb0 logging.cc:1153]
@@ -1779,7 +1850,7 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
     std::ios saved_fmt(nullptr);
     saved_fmt.copyfmt(stream());
     FillSaver saver(stream(), '0');
-    if (custom_prefix_callback == nullptr) {
+    if (g_prefix_formatter == nullptr) {
       stream() << LogSeverityNames[severity][0];
       if (FLAGS_log_year_in_prefix) {
         stream() << setw(4) << 1900 + time_.year();
@@ -1788,14 +1859,10 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
                << setw(2) << time_.hour() << ':' << setw(2) << time_.minute()
                << ':' << setw(2) << time_.sec() << "." << setw(6)
                << time_.usec() << ' ' << setfill(' ') << setw(5)
-               << std::this_thread::get_id() << setfill('0') << ' '
-               << data_->basename_ << ':' << data_->line_ << "] ";
+               << data_->thread_id_ << setfill('0') << ' ' << data_->basename_
+               << ':' << data_->line_ << "] ";
     } else {
-      custom_prefix_callback(
-          stream(),
-          LogMessageInfo(LogSeverityNames[severity], data_->basename_,
-                         data_->line_, std::this_thread::get_id(), time_),
-          custom_prefix_callback_data);
+      (*g_prefix_formatter)(stream(), *this);
       stream() << " ";
     }
     stream().copyfmt(saved_fmt);
@@ -1815,7 +1882,15 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
   }
 }
 
-const LogMessageTime& LogMessage::time() const { return time_; }
+LogSeverity LogMessage::severity() const noexcept { return data_->severity_; }
+
+int LogMessage::line() const noexcept { return data_->line_; }
+const std::thread::id& LogMessage::thread_id() const noexcept {
+  return data_->thread_id_;
+}
+const char* LogMessage::fullname() const noexcept { return data_->fullname_; }
+const char* LogMessage::basename() const noexcept { return data_->basename_; }
+const LogMessageTime& LogMessage::time() const noexcept { return time_; }
 
 void
 LogMessage::__FlushAndFailAtEnd() {
@@ -2055,7 +2130,7 @@ void LogMessage::RecordCrashReason(logging::internal::CrashReason* reason) {
 	{
 		attempts++;
 		fprintf(stderr, "Throwing C++ exception (abort)\n");
-		fflush(stderr);
+                       const logging::internal::CheckOpString& /*result*/)
 		throw std::exception("aborting");
 	}
 	attempts++;
@@ -2251,26 +2326,26 @@ void LogSink::WaitTillSent() {
 }
 
 string LogSink::ToString(LogSeverity severity, const char* file, int line,
-                         const LogMessageTime& logmsgtime, const char* message,
+                         const LogMessageTime& time, const char* message,
                          size_t message_len) {
   ostringstream stream;
   stream.fill('0');
 
   stream << LogSeverityNames[severity][0];
   if (FLAGS_log_year_in_prefix) {
-    stream << setw(4) << 1900 + logmsgtime.year();
+    stream << setw(4) << 1900 + time.year();
   }
-  stream << setw(2) << 1 + logmsgtime.month()
-         << setw(2) << logmsgtime.day()
+  stream << setw(2) << 1 + time.month()
+         << setw(2) << time.day()
          << ' '
-         << setw(2) << logmsgtime.hour() << ':'
-         << setw(2) << logmsgtime.minute() << ':'
-         << setw(2) << logmsgtime.sec() << '.'
-         << setw(6) << logmsgtime.usec()
+         << setw(2) << time.hour() << ':'
+         << setw(2) << time.minute() << ':'
+         << setw(2) << time.sec() << '.'
+         << setw(6) << time.usec()
          << ' '
          << setw(5) << setfill(' ') << std::this_thread::get_id() << setfill('0')
          << ' '
-         << file << ':' << line << "] ";
+         << line << "] ";
 
   // A call to `write' is enclosed in parenthneses to prevent possible macro
   // expansion.  On Windows, `write' could be a macro defined for portability.
@@ -2581,6 +2656,8 @@ void TruncateStdoutStderr() {
 #endif
 }
 
+namespace logging {
+namespace internal {
 // Helper functions for string comparisons.
 #define DEFINE_CHECK_STROP_IMPL(name, func, expected)                         \
   string* Check##func##expected##Impl(const char* s1, const char* s2,         \
@@ -2601,6 +2678,8 @@ DEFINE_CHECK_STROP_IMPL(CHECK_STRNE, strcmp, false)
 DEFINE_CHECK_STROP_IMPL(CHECK_STRCASEEQ, strcasecmp, true)
 DEFINE_CHECK_STROP_IMPL(CHECK_STRCASENE, strcasecmp, false)
 #undef DEFINE_CHECK_STROP_IMPL
+}  // namespace internal
+}  // namespace logging
 
 // glibc has traditionally implemented two incompatible versions of
 // strerror_r(). There is a poorly defined convention for picking the
@@ -2667,7 +2746,6 @@ int posix_strerror_r(int err, char* buf, size_t len) {
 
 // A thread-safe replacement for strerror(). Returns a string describing the
 // given POSIX error code.
-GLOG_NO_EXPORT
 string StrError(int err) {
   char buf[100];
   int rc = posix_strerror_r(err, buf, sizeof(buf));
@@ -2681,7 +2759,7 @@ LogMessageFatal::LogMessageFatal(const char* file, int line)
     : LogMessage(file, line, GLOG_FATAL) {}
 
 LogMessageFatal::LogMessageFatal(const char* file, int line,
-                                 const CheckOpString& result)
+                                 const logging::internal::CheckOpString& result)
     : LogMessage(file, line, result) {}
 
 [[noreturn]] void
@@ -2694,7 +2772,8 @@ LogMessageFatal::__FlushAndFailAtEnd() {
 	__FlushAndFailAtEnd();
 }
 
-namespace base {
+namespace logging {
+namespace internal {
 
 CheckOpMessageBuilder::CheckOpMessageBuilder(const char* exprtext)
     : stream_(new ostringstream) {
@@ -2712,8 +2791,6 @@ string* CheckOpMessageBuilder::NewString() {
   *stream_ << ")";
   return new string(stream_->str());
 }
-
-}  // namespace base
 
 template <>
 void MakeCheckOpValueString(std::ostream* os, const char& v) {
@@ -2747,21 +2824,47 @@ void MakeCheckOpValueString(std::ostream* os, const std::nullptr_t& /*v*/) {
   (*os) << "nullptr";
 }
 
-void InitGoogleLogging(const char* argv0) {
-  glog_internal_namespace_::InitGoogleLoggingUtilities(argv0);
-}
+}  // namespace internal
+}  // namespace logging
 
+void InitGoogleLogging(const char* argv0) { InitGoogleLoggingUtilities(argv0); }
+
+#if defined(__GNUG__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable : 4996)
+#endif  // __GNUG__
 void InitGoogleLogging(const char* argv0, CustomPrefixCallback prefix_callback,
                        void* prefix_callback_data) {
-  custom_prefix_callback = prefix_callback;
-  custom_prefix_callback_data = prefix_callback_data;
+  if (prefix_callback != nullptr) {
+    g_prefix_formatter = std::make_unique<PrefixFormatter>(
+        prefix_callback, prefix_callback_data);
+  } else {
+    g_prefix_formatter = nullptr;
+  }
   InitGoogleLogging(argv0);
+}
+#if defined(__GNUG__)
+#  pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#  pragma warning(pop)
+#endif  // __GNUG__
+
+void InstallPrefixFormatter(PrefixFormatterCallback callback, void* data) {
+  if (callback != nullptr) {
+    g_prefix_formatter = std::make_unique<PrefixFormatter>(callback, data);
+  } else {
+    g_prefix_formatter = nullptr;
+  }
 }
 
 void ShutdownGoogleLogging() {
-  glog_internal_namespace_::ShutdownGoogleLoggingUtilities();
+  ShutdownGoogleLoggingUtilities();
   LogDestination::DeleteLogDestinations();
   logging_directories_list = nullptr;
+  g_prefix_formatter = nullptr;
 }
 
 void EnableLogCleaner(unsigned int overdue_days) {

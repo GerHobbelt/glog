@@ -48,8 +48,6 @@ def glog_library(with_gflags = 1, **kwargs):
 
     common_copts = [
         "-std=c++14",
-        "-DGLOG_BAZEL_BUILD",
-        "-DHAVE_STRING_H",
         "-I%s/glog_internal" % gendir,
     ] + (["-DGLOG_USE_GFLAGS"] if with_gflags else [])
 
@@ -74,6 +72,7 @@ def glog_library(with_gflags = 1, **kwargs):
         "-DGOOGLE_GLOG_DLL_DECL=__attribute__((visibility(\\\"default\\\")))",
         "-DGLOG_NO_EXPORT=__attribute__((visibility(\\\"default\\\")))",
         "-DHAVE_MODE_T",
+        "-DHAVE_POSIX_FADVISE",
         "-DHAVE_SSIZE_T",
         "-DHAVE_SYS_TYPES_H",
         # For src/utilities.cc.
@@ -87,11 +86,13 @@ def glog_library(with_gflags = 1, **kwargs):
     freebsd_only_copts = [
         # Enable declaration of _Unwind_Backtrace
         "-D_GNU_SOURCE",
+        "-DHAVE_LINK_H",
     ]
 
     linux_only_copts = [
         # For utilities.h.
         "-DHAVE_EXECINFO_H",
+        "-DHAVE_LINK_H",
     ]
 
     darwin_only_copts = [
@@ -102,10 +103,11 @@ def glog_library(with_gflags = 1, **kwargs):
     windows_only_copts = [
         # Override -DGOOGLE_GLOG_DLL_DECL= from the cc_library's defines.
         "-DGOOGLE_GLOG_DLL_DECL=__declspec(dllexport)",
-        "-DGLOG_NO_EXPORT=",
         "-DGLOG_NO_ABBREVIATED_SEVERITIES",
+        "-DGLOG_NO_EXPORT=",
         "-DGLOG_USE_WINDOWS_PORT",
         "-DHAVE__CHSIZE_S",
+        "-DHAVE_DBGHELP",
         "-I" + src_windows,
     ]
 
@@ -115,7 +117,6 @@ def glog_library(with_gflags = 1, **kwargs):
     ]
 
     windows_only_srcs = [
-        "src/glog/log_severity.h",
         "src/windows/dirent.h",
         "src/windows/port.cc",
         "src/windows/port.h",
@@ -127,13 +128,15 @@ def glog_library(with_gflags = 1, **kwargs):
         # GLOG_EXPORT is normally set by export.h, but that's not
         # generated for Bazel.
         "@bazel_tools//src/conditions:windows": [
-            "GLOG_EXPORT=",
             "GLOG_DEPRECATED=__declspec(deprecated)",
+            "GLOG_EXPORT=",
             "GLOG_NO_ABBREVIATED_SEVERITIES",
+            "GLOG_NO_EXPORT=",
         ],
         "//conditions:default": [
             "GLOG_DEPRECATED=__attribute__((deprecated))",
             "GLOG_EXPORT=__attribute__((visibility(\\\"default\\\")))",
+            "GLOG_NO_EXPORT=__attribute__((visibility(\\\"default\\\")))",
         ],
     })
 
@@ -171,6 +174,8 @@ def glog_library(with_gflags = 1, **kwargs):
             "src/logging.cc",
             "src/raw_logging.cc",
             "src/signalhandler.cc",
+            "src/stacktrace.cc",
+            "src/stacktrace.h",
             "src/stacktrace_generic-inl.h",
             "src/stacktrace_libunwind-inl.h",
             "src/stacktrace_powerpc-inl.h",
@@ -180,6 +185,7 @@ def glog_library(with_gflags = 1, **kwargs):
             "src/symbolize.cc",
             "src/symbolize.h",
             "src/utilities.cc",
+            "src/utilities.h",
             "src/vlog_is_on.cc",
         ] + select({
             "@bazel_tools//src/conditions:windows": windows_only_srcs,
@@ -208,6 +214,10 @@ def glog_library(with_gflags = 1, **kwargs):
         copts = final_lib_copts,
         deps = gflags_deps + select({
             "@bazel_tools//src/conditions:windows": [":strip_include_prefix_hack"],
+            "//conditions:default": [],
+        }),
+        linkopts = select({
+            "@bazel_tools//src/conditions:windows": ["dbghelp.lib"],
             "//conditions:default": [],
         }),
         **kwargs

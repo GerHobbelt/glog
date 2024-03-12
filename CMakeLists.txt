@@ -18,7 +18,6 @@ list (APPEND CMAKE_MODULE_PATH ${glog_SOURCE_DIR}/cmake)
 include (CheckCXXSourceCompiles)
 include (CheckCXXSourceRuns)
 include (CheckCXXSymbolExists)
-include (CheckFunctionExists)
 include (CheckIncludeFileCXX)
 include (CheckStructHasMember)
 include (CheckTypeSize)
@@ -126,8 +125,11 @@ if (Unwind_FOUND)
 endif (Unwind_FOUND)
 
 check_include_file_cxx (dlfcn.h HAVE_DLFCN_H)
+check_include_file_cxx (elf.h HAVE_ELF_H)
 check_include_file_cxx (glob.h HAVE_GLOB_H)
+check_include_file_cxx (link.h HAVE_LINK_H)
 check_include_file_cxx (pwd.h HAVE_PWD_H)
+check_include_file_cxx (sys/exec_elf.h HAVE_SYS_EXEC_ELF_H)
 check_include_file_cxx (sys/syscall.h HAVE_SYS_SYSCALL_H)
 check_include_file_cxx (sys/time.h HAVE_SYS_TIME_H)
 check_include_file_cxx (sys/types.h HAVE_SYS_TYPES_H)
@@ -141,12 +143,13 @@ check_include_file_cxx (unistd.h HAVE_UNISTD_H)
 check_type_size (mode_t HAVE_MODE_T LANGUAGE CXX)
 check_type_size (ssize_t HAVE_SSIZE_T LANGUAGE CXX)
 
-check_function_exists (dladdr HAVE_DLADDR)
-check_function_exists (fcntl HAVE_FCNTL)
-check_function_exists (pread HAVE_PREAD)
-check_function_exists (pwrite HAVE_PWRITE)
-check_function_exists (sigaction HAVE_SIGACTION)
-check_function_exists (sigaltstack HAVE_SIGALTSTACK)
+check_cxx_symbol_exists (dladdr dlfcn.h HAVE_DLADDR)
+check_cxx_symbol_exists (fcntl fcntl.h HAVE_FCNTL)
+check_cxx_symbol_exists (posix_fadvise fcntl.h HAVE_POSIX_FADVISE)
+check_cxx_symbol_exists (pread unistd.h HAVE_PREAD)
+check_cxx_symbol_exists (pwrite unistd.h HAVE_PWRITE)
+check_cxx_symbol_exists (sigaction csignal HAVE_SIGACTION)
+check_cxx_symbol_exists (sigaltstack csignal HAVE_SIGALTSTACK)
 
 check_cxx_symbol_exists (backtrace execinfo.h HAVE_EXECINFO_BACKTRACE)
 check_cxx_symbol_exists (backtrace_symbols execinfo.h
@@ -275,9 +278,9 @@ if (WITH_SYMBOLIZE)
       set (HAVE_STACKTRACE 1)
     endif (HAVE_SYMBOLIZE)
   elseif (UNIX)
-    cmake_push_check_state (RESET)
-    check_cxx_symbol_exists (__ELF__ "" HAVE_SYMBOLIZE)
-    cmake_pop_check_state ()
+    if (HAVE_ELF_H OR HAVE_SYS_EXEC_ELF_H)
+      set (HAVE_SYMBOLIZE 1)
+    endif (HAVE_ELF_H OR HAVE_SYS_EXEC_ELF_H)
   elseif (APPLE AND HAVE_DLADDR)
     set (HAVE_SYMBOLIZE 1)
   endif (WIN32 OR CYGWIN)
@@ -365,6 +368,8 @@ set (GLOG_SRCS
   src/logging.cc
   src/raw_logging.cc
   src/signalhandler.cc
+  src/stacktrace.cc
+  src/stacktrace.h
   src/symbolize.cc
   src/symbolize.h
   src/utilities.cc
@@ -467,7 +472,7 @@ if (ANDROID)
 endif (ANDROID)
 
 set_target_properties (glog PROPERTIES VERSION ${glog_VERSION})
-set_target_properties (glog PROPERTIES SOVERSION 1)
+set_target_properties (glog PROPERTIES SOVERSION 2)
 
 if (CYGWIN OR WIN32)
   target_compile_definitions (glog PUBLIC GLOG_NO_ABBREVIATED_SEVERITIES)
