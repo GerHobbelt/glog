@@ -38,6 +38,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <iterator>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <string>
@@ -88,10 +89,6 @@
 #endif
 #ifdef HAVE_SYSLOG_H
 #  include <syslog.h>
-#endif
-
-#ifdef __ANDROID__
-#  include <android/log.h>
 #endif
 
 #ifdef HAVE_SYS_TYPES_H
@@ -432,7 +429,7 @@ class LogFileObject : public base::Logger {
   string base_filename_;
   string symlink_basename_;
   string filename_extension_;  // option users can specify (eg to add port#)
-  FILE* file_{nullptr};
+  std::unique_ptr<FILE> file_;
   LogSeverity severity_;
   uint32 bytes_since_flush_{0};
   uint32 dropped_mem_length_{0};
@@ -816,24 +813,9 @@ inline void LogDestination::MaybeLogToStderr(LogSeverity severity,
                                              size_t prefix_len) {
   if ((severity >= FLAGS_stderrthreshold) || FLAGS_alsologtostderr) {
     ColoredWriteToStderr(severity, message, message_len);
-#ifdef GLOG_OS_WINDOWS
-    (void)prefix_len;
-    // On Windows, also output to the debugger
-    ::OutputDebugStringA(message);
-#elif defined(__ANDROID__)
-    // On Android, also output to logcat
-    const int android_log_levels[NUM_SEVERITIES] = {
-        ANDROID_LOG_INFO,
-        ANDROID_LOG_WARN,
-        ANDROID_LOG_ERROR,
-        ANDROID_LOG_FATAL,
-    };
-    __android_log_write(android_log_levels[severity],
-                        glog_internal_namespace_::ProgramInvocationShortName(),
-                        message + prefix_len);
-#else
-    (void)prefix_len;
-#endif
+    AlsoErrorWrite(severity,
+                   glog_internal_namespace_::ProgramInvocationShortName(),
+                   message + prefix_len);
   }
 }
 
@@ -978,10 +960,7 @@ LogFileObject::LogFileObject(LogSeverity severity, const char* base_filename)
 
 LogFileObject::~LogFileObject() {
   std::lock_guard<std::mutex> l{mutex_};
-  if (file_ != nullptr) {
-    fclose(file_);
-    file_ = nullptr;
-  }
+  file_ = nullptr;
 }
 
 void LogFileObject::SetBasename(const char* basename) {
@@ -990,7 +969,6 @@ void LogFileObject::SetBasename(const char* basename) {
   if (base_filename_ != basename) {
     // Get rid of old log file since we are changing names
     if (file_ != nullptr) {
-      fclose(file_);
       file_ = nullptr;
       rollover_attempt_ = kRolloverAttemptFrequency - 1;
     }
@@ -1003,7 +981,6 @@ void LogFileObject::SetExtension(const char* ext) {
   if (filename_extension_ != ext) {
     // Get rid of old log file since we are changing names
     if (file_ != nullptr) {
-      fclose(file_);
       file_ = nullptr;
       rollover_attempt_ = kRolloverAttemptFrequency - 1;
     }
@@ -1024,7 +1001,7 @@ void LogFileObject::Flush() {
 void LogFileObject::FlushUnlocked(
     const std::chrono::system_clock::time_point& now) {
   if (file_ != nullptr) {
-    fflush(file_);
+    fflush(file_.get());
     bytes_since_flush_ = 0;
   }
   // Figure out when we are due for another flush.
@@ -1048,11 +1025,13 @@ std::wstring toNativeFilename(const std::string& str) {
 #endif
 
 bool LogFileObject::CreateLogfileInternal(const fs::path &filename, int flags) {
-  int fd = open(reinterpret_cast<const char *>(filename.u8string().c_str()), flags, static_cast<mode_t>(FLAGS_logfile_mode));
-  if (fd == -1) return false;
+  FileDescriptor fd{
+      open(reinterpret_cast<const char *>(filename.u8string().c_str()), flags, static_cast<mode_t>(FLAGS_logfile_mode))
+  );
+  if (!fd) return false;
 #ifdef HAVE_FCNTL
   // Mark the file close-on-exec. We don't really care if this fails
-  fcntl(fd, F_SETFD, FD_CLOEXEC);
+  fcntl(fd.get(), F_SETFD, FD_CLOEXEC);
 
   // Mark the file as exclusive write access to avoid two clients logging to the
   // same file. This applies particularly when !FLAGS_timestamp_in_logfile_name
@@ -1071,17 +1050,15 @@ bool LogFileObject::CreateLogfileInternal(const fs::path &filename, int flags) {
   w_lock.l_whence = SEEK_SET;
   w_lock.l_len = 0;
 
-  int wlock_ret = fcntl(fd, F_SETLK, &w_lock);
+  int wlock_ret = fcntl(fd.get(), F_SETLK, &w_lock);
   if (wlock_ret == -1) {
-    close(fd);  // as we are failing already, do not check errors here
     return false;
   }
 #endif
 
   // fdopen in append mode so if the file exists it will fseek to the end
-  file_ = fdopen(fd, "a");  // Make a FILE*.
-  if (file_ == nullptr) {      // Man, we're screwed!
-    close(fd);
+  file_.reset(fdopen(fd.release(), "a"));  // Make a FILE*.
+  if (file_ == nullptr) {                  // Man, we're screwed!
     if (FLAGS_timestamp_in_logfile_name) {
       std::error_code dummy_err;
       (void)fs::remove(filename, dummy_err);  // Erase the half-baked evidence: an unusable log file, only if we just created it.
@@ -1092,7 +1069,7 @@ bool LogFileObject::CreateLogfileInternal(const fs::path &filename, int flags) {
   // https://github.com/golang/go/issues/27638 - make sure we seek to the end to
   // append empirically replicated with wine over mingw build
   if (!FLAGS_timestamp_in_logfile_name) {
-    if (fseek(file_, 0, SEEK_END) != 0) {
+    if (fseek(file_.get(), 0, SEEK_END) != 0) {
       return false;
     }
   }
@@ -1256,7 +1233,6 @@ void LogFileObject::Write(
   
   bool roll_needed = CheckNeedRollLogFiles(timestamp);
   if (roll_needed) {
-    if (file_ != nullptr) fclose(file_);
     file_ = nullptr;
     file_length_ = bytes_since_flush_ = dropped_mem_length_ = 0;
     rollover_attempt_ = kRolloverAttemptFrequency - 1;
@@ -1414,7 +1390,7 @@ void LogFileObject::Write(
       const string& file_header_string = file_header_stream.str();
 
       const size_t header_len = file_header_string.size();
-      fwrite(file_header_string.data(), 1, header_len, file_);
+      fwrite(file_header_string.data(), 1, header_len, file_.get());
       file_length_ += header_len;
       bytes_since_flush_ += header_len;
     }
@@ -1428,7 +1404,7 @@ void LogFileObject::Write(
     // 4096 bytes. fwrite() returns 4096 for message lengths that are
     // greater than 4096, thereby indicating an error.
     errno = 0;
-    fwrite(message, 1, message_len, file_);
+    fwrite(message, 1, message_len, file_.get());
     if (FLAGS_stop_logging_if_full_disk &&
         errno == ENOSPC) {  // disk full, stop writing to disk
       stop_writing = true;  // until the disk is
@@ -1463,9 +1439,9 @@ void LogFileObject::Write(
         // 'posix_fadvise' introduced in API 21:
         // * https://android.googlesource.com/platform/bionic/+/6880f936173081297be0dc12f687d341b86a4cfa/libc/libc.map.txt#732
 #  else
-        posix_fadvise(fileno(file_), static_cast<off_t>(dropped_mem_length_),
-                      static_cast<off_t>(this_drop_length),
-                      POSIX_FADV_DONTNEED);
+        posix_fadvise(
+            fileno(file_.get()), static_cast<off_t>(dropped_mem_length_),
+            static_cast<off_t>(this_drop_length), POSIX_FADV_DONTNEED);
 #  endif
         dropped_mem_length_ = total_drop_length;
       }
@@ -1679,7 +1655,7 @@ bool LogCleaner::IsLogLastModifiedOver(
 // for exclusive use by the first thread, and one for shared use by
 // all other threads.
 static std::mutex fatal_msg_lock;
-static CrashReason crash_reason;
+static logging::internal::CrashReason crash_reason;
 static bool fatal_msg_exclusive = true;
 static LogMessage::LogMessageData fatal_msg_data_exclusive;
 static LogMessage::LogMessageData fatal_msg_data_shared;
@@ -2043,18 +2019,14 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     const char* message = "*** Check failure stack trace: ***\n";
 	fputs(message, stderr);  	// Ignore errors.
 	fflush(stderr);
-#if defined(__ANDROID__)
-    // ANDROID_LOG_FATAL as this message is of FATAL severity.
-    __android_log_write(ANDROID_LOG_FATAL,
-                        glog_internal_namespace_::ProgramInvocationShortName(),
-                        message);
-#endif
+    AlsoErrorWrite(GLOG_FATAL,
+                   glog_internal_namespace_::ProgramInvocationShortName(),
+                   message);
     //Fail();  -- do NOT call that one here: other loggers may be active and we want to flush them all. FlushAndFail will take care of the Fail after all that's been done.
   }
 }
 
-void LogMessage::RecordCrashReason(
-    glog_internal_namespace_::CrashReason* reason) {
+void LogMessage::RecordCrashReason(logging::internal::CrashReason* reason) {
   reason->filename = fatal_msg_data_exclusive.fullname_;
   reason->line_number = fatal_msg_data_exclusive.line_;
   reason->message = fatal_msg_data_exclusive.message_text_ +
@@ -2418,17 +2390,17 @@ bool SendEmail(const char* dest, const char* subject, const char* body) {
   return SendEmailInternal(dest, subject, body, true);
 }
 
-static void GetTempDirectories(vector<string>* list) {
-  list->clear();
+static void GetTempDirectories(vector<string>& list) {
+  list.clear();
 #ifdef GLOG_OS_WINDOWS
   // On windows we'll try to find a directory in this order:
   //   C:/Documents & Settings/whomever/TEMP (or whatever GetTempPath() is)
   //   C:/TMP/
   //   C:/TEMP/
   char tmp[MAX_PATH];
-  if (GetTempPathA(MAX_PATH, tmp)) list->push_back(tmp);
-  list->push_back("C:\\TMP\\");
-  list->push_back("C:\\TEMP\\");
+  if (GetTempPathA(MAX_PATH, tmp)) list.push_back(tmp);
+  list.push_back("C:\\TMP\\");
+  list.push_back("C:\\TEMP\\");
 #else
   // Directories, in order of preference. If we find a dir that
   // exists, we stop adding other less-preferred dirs
@@ -2452,7 +2424,7 @@ static void GetTempDirectories(vector<string>* list) {
     if (dstr[dstr.size() - 1] != '/') {
       dstr += "/";
     }
-    list->push_back(dstr);
+    list.push_back(dstr);
 
     struct stat statbuf;
     if (!stat(d, &statbuf) && S_ISDIR(statbuf.st_mode)) {
@@ -2463,12 +2435,12 @@ static void GetTempDirectories(vector<string>* list) {
 #endif
 }
 
-static vector<string>* logging_directories_list;
+static std::unique_ptr<std::vector<std::string>> logging_directories_list;
 
 const vector<string>& GetLoggingDirectories() {
   // Not strictly thread-safe but we're called early in InitGoogle().
   if (logging_directories_list == nullptr) {
-    logging_directories_list = new vector<string>;
+    logging_directories_list = std::make_unique<std::vector<std::string>>();
 
     if (!FLAGS_log_dir.empty()) {
       // Ensure the specified path ends with a directory delimiter.
@@ -2480,7 +2452,7 @@ const vector<string>& GetLoggingDirectories() {
         logging_directories_list->push_back(FLAGS_log_dir);
       }
     } else {
-      GetTempDirectories(logging_directories_list);
+      GetTempDirectories(*logging_directories_list);
 #ifdef GLOG_OS_WINDOWS
       char tmp[MAX_PATH];
       if (GetWindowsDirectoryA(tmp, MAX_PATH))
@@ -2498,14 +2470,14 @@ const vector<string>& GetLoggingDirectories() {
 // subset of the directories returned by GetLoggingDirectories().
 // Thread-safe.
 GLOG_NO_EXPORT
-void GetExistingTempDirectories(vector<string>* list) {
+void GetExistingTempDirectories(vector<string>& list) {
   GetTempDirectories(list);
-  auto i_dir = list->begin();
-  while (i_dir != list->end()) {
+  auto i_dir = list.begin();
+  while (i_dir != list.end()) {
     // zero arg to access means test for existence; no constant
     // defined on windows
     if (access(i_dir->c_str(), 0)) {
-      i_dir = list->erase(i_dir);
+      i_dir = list.erase(i_dir);
     } else {
       ++i_dir;
     }
@@ -2526,8 +2498,8 @@ void TruncateLogFile(const char* path, uint64 limit, uint64 keep) {
   if (strncmp(procfd_prefix, path, strlen(procfd_prefix))) flags |= O_NOFOLLOW;
 #  endif
 
-  int fd = open(path, flags);
-  if (fd == -1) {
+  FileDescriptor fd{open(path, flags)};
+  if (!fd) {
     if (errno == EFBIG) {
       // The log file in question has got too big for us to open. The
       // real fix for this would be to compile logging.cc (or probably
@@ -2535,7 +2507,7 @@ void TruncateLogFile(const char* path, uint64 limit, uint64 keep) {
       // rather scary.
       // Instead just truncate the file to something we can manage
 #  ifdef HAVE__CHSIZE_S
-      if (_chsize_s(fd, 0) != 0) {
+      if (_chsize_s(fd.get(), 0) != 0) {
 #  else
       if (truncate(path, 0) == -1) {
 #  endif
@@ -2549,16 +2521,16 @@ void TruncateLogFile(const char* path, uint64 limit, uint64 keep) {
     return;
   }
 
-  if (fstat(fd, &statbuf) == -1) {
+  if (fstat(fd.get(), &statbuf) == -1) {
     PLOG(ERROR) << "Unable to fstat()";
-    goto out_close_fd;
+    return;
   }
 
   // See if the path refers to a regular file bigger than the
   // specified limit
-  if (!S_ISREG(statbuf.st_mode)) goto out_close_fd;
-  if (statbuf.st_size <= static_cast<off_t>(limit)) goto out_close_fd;
-  if (statbuf.st_size <= static_cast<off_t>(keep)) goto out_close_fd;
+  if (!S_ISREG(statbuf.st_mode)) return;
+  if (statbuf.st_size <= static_cast<off_t>(limit)) return;
+  if (statbuf.st_size <= static_cast<off_t>(keep)) return;
 
   // This log file is too large - we need to truncate it
   LOG(INFO) << "Truncating " << path << " to " << keep << " bytes";
@@ -2567,8 +2539,10 @@ void TruncateLogFile(const char* path, uint64 limit, uint64 keep) {
   read_offset = statbuf.st_size - static_cast<off_t>(keep);
   write_offset = 0;
   ssize_t bytesin, bytesout;
-  while ((bytesin = pread(fd, copybuf, sizeof(copybuf), read_offset)) > 0) {
-    bytesout = pwrite(fd, copybuf, static_cast<size_t>(bytesin), write_offset);
+  while ((bytesin = pread(fd.get(), copybuf, sizeof(copybuf), read_offset)) >
+         0) {
+    bytesout =
+        pwrite(fd.get(), copybuf, static_cast<size_t>(bytesin), write_offset);
     if (bytesout == -1) {
       PLOG(ERROR) << "Unable to write to " << path;
       break;
@@ -2584,15 +2558,13 @@ void TruncateLogFile(const char* path, uint64 limit, uint64 keep) {
     // end of the file after our last read() above, we lose their latest
     // data. Too bad ...
 #  ifdef HAVE__CHSIZE_S
-  if (_chsize_s(fd, write_offset) != 0) {
+  if (_chsize_s(fd.get(), write_offset) != 0) {
 #  else
-  if (ftruncate(fd, write_offset) == -1) {
+  if (ftruncate(fd.get(), write_offset) == -1) {
 #  endif
     PLOG(ERROR) << "Unable to truncate " << path;
   }
 
-out_close_fd:
-  close(fd);
 #else
   LOG(ERROR) << "No log truncation support.";
 #endif
@@ -2789,7 +2761,6 @@ void InitGoogleLogging(const char* argv0, CustomPrefixCallback prefix_callback,
 void ShutdownGoogleLogging() {
   glog_internal_namespace_::ShutdownGoogleLoggingUtilities();
   LogDestination::DeleteLogDestinations();
-  delete logging_directories_list;
   logging_directories_list = nullptr;
 }
 
