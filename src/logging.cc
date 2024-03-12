@@ -1823,7 +1823,7 @@ const char* LogMessage::fullname() const noexcept { return data_->fullname_; }
 const char* LogMessage::basename() const noexcept { return data_->basename_; }
 const LogMessageTime& LogMessage::time() const noexcept { return time_; }
 
-void
+[[noreturn]] void
 LogMessage::__FlushAndFailAtEnd() {
 	try {
 		Flush();

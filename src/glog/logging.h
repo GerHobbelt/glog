@@ -462,7 +462,11 @@ GOOGLE_GLOG_DLL_DECL bool IsGoogleLoggingInitialized();
 // Shutdown google's logging library.
 GOOGLE_GLOG_DLL_DECL void ShutdownGoogleLogging();
 
+#if defined(__GNUC__)
+typedef void (*logging_fail_func_t)() __attribute__((noreturn));
+#else
 typedef void (*logging_fail_func_t)();
+#endif
 
 class LogMessage;
 
@@ -1280,7 +1284,7 @@ class GOOGLE_GLOG_DLL_DECL LogMessage {
   LogMessage(const char* file, int line,
              const logging::internal::CheckOpString& result);
 
-  void __FlushAndFailAtEnd();
+  [[noreturn]] void __FlushAndFailAtEnd();
 
   ~LogMessage() noexcept(false);
 
@@ -1551,7 +1555,7 @@ GOOGLE_GLOG_DLL_DECL void TruncateStdoutStderr();
 // Thread-safe.
 GOOGLE_GLOG_DLL_DECL const char* GetLogSeverityName(LogSeverity severity);
 
-GOOGLE_GLOG_DLL_DECL @ac_cv___attribute___noreturn@ void logging_fail();
+GOOGLE_GLOG_DLL_DECL [[noreturn]] void logging_fail();
 
 
 // ---------------------------------------------------------------------
@@ -1613,7 +1617,7 @@ class GOOGLE_GLOG_DLL_DECL NullStream : public LogMessage::LogStream {
   // the overloaded NullStream::operator<< will not be invoked.
   NullStream() : LogMessage::LogStream(message_buffer_, 1, 0) { }
   NullStream(const char* /*file*/, int /*line*/,
-             const logging::internal::CheckOpString& /*result*/);
+             const logging::internal::CheckOpString& /*result*/) :
       LogMessage::LogStream(message_buffer_, 1, 0) { }
   NullStream &stream() { return *this; }
 

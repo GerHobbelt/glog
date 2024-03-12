@@ -98,9 +98,9 @@ constexpr int NUM_SEVERITIES = 4;
 
 // DFATAL is FATAL in debug mode, ERROR in normal mode
 #ifdef NDEBUG
-#define DFATAL_LEVEL GLOG_ERROR
+#  define DFATAL_LEVEL GLOG_ERROR
 #else
-#define DFATAL_LEVEL GLOG_FATAL
+#  define DFATAL_LEVEL GLOG_FATAL
 #endif
 
 // NDEBUG usage helpers related to (RAW_)DCHECK:
