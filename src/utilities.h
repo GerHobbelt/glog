@@ -62,11 +62,17 @@
 
 #include "config.h"
 #include "glog/platform.h"
+#if defined(GLOG_OS_WINDOWS)
+#  include <windows.h>
+#endif
 #if defined(GLOG_USE_WINDOWS_PORT)
 #  include "port.h"
 #endif
 #if defined(HAVE_UNISTD_H)
 #  include <unistd.h>
+#endif
+#if defined(HAVE_IO_H)
+#  include <io.h>
 #endif
 #if !defined(HAVE_SSIZE_T)
 #  if defined(GLOG_OS_WINDOWS)
@@ -213,20 +219,32 @@ class GLOG_NO_EXPORT FileDescriptor final {
 
   constexpr int get() const noexcept { return fd_; }
 
-  int release() noexcept { return std::exchange(fd_, InvalidHandle); }
-  void reset(std::nullptr_t) noexcept { safe_close(); }
-  void reset() noexcept { reset(nullptr); }
+  int release() noexcept {
+    return std::exchange(fd_, InvalidHandle);
+  }
+  void reset(std::nullptr_t) noexcept {
+    safe_close();
+  }
+  void reset() noexcept {
+    reset(nullptr);
+  }
   void reset(int fd) noexcept {
     reset();
     fd_ = fd;
   }
 
-  int close() noexcept { return unsafe_close(); }
+  int close() noexcept {
+    return unsafe_close();
+  }
 
-  ~FileDescriptor() { safe_close(); }
+  ~FileDescriptor() {
+    safe_close();
+  }
 
  private:
-  int unsafe_close() noexcept { return ::close(release()); }
+  int unsafe_close() noexcept {
+    return ::close(release());
+  }
   void safe_close() noexcept {
     if (*this) {
       unsafe_close();

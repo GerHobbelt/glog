@@ -1675,7 +1675,7 @@ GOOGLE_GLOG_DLL_DECL bool IsFailureSignalHandlerInstalled();
 // is the size of the message.  You should not expect the data is
 // terminated with '\0'.
 GOOGLE_GLOG_DLL_DECL void InstallFailureWriter(
-                                                     size_t size));
+    void (*writer)(const char* data, size_t size));
 
 // Dump stack trace as a string.
 GOOGLE_GLOG_DLL_DECL std::string GetStackTrace();

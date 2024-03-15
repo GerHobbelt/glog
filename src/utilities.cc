@@ -31,6 +31,7 @@
 
 #define _GNU_SOURCE 1
 
+#include "config.h"
 #include "utilities.h"
 
 #include <atomic>
@@ -40,7 +41,6 @@
 #include <cstdlib>
 
 #include "base/googleinit.h"
-#include "config.h"
 #include "glog/flags.h"
 #include "glog/logging.h"
 #include "stacktrace.h"

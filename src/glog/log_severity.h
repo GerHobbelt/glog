@@ -30,14 +30,6 @@
 #ifndef BASE_LOG_SEVERITY_H__
 #define BASE_LOG_SEVERITY_H__
 
-#ifndef GLOG_LOGGING_H
-#error "Include glog/logging.h instead of log_severity.h"
-#endif
-
-#if !defined(GOOGLE_GLOG_DLL_DECL)
-#  error <glog/log_severity.h> was not included correctly. See the documentation for how to consume the library.
-#endif
-
 namespace google {
 
 // The recommended semantics of the log levels are as follows:
