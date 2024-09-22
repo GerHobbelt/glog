@@ -7,9 +7,10 @@
 #define main(cnt, arr)      glog_package_config_unittest_main(cnt, arr)
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
-    google::InitGoogleLogging(argv[0]);
+  google::InitGoogleLogging(argv[0]);
 
 	return 0;
 }

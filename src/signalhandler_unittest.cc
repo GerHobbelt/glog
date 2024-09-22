@@ -82,6 +82,7 @@ static void WriteToStdout(const char* data, size_t size) {
 #define main(cnt, arr)      glog_signalhandler_unittest_main(cnt, arr)
 #endif
 
+extern "C"
 int main(int argc, const char** argv) {
 #if defined(HAVE_STACKTRACE) && defined(HAVE_SYMBOLIZE)
   InitGoogleLogging(argv[0]);

@@ -105,6 +105,7 @@ TEST(ScopedMockLogTest, LogDuringIntercept) {
 #define main(cnt, arr)      glog_mock_log_test_main(cnt, arr)
 #endif
 
+extern "C"
 int main(int argc, const char** argv) {
   google::InitGoogleLogging(argv[0]);
   testing::InitGoogleTest(&argc, argv);

@@ -237,6 +237,7 @@ void ATTRIBUTE_NOINLINE CheckStackTrace(int i) {
 #define main(cnt, arr)      glog_stacktrace_unittest_main(cnt, arr)
 #endif
 
+extern "C"
 int main(int argc, const char** argv) {
   FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);
@@ -255,6 +256,7 @@ int main(int argc, const char** argv) {
 #define main(cnt, arr)      glog_stacktrace_unittest_main(cnt, arr)
 #endif
 
+extern "C"
 int main(int argc, const char** argv) {
 #ifdef GLOG_BAZEL_BUILD
   printf("HAVE_STACKTRACE is expected to be defined in Bazel tests\n");

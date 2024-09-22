@@ -445,6 +445,7 @@ __declspec(noinline) void TestWithReturnAddress() {
 #define main(cnt, arr)      glog_symbolize_unittest_main(cnt, arr)
 #endif
 
+extern "C"
 int main(int argc, const char** argv) {
   FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);

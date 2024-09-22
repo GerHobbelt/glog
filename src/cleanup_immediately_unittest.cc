@@ -73,6 +73,7 @@ TEST(CleanImmediately, logging) {
 #define main(cnt, arr)      glog_cleanup_immediately_unittest_main(cnt, arr)
 #endif
 
+extern "C"
 int main(int argc, const char **argv) {
   FLAGS_colorlogtostderr = false;
   FLAGS_timestamp_in_logfile_name = true;

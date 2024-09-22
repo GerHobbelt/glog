@@ -154,6 +154,7 @@ TEST(Demangle, FromFile) {
 #define main(cnt, arr)      glog_demangle_unittest_main(cnt, arr)
 #endif
 
+extern "C"
 int main(int argc, const char** argv) {
 #ifdef HAVE_LIB_GFLAGS
   ParseCommandLineFlags(&argc, &argv, true);

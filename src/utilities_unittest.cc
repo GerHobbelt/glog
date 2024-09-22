@@ -57,6 +57,7 @@ TEST(utilities, InitGoogleLoggingDeathTest) {
 #define main(cnt, arr)      glog_utilities_unittest_main(cnt, arr)
 #endif
 
+extern "C"
 int main(int argc, const char** argv) {
   InitGoogleLogging(argv[0]);
   InitGoogleTest(&argc, argv);

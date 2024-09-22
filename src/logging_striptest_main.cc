@@ -143,6 +143,7 @@ static jmp_buf ret_on_uncaught_exception;
 #define main(cnt, arr)      CAT(glog_logging_striptest, GOOGLE_STRIP_LOG, _main)(cnt, arr)
 #endif
 
+extern "C"
 int main(int argc, const char** argv) {
   FLAGS_logtostderr = true;
   InitGoogleLogging(argv[0]);

@@ -114,6 +114,7 @@ static void TestSTLLogging() {
 #define main(cnt, arr)      glog_stl_logging_unittest_main(cnt, arr)
 #endif
 
+extern "C"
 int main(int argc, const char** argv) {
   TestSTLLogging();
   std::cout << "PASS\n";
