@@ -336,7 +336,7 @@ if (WITH_SYMBOLIZE)
 
     void foobar() { }
 
-    int main()
+    int main(void)
     {
         HANDLE process = GetCurrentProcess();
 
@@ -363,7 +363,7 @@ if (WITH_SYMBOLIZE)
   elseif (UNIX)
     cmake_push_check_state (RESET)
     check_cxx_source_compiles ([=[
-    int main()
+    int main(void)
     {
       #ifndef __ELF__
       #error __ELF__ not defined
@@ -383,7 +383,7 @@ add_compile_definitions (GLOG_NO_SYMBOLIZE_DETECTION)
 check_cxx_source_compiles ("
 #include <cstdlib>
 #include <ctime>
-int main()
+int main(void)
 {
     time_t timep;
     struct tm result;
