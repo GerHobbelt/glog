@@ -2185,6 +2185,15 @@ void LogMessage::RecordCrashReason(
 
 GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = &__internal_logging_fail;
 
+GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func =
+    reinterpret_cast<logging_fail_func_t>(&abort);
+
+NullStreamBase::NullStreamBase() noexcept = default;
+NullStreamBase::NullStreamBase(const char* /*file*/, int /*line*/,
+                               const CheckOpString& /*result*/) noexcept {}
+NullStreamBase& NullStreamBase::stream() noexcept { return *this; }
+NullStreamBase::~NullStreamBase() = default;
+
 void InstallFailureFunction(logging_fail_func_t fail_func) {
   if (!fail_func)
 	fail_func = &__internal_logging_fail;
