@@ -533,9 +533,11 @@ static inline void WriteToFile(const string& body, const string& file) {
 static inline bool MungeAndDiffTest(const string& golden_filename,
                                     CapturedStream* cap) {
   if (cap == s_captured_streams[STDOUT_FILENO]) {
-    CHECK(cap) << ": did you forget CaptureTestStdout()?\n";
+    LOG_IF(ERROR, GOOGLE_PREDICT_BRANCH_NOT_TAKEN(!cap))
+        << "Captured Stream Check failed:: did you forget CaptureTestStdout()?\n";
   } else {
-    CHECK(cap) << ": did you forget CaptureTestStderr()?\n";
+    LOG_IF(ERROR, GOOGLE_PREDICT_BRANCH_NOT_TAKEN(!cap))
+		<< "Captured Stream Check failed:: did you forget CaptureTestStderr()?\n";
   }
   
   if (!cap)
