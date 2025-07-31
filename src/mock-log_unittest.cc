@@ -58,9 +58,9 @@ TEST(ScopedMockLogTest, InterceptsLog) {
   InSequence s;
   EXPECT_CALL(log,
               Log(GLOG_WARNING, EndsWith("mock-log_unittest.cc"), "Fishy."));
-  EXPECT_CALL(log, Log(GLOG_INFO, _, "Working..."))
+  EXPECT_CALL(log, Log(GLOG_INFO, {}, "Working..."))
       .Times(2);
-  EXPECT_CALL(log, Log(GLOG_ERROR, _, "Bad!!"));
+  EXPECT_CALL(log, Log(GLOG_ERROR, {}, "Bad!!"));
 
   LOG(WARNING) << "Fishy.";
   LOG(INFO) << "Working...";

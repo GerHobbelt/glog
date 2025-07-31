@@ -1354,7 +1354,7 @@ TEST(DVLog, Basic) {
 
 #if defined(NDEBUG)
   // We are expecting that nothing is logged.
-  EXPECT_CALL(log, Log(_, _, _)).Times(0);
+  EXPECT_CALL(log, Log(GLOG_INFO, {}, {})).Times(0);
 #else
   EXPECT_CALL(log, Log(GLOG_INFO, __FILE__, "debug log"));
 #endif
@@ -1367,7 +1367,7 @@ TEST(DVLog, V0) {
   ScopedMockLog log;
 
   // We are expecting that nothing is logged.
-  EXPECT_CALL(log, Log(_, _, _)).Times(0);
+  EXPECT_CALL(log, Log(GLOG_INFO, {}, {})).Times(0);
 
   FLAGS_v = 0;
   DVLOG(1) << "debug log";
@@ -1439,8 +1439,8 @@ TEST(LogBacktraceAt, DoesNotBacktraceWhenDisabled) {
 
   FLAGS_log_backtrace_at = "";
 
-  EXPECT_CALL(log, Log(_, _, "Backtrace me"));
-  EXPECT_CALL(log, Log(_, _, "Not me"));
+  EXPECT_CALL(log, Log(GLOG_INFO, {}, "Backtrace me"));
+  EXPECT_CALL(log, Log(GLOG_INFO, {}, "Not me"));
 
   BacktraceAtHelper();
 }
@@ -1457,12 +1457,12 @@ TEST(LogBacktraceAt, DoesBacktraceAtRightLineWhenEnabled) {
   // the name of the containing function, followed by the log message.
   // We use HasSubstr()s instead of ContainsRegex() for environments
   // which don't have regexp.
-  EXPECT_CALL(log, Log(_, _, AllOf(HasSubstr("stacktrace:"),
+  EXPECT_CALL(log, Log(GLOG_INFO, {}, AllOf(HasSubstr("stacktrace:"),
                                    HasSubstr("BacktraceAtHelper"),
                                    HasSubstr("main"),
                                    HasSubstr("Backtrace me"))));
   // Other LOGs should not include a backtrace.
-  EXPECT_CALL(log, Log(_, _, "Not me"));
+  EXPECT_CALL(log, Log(GLOG_INFO, {}, "Not me"));
 
   BacktraceAtHelper();
 }
