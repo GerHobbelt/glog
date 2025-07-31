@@ -71,7 +71,7 @@ _START_GOOGLE_NAMESPACE_
 // macro. So far, we don't need pretty printing for __FILE__, etc.
 
 // A wrapper for abort() to make it callable in ? :.
-static int AssertFail() {
+static int AssertFail() noexcept(false) {
   logging_fail();
   return 0;  // Should not reach.
 }

@@ -1921,6 +1921,8 @@ const LogMessageTime& LogMessage::getLogMessageTime() const {
   return logmsgtime_;
 }
 
+extern "C" void BreakIntoDebugger(void);
+
 void
 LogMessage::__FlushAndFailAtEnd() {
 	try {
@@ -1938,12 +1940,18 @@ LogMessage::__FlushAndFailAtEnd() {
 #endif // defined(GLOG_THREAD_LOCAL_STORAGE)
 	}
     catch (...) {
+		BreakIntoDebugger();
 		std::exception_ptr e = std::current_exception(); // capture
-		auto msg = (e != nullptr ? e->what() : nullptr);
-		if (msg != nullptr)
-			fprintf(stderr, "Exception caught: %s. Rotten way to do this sort of thing anyway.\n", msg);
-		else
-            fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.\n");
+        try {
+          if (e) {
+            std::rethrow_exception(e);
+          }
+        } catch (const std::exception& e) {
+		  auto msg = e.what();
+		  fprintf(stderr, "Exception caught: %s. Rotten way to do this sort of thing anyway.\n", msg);
+		} catch (...) {
+          fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.\n");
+		}
 #if 0			
 		std::rethrow_exception(eptr);
 #endif		
@@ -2184,7 +2192,7 @@ void LogMessage::RecordCrashReason(
 	attempts++;
 	fprintf(stderr, "Triggering SEH exception (abort)\n");
 	fflush(stderr);
-	volatile int* pInt = 0x00000000;
+	volatile int* pInt = (int *)0x00000001;
 	*pInt = 20;
 #if 0
 	abort();
@@ -2214,17 +2222,17 @@ bool HasInstalledCustomFailureFunction(void) {
 }
 
 
-[[noreturn]] void LogMessage::Fail() {
+[[noreturn]] void LogMessage::Fail() noexcept(false) {
   g_logging_fail_func();
   throw std::exception("LogMessage::Fail::aborting...");
 }
 
-[[noreturn]] void logging_fail() {
+[[noreturn]] void logging_fail() noexcept(false) {
 	g_logging_fail_func();
 	throw std::exception("logging_fail::FATAL::aborting...");
 }
 
-[[noreturn]] void NullStreamFatal::__Fail() {
+[[noreturn]] void NullStreamFatal::__Fail() noexcept(false) {
 	g_logging_fail_func();
 	throw std::exception("NullStreamFatal::aborting...");
 };
@@ -2802,13 +2810,21 @@ LogMessageFatal::LogMessageFatal(const char* file, int line,
     LogMessage(file, line, result) {}
 
 [[noreturn]] void
-LogMessageFatal::__FlushAndFailAtEnd() {
+LogMessageFatal::__FlushAndFailAtEnd() noexcept(false) {
 	Flush();
-	LogMessage::Fail();
+  try {
+    LogMessage::Fail();
+  } catch (std::exception& e) {
+    throw e;
+  }
 }
 
-[[noreturn]] LogMessageFatal::~LogMessageFatal() {
-	__FlushAndFailAtEnd();
+[[noreturn]] LogMessageFatal::~LogMessageFatal() noexcept(false) {
+  try {
+    __FlushAndFailAtEnd();
+  } catch (std::exception& e) {
+    throw e;
+  }
 }
 
 namespace base {

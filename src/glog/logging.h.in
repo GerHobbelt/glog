@@ -1757,7 +1757,7 @@ GOOGLE_GLOG_DLL_DECL void TruncateStdoutStderr();
 // Thread-safe.
 GOOGLE_GLOG_DLL_DECL const char* GetLogSeverityName(LogSeverity severity);
 
-GOOGLE_GLOG_DLL_DECL @ac_cv___attribute___noreturn@ void logging_fail();
+GOOGLE_GLOG_DLL_DECL @ac_cv___attribute___noreturn@ void logging_fail() noexcept(false);
 
 
 // ---------------------------------------------------------------------

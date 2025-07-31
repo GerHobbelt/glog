@@ -156,6 +156,7 @@ TEST(Demangle, FromFile) {
 
 extern "C"
 int main(int argc, const char** argv) {
+  try {
 #ifdef HAVE_LIB_GFLAGS
   ParseCommandLineFlags(&argc, &argv, true);
 #endif
@@ -175,5 +176,8 @@ int main(int argc, const char** argv) {
     return 0;
   } else {
     return RUN_ALL_TESTS();
+  }
+  } catch (const std::exception& e) {
+    throw e;
   }
 }

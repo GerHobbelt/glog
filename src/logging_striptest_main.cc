@@ -94,7 +94,9 @@ static void handle_exception_eptr_4_fatal_fail(std::exception_ptr eptr) // passi
 
 typedef void exec_f();
 
-static void contain_fatal_testcode(exec_f f)
+extern "C" void BreakIntoDebugger(void);
+
+static void contain_fatal_testcode(exec_f f) noexcept(false)
 {
 	try
 	{
@@ -115,10 +117,17 @@ static void contain_fatal_testcode(exec_f f)
 		InstallFailureFunction(dummy_logging_fail_handler_4_test);
 		assert(HasInstalledCustomFailureFunction());
 
+		try {
 		f();
-	}
+        } catch (std::exception& e) {
+            throw e;
+        }
+//    } catch (std::exception& e) {
+//        throw e;
+    }
 	catch (...)
 	{
+        BreakIntoDebugger();
 		auto e = std::current_exception(); // capture
 		handle_exception_eptr_4_fatal_fail(e);
 	}
@@ -132,6 +141,73 @@ static void log_fatal()
 static jmp_buf ret_on_uncaught_exception;
 
 //-----------------------------------------------------------------------//
+
+static void exec_test_code(void) noexcept(false) {
+  int val = 0;
+   // setjmp(ret_on_uncaught_exception);
+  if (!val) {
+    /*
+     * Investigation result:
+     * The terminate_handler is executed while the stack is still (more or less)
+     * intact. This gives us the opportunity to do something that's rather
+     * 'undefined behaviour': as C++ won't be able to help us with stack
+     * unwinding any longer, there's sure to be plenty memory leaks and resource
+     * leaks, but we'll (probably) still have the main() + its bit of stack
+     * intact! Hence we can use old C setjmp/longjmp to get us back there, WHILE
+     * WE CONSCIOUSLY IGNORE ALL MEMORY LEAKS AND RESOURCE LEAKS that occur
+     * along the way.
+     *
+     * NOTE: turns out (while testing this hack) that C++ still does stack
+     * unwinding, at least where we can easily notice such: the `auto_scope`
+     * instance further above is unwound when using setjmp/longjmp, while the
+     * *documented* behaviour where the terminate_handler invokes `abort()` does
+     * not.
+     * -->
+     * CUTE BUT NO CIGAR: when one logs a FATAL like that, any unwinding like
+     * that is very probably highly dangerous -- or it wouldn't have been a
+     * FATAL log entry!
+     */
+#if 0
+	std::set_terminate([]() {
+      fprintf(stderr, "terminate_handler: uncaught_exceptions: %d\n",
+              std::uncaught_exceptions());
+
+      assert(fatal_fail_handler_hits == 1);
+      assert(fatal_fail_catcher_hits == 0);
+      assert(fatal_fail_catcher_rethrow_hits == 0);
+
+#if 01
+		  ShutdownGoogleLogging();
+		  std::abort();
+#else
+      longjmp(ret_on_uncaught_exception, 101); /* signaling an error */
+#endif
+    });
+#endif
+
+#if 0
+	  contain_fatal_testcode(log_fatal);
+#else
+    try {
+    contain_fatal_testcode([]() {
+      try {
+		LOG(FATAL) << "TESTMESSAGE FATAL";
+      } catch (std::exception& e) {
+        throw e;
+      }
+    });
+    } catch (std::exception& e) {
+      throw e;
+    }
+#endif
+  } else {
+    // uncaught exception has happened. Wind down the test app.
+    fprintf(stderr, "main: uncaught_exceptions: %d\n",
+            std::uncaught_exceptions());
+
+    assert(fatal_fail_handler_hits == 1);
+  }
+}
 
 #if !defined(GOOGLE_STRIP_LOG)
 #define GOOGLE_STRIP_LOG        1
@@ -159,59 +235,36 @@ int main(int argc, const char** argv) {
   LOG(WARNING) << 2 << "something" << "TESTMESSAGE WARNING"
                << 1 << 'c' << A() << std::endl;
   LOG(ERROR) << "TESTMESSAGE ERROR";
-  bool flag = true;
-  (flag ? LOG(INFO) : LOG(ERROR)) << "TESTMESSAGE COND";
-
-  int val = setjmp(ret_on_uncaught_exception);
-  if (!val) {
-	  /*
-	  * Investigation result:
-	  * The terminate_handler is executed while the stack is still (more or less) intact.
-	  * This gives us the opportunity to do something that's rather 'undefined behaviour':
-	  * as C++ won't be able to help us with stack unwinding any longer, there's sure to be
-	  * plenty memory leaks and resource leaks, but we'll (probably) still have
-	  * the main() + its bit of stack intact! Hence we can use old C setjmp/longjmp
-	  * to get us back there, WHILE WE CONSCIOUSLY IGNORE ALL MEMORY LEAKS AND RESOURCE LEAKS
-	  * that occur along the way.
-	  *
-	  * NOTE: turns out (while testing this hack) that C++ still does stack unwinding,
-	  * at least where we can easily notice such: the `auto_scope` instance further above is
-	  * unwound when using setjmp/longjmp, while the *documented* behaviour where the
-	  * terminate_handler invokes `abort()` does not.
-	  * -->
-	  * CUTE BUT NO CIGAR: when one logs a FATAL like that, any unwinding like that is
-	  * very probably highly dangerous -- or it wouldn't have been a FATAL log entry!
-	  */
-	  std::set_terminate([]() {
-		  fprintf(stderr, "terminate_handler: uncaught_exceptions: %d\n", std::uncaught_exceptions());
-
-		  assert(fatal_fail_handler_hits == 1);
-		  assert(fatal_fail_catcher_hits == 0);
-		  assert(fatal_fail_catcher_rethrow_hits == 0);
-
+  constexpr const bool flag = true;
 #if 0
-		  ShutdownGoogleLogging();
-		  std::abort();
+  // error C2446: ':': no conversion from 'std::ostream' to 'google::NullStreamBase'
+  (flag ? LOG(INFO) : LOG(ERROR)) << "TESTMESSAGE COND / compile-time";
+  bool flag2 = true;
+  // error C2446: ':': no conversion from 'std::ostream' to 'google::NullStreamBase'
+  (flag2 ? LOG(INFO) : LOG(ERROR)) << "TESTMESSAGE COND / run-time";
 #else
-		  longjmp(ret_on_uncaught_exception, 101);   /* signaling an error */
+  // Since the introduction of the NullStream class hierarchy for the scenario where the log level is known to be defunct/quiet at compile time,
+  // the about ternary style cannot be used anyt more.
+  // Reproducing a working alternative here: as one can see, this kind of behaviour is NOT what the googlelog library is about as you'll
+  // inevitably end up with duplicated code lines this way...
+  if constexpr (flag)
+    LOG(INFO) << "TESTMESSAGE COND / compile-time";
+  else
+    LOG(ERROR) << "TESTMESSAGE COND / compile-time";
+  bool flag2 = true;
+  if (flag2)
+    LOG(INFO) << "TESTMESSAGE COND / run-time";
+  else
+    LOG(ERROR) << "TESTMESSAGE COND / run-time";
 #endif
-	   });
 
-#if 0
-	  contain_fatal_testcode(log_fatal);
-#else
-	  contain_fatal_testcode([] {
-		  LOG(FATAL) << "TESTMESSAGE FATAL";
-	  });
-#endif
-  }
-  else {
-	  // uncaught exception has happened. Wind down the test app.
-	  fprintf(stderr, "main: uncaught_exceptions: %d\n", std::uncaught_exceptions());
-
-	  assert(fatal_fail_handler_hits == 1);
+  try {
+  exec_test_code();
+  } catch (std::exception& e) {
+    throw e;
   }
 
   ShutdownGoogleLogging();
+
   return 0;
 }
