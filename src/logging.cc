@@ -1937,8 +1937,16 @@ LogMessage::__FlushAndFailAtEnd() {
 		delete allocated_;
 #endif // defined(GLOG_THREAD_LOCAL_STORAGE)
 	}
-	catch (...) {
-		fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.\n");
+    catch (...) {
+		std::exception_ptr e = std::current_exception(); // capture
+		auto msg = (e != nullptr ? e->what() : nullptr);
+		if (msg != nullptr)
+			fprintf(stderr, "Exception caught: %s. Rotten way to do this sort of thing anyway.\n", msg);
+		else
+            fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.\n");
+#if 0			
+		std::rethrow_exception(eptr);
+#endif		
 	}
 }
 
@@ -2184,9 +2192,6 @@ void LogMessage::RecordCrashReason(
 }
 
 GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func = &__internal_logging_fail;
-
-GOOGLE_GLOG_DLL_DECL logging_fail_func_t g_logging_fail_func =
-    reinterpret_cast<logging_fail_func_t>(&abort);
 
 NullStreamBase::NullStreamBase() noexcept = default;
 NullStreamBase::NullStreamBase(const char* /*file*/, int /*line*/,
