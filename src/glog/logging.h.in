@@ -60,10 +60,10 @@
 #define GLOG_MSVC_POP_WARNING()
 #endif
 
-#include "glog/platform.h"
+#include <glog/platform.h>
 
 #if @ac_cv_have_glog_export@
-#include "glog/export.h"
+#include <glog/export.h>
 #endif
 
 // We care a lot about number of bits things take up.  Unfortunately,
@@ -72,16 +72,28 @@
 // Note: these commands below may look like "#if 1" or "#if 0", but
 // that's because they were constructed that way at ./configure time.
 // Look at logging.h.in to see how they're calculated (based on your config).
-#include <cstdint>  // the normal place uint16_t is defined
+#include <cstdint>              // the normal place uint16_t is defined
 #if @ac_cv_have_systypes_h@
 #include <sys/types.h>          // the normal place u_int16_t is defined
-#endif
+#include <inttypes.h>           // a third place for uint16_t or u_int16_t
+
+#ifdef GFLAGS_DLL_DECLARE_FLAG
+#define GLOG_GFLAGS_DLL_DECLARE_FLAG_WAS_DEFINED
+#pragma push_macro("GFLAGS_DLL_DECLARE_FLAG")
+#undef GFLAGS_DLL_DECLARE_FLAG
+#endif // defined(GFLAGS_DLL_DECLARE_FLAG)
+
+#define GFLAGS_DLL_DECLARE_FLAG GOOGLE_GLOG_DLL_DECL
 
 #if @ac_cv_have_libgflags@
 #include <gflags/gflags.h>
 #endif
 
+#ifdef HAVE_CXX11_ATOMIC
 #include <atomic>
+#elif defined(GLOG_OS_WINDOWS)
+#include <windows.h>
+#endif
 
 @ac_google_start_namespace@
 
@@ -630,8 +642,8 @@ DECLARE_string(logmailer);
 @ac_google_start_namespace@
 
 // They need the definitions of integer types.
-#include "glog/log_severity.h"
-#include "glog/vlog_is_on.h"
+#include <glog/log_severity.h>
+#include <glog/vlog_is_on.h>
 
 // Initialize google's logging library. You will see the program name
 // specified by argv0 in log outputs.
@@ -639,7 +651,7 @@ GOOGLE_GLOG_DLL_DECL void InitGoogleLogging(const char* argv0);
 
 GOOGLE_GLOG_DLL_DECL void InitGoogleLogging(const char* argv0,
                                             CustomPrefixCallback prefix_callback,
-                                   void* prefix_callback_data = nullptr);
+                                            void* prefix_callback_data = nullptr);
 
 // Check if google's logging library has been initialized.
 GOOGLE_GLOG_DLL_DECL bool IsGoogleLoggingInitialized();
@@ -791,8 +803,7 @@ void MakeCheckOpValueString(std::ostream* os, const unsigned char& v);
 
 // Provide printable value for nullptr_t
 template <> GOOGLE_GLOG_DLL_DECL
-void MakeCheckOpValueString(std::ostream* os,
-                                        const std::nullptr_t& v);
+void MakeCheckOpValueString(std::ostream* os, const std::nullptr_t& v);
 
 // Build the error message string. Specify no inlining for code size.
 template <typename T1, typename T2>
@@ -1896,6 +1907,11 @@ GOOGLE_GLOG_DLL_DECL void InstallFailureWriter(
     void (*writer)(const char* data, size_t size));
 
 @ac_google_end_namespace@
+
+#ifdef GLOG_GFLAGS_DLL_DECLARE_FLAG_WAS_DEFINED
+#undef GLOG_GFLAGS_DLL_DECLARE_FLAG_WAS_DEFINED
+#pragma pop_macro("GFLAGS_DLL_DECLARE_FLAG")
+#endif // defined(GLOG_GFLAGS_DLL_DECLARE_FLAG_WAS_DEFINED)
 
 #pragma pop_macro("DECLARE_VARIABLE")
 #pragma pop_macro("DECLARE_bool")
