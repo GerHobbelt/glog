@@ -39,9 +39,10 @@
 #include <ctime>
 
 @ac_google_start_namespace@
-#include "glog/log_severity.h"
-#include "glog/logging.h"
-#include "glog/vlog_is_on.h"
+
+#include <glog/log_severity.h>
+#include <glog/logging.h>
+#include <glog/vlog_is_on.h>
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -169,8 +170,10 @@ static inline void RawLogStub__(int /* ignored */, ...) {
 // Logs format... at "severity" level, reporting it
 // as called from file:line.
 // This does not allocate memory or acquire locks.
-GOOGLE_GLOG_DLL_DECL void RawLog__(LogSeverity severity, const char* file, int line,
-                          const char* format, ...)
+GOOGLE_GLOG_DLL_DECL void RawLog__(LogSeverity severity,
+                                   const char* file,
+                                   int line,
+                                   const char* format, ...)
     @ac_cv___attribute___printf_4_5@;
 
 @ac_google_end_namespace@
