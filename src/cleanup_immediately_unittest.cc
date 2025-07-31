@@ -44,7 +44,6 @@ using namespace GFLAGS_NAMESPACE;
 
 // Introduce several symbols from gmock.
 using GOOGLE_NAMESPACE::glog_testing::ScopedMockLog;
-using testing::_;
 using testing::AllOf;
 using testing::AnyNumber;
 using testing::HasSubstr;

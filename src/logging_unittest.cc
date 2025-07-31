@@ -73,7 +73,6 @@ using namespace GFLAGS_NAMESPACE;
 #include <gmock/gmock.h>
 #include "mock-log.h"
 // Introduce several symbols from gmock.
-using testing::_;
 using testing::AnyNumber;
 using testing::HasSubstr;
 using testing::AllOf;
