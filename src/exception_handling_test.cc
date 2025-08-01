@@ -54,7 +54,7 @@ class ExpectFailureListener : public testing::EmptyTestEventListener {
   ExpectFailureListener() {}
   virtual ~ExpectFailureListener() {
 	assert(mark_ == 0);
-    singleton_instance.reset();
+    singleton_instance = nullptr;
   }
 
   testing::TestPartResult OnTestPartResult(const testing::TestPartResult& result) override {
@@ -135,43 +135,35 @@ class ExpectFailureListener : public testing::EmptyTestEventListener {
 
   void OnTestEnd(const testing::TestInfo& test_info) override {
 	// remove ourselves from the listeners queue!
-#if 0
-	testing::TestEventListeners& listeners = testing::UnitTest::GetInstance()->listeners();
-    listeners.Release(this);
-#endif
     assert(mark_ == 0);
   }
 
   void OnTestIterationEnd(const testing::UnitTest& unit_test, int iteration) override {
-    std::ostringstream os;
-    os << "Expected failures, but observed failures instead.";
-
-    throw std::runtime_error(os.str());
   }
 
   static void SetUpExpectedFailureHandler(void) {
     testing::TestEventListeners& listeners = testing::UnitTest::GetInstance()->listeners();
     if (!singleton_instance) {
-      singleton_instance = std::make_unique<ExpectFailureListener>();
+      singleton_instance = new ExpectFailureListener();
     }
-    if (!listeners.Has(singleton_instance.get())) {
-      listeners.Prepend(singleton_instance.get());
-      listeners.Append(singleton_instance.get());
+    if (!listeners.Has(singleton_instance)) {
+      listeners.Prepend(singleton_instance);
+      listeners.Append(singleton_instance);
 	}
   }
 
   static void Mark(unsigned int count = 1) {
     SetUpExpectedFailureHandler();
     assert(!!singleton_instance);
-    assert(singleton_instance.get()->mark_ == 0);
+    assert(singleton_instance->mark_ == 0);
     assert(count >= 1);
-    singleton_instance.get()->mark_ = count;
+    singleton_instance->mark_ = count;
   }
 
   static bool IsMarkActivate(void) {
     SetUpExpectedFailureHandler();
     assert(!!singleton_instance);
-    return singleton_instance.get()->mark_ > 0;
+    return singleton_instance->mark_ > 0;
   }
 
  protected:
@@ -182,10 +174,10 @@ class ExpectFailureListener : public testing::EmptyTestEventListener {
   std::optional<testing::TestPartResult> buffered_result_{};
 
   // single instance management:
-  static class std::unique_ptr<ExpectFailureListener> singleton_instance;
+  static class ExpectFailureListener* singleton_instance;
 };
 
-std::unique_ptr<ExpectFailureListener> ExpectFailureListener::singleton_instance{nullptr};
+ExpectFailureListener* ExpectFailureListener::singleton_instance{nullptr};
 
 static void GTEST_MARK_NEXT_AS_EXPECTED_FAILURE(unsigned int count = 1) {
   ExpectFailureListener::Mark(count);
