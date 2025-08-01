@@ -3,6 +3,16 @@ Google Logging Library
 
 |Linux Github actions| |Windows Github actions| |macOS Github actions| |Codecov|
 
+**Deprecation notice**: This project is no longer maintained and will be archived on 2025-06-30.
+Consider using
+`ng-log <https://github.com/ng-log/ng-log>`_ (API-compatible,
+community-maintained,
+`migration instructions <https://github.com/ng-log/ng-log/blob/master/docs/build.md>`_)
+or
+`Abseil Logging <https://abseil.io/docs/cpp/guides/logging>`_
+(Google-maintained) instead. Thank you for all the contributions!
+
+
 Google Logging (glog) is a C++14 library that implements application-level
 logging. The library provides logging APIs based on C++-style streams and
 various helper macros.
