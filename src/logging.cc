@@ -1847,6 +1847,17 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
     }
 
     LogDestination::WaitForSinks(data_);
+#if defined(__cpp_lib_uncaught_exceptions) && \
+    (__cpp_lib_uncaught_exceptions >= 201411L)
+    if (std::uncaught_exceptions() == 0)
+#else
+    if (!std::uncaught_exception())
+#endif
+    {
+      // Avoid throwing exceptions if the LogMessageFatal destructor is
+      // unwound to prevent a std::terminate.
+      Fail();
+    }
   }
 }
 
