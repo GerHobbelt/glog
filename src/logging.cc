@@ -1921,10 +1921,8 @@ const LogMessageTime& LogMessage::getLogMessageTime() const {
   return logmsgtime_;
 }
 
-extern "C" void BreakIntoDebugger(void);
-
 void
-LogMessage::__FlushAndFailAtEnd() {
+LogMessage::__FlushAndFailAtEnd() noexcept(false) {
 	try {
 		Flush();
 #ifdef GLOG_THREAD_LOCAL_STORAGE
@@ -1940,7 +1938,6 @@ LogMessage::__FlushAndFailAtEnd() {
 #endif // defined(GLOG_THREAD_LOCAL_STORAGE)
 	}
     catch (...) {
-		BreakIntoDebugger();
 		std::exception_ptr e = std::current_exception(); // capture
         try {
           if (e) {
@@ -1949,6 +1946,12 @@ LogMessage::__FlushAndFailAtEnd() {
         } catch (const std::exception& e) {
 		  auto msg = e.what();
 		  fprintf(stderr, "Exception caught: %s. Rotten way to do this sort of thing anyway.\n", msg);
+        } catch (const std::exception* e) {
+		  auto msg = e->what();
+		  fprintf(stderr, "Exception caught: %s. Rotten way to do this sort of thing anyway.\n", msg);
+#if 1
+		  delete e;
+#endif
 		} catch (...) {
           fprintf(stderr, "Exception caught. Rotten way to do this sort of thing anyway.\n");
 		}
@@ -1958,7 +1961,7 @@ LogMessage::__FlushAndFailAtEnd() {
 	}
 }
 
-LogMessage::~LogMessage() {
+LogMessage::~LogMessage() noexcept(false) {
 	__FlushAndFailAtEnd();
 }
 
@@ -2222,12 +2225,12 @@ bool HasInstalledCustomFailureFunction(void) {
 }
 
 
-[[noreturn]] void LogMessage::Fail() noexcept(false) {
+[[noreturn]] void LogMessage::Fail() {
   g_logging_fail_func();
   throw std::exception("LogMessage::Fail::aborting...");
 }
 
-[[noreturn]] void logging_fail() noexcept(false) {
+[[noreturn]] void logging_fail() {
 	g_logging_fail_func();
 	throw std::exception("logging_fail::FATAL::aborting...");
 }
@@ -2812,19 +2815,11 @@ LogMessageFatal::LogMessageFatal(const char* file, int line,
 [[noreturn]] void
 LogMessageFatal::__FlushAndFailAtEnd() noexcept(false) {
 	Flush();
-  try {
-    LogMessage::Fail();
-  } catch (std::exception& e) {
-    throw e;
-  }
+	LogMessage::Fail();
 }
 
 [[noreturn]] LogMessageFatal::~LogMessageFatal() noexcept(false) {
-  try {
-    __FlushAndFailAtEnd();
-  } catch (std::exception& e) {
-    throw e;
-  }
+	__FlushAndFailAtEnd();
 }
 
 namespace base {
